@@ -60,7 +60,8 @@ class ConnectionManager:
         self.clients.append(ws)
 
     def disconnect(self, ws: WebSocket):
-        self.clients.remove(ws)
+        if ws in self.clients:
+            self.clients.remove(ws)
 
     async def broadcast(self, data: dict):
         dead = []
