@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap');
 
 :root {
+  /* Dark theme (default) */
   --bg:         #0a0c0e;
   --bg-2:       #111418;
   --bg-3:       #181d22;
@@ -28,7 +29,35 @@
   --cat-system:     #a78bfa;   /* Purple - System & Misc */
 }
 
+[data-theme="light"] {
+  --bg:         #f8fafc;
+  --bg-2:       #ffffff;
+  --bg-3:       #f1f5f9;
+  --border:     #e2e8f0;
+  --border-hi:  #cbd5e1;
+  --amber:      #d97706;
+  --amber-dim:  #b45309;
+  --amber-glow: rgba(217,119,6,0.12);
+  --green:      #16a34a;
+  --green-dim:  #15803d;
+  --red:        #dc2626;
+  --red-dim:    #b91c1c;
+  --blue:       #0284c7;
+  --text:       #0f172a;
+  --text-dim:   #475569;
+  --text-muted: #94a3b8;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Logo text color - changes with theme */
+[data-theme="dark"] .logo .logo-text {
+  fill: #ffffff;
+}
+
+[data-theme="light"] .logo .logo-text {
+  fill: #000000;
+}
 
 html, body, #root {
   height: 100%;
@@ -53,8 +82,8 @@ button {
   background: none;
 }
 
-/* Scanline overlay */
-body::after {
+/* Scanline overlay (dark mode only) */
+[data-theme="dark"] body::after {
   content: '';
   position: fixed;
   inset: 0;
