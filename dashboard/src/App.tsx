@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from './components/Sidebar';
+import { Menu } from 'lucide-react';
 import Overview from './pages/Overview';
 import Charts   from './pages/Charts';
 import RawData  from './pages/RawData';
@@ -14,6 +16,7 @@ const queryClient = new QueryClient({
 function Layout() {
   const connect    = useWsStore(s => s.connect);
   const disconnect = useWsStore(s => s.disconnect);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     connect();
@@ -22,13 +25,15 @@ function Layout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main style={{
         flex: 1,
         marginLeft: 200,
         maxHeight: '100vh',
         overflowY: 'auto',
         minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
       }}>
         {/* Top bar */}
         <div style={{
@@ -44,10 +49,34 @@ function Layout() {
           top: 0,
           background: 'var(--bg)',
           zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
         }}>
-          AC500 Power Station Monitor
+          {/* Hamburger menu button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="hamburger-btn"
+            style={{
+              display: 'none',
+              background: 'var(--bg-3)',
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              color: 'var(--text)',
+              cursor: 'pointer',
+              padding: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              width: 36,
+              height: 36,
+            }}
+          >
+            <Menu size={20} />
+          </button>
+          <span className="top-bar-title" style={{ flex: 1, textAlign: 'center' }}>AC500 Power Station Monitor</span>
         </div>
-        <div style={{ padding: 24 }}>
+        <div style={{ padding: 24, flex: 1 }}>
           <Routes>
             <Route path="/"       element={<Overview />} />
             <Route path="/charts" element={<Charts   />} />

@@ -18,7 +18,7 @@ function PowerFlow({ state }: { state: Record<string, { value: string; ts: strin
   return (
     <Card>
       <SectionLabel color="var(--cat-input)"><ArrowRight size={16} style={{ marginRight: 6, color: 'var(--cat-input)' }} />Power Flow</SectionLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto 1fr', alignItems: 'center', gap: 12 }}>
+      <div className="power-flow-grid" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto 1fr', alignItems: 'center', gap: 12 }}>
         {/* Input */}
         <div style={{ textAlign: 'right' }}>
           {dcIn > 0 && <BigMetric label="Solar DC" value={dcIn} unit="W" color="var(--amber)" icon={Sun} />}
@@ -108,7 +108,7 @@ export default function Overview() {
 
             <PowerFlow state={fields} />
 
-            <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+            <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
               {CATEGORIES.filter(c => byCategory[c]?.length).map(cat => {
                 const Icon = categoryIcons[cat] ?? Gauge;
                 const color = categoryColors[cat] ?? 'var(--text-dim)';

@@ -118,3 +118,132 @@ button {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Sidebar nav hover effects */
+.sidebar-nav-link:hover {
+  background: var(--bg-3) !important;
+  color: var(--text) !important;
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  /* Show hamburger menu on mobile/tablet */
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  /* Sidebar hidden by default on mobile/tablet */
+  .sidebar {
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  /* Show close button on mobile/tablet */
+  .sidebar-close {
+    display: flex !important;
+  }
+
+  /* Add margin above logo on mobile/tablet */
+  .sidebar > div:first-child {
+    padding-top: 60px !important;
+  }
+
+  /* Main content takes full width on mobile/tablet */
+  main {
+    margin-left: 0 !important;
+  }
+
+  /* Adjust top bar padding on mobile/tablet */
+  main > div:first-child {
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+  }
+
+  /* Shift title left to account for hamburger button on mobile/tablet */
+  .top-bar-title {
+    transform: translateX(-18px) !important;
+  }
+
+  /* Reduce page padding on mobile/tablet */
+  main > div:last-child {
+    padding: 16px !important;
+  }
+
+  /* Make cards more compact on mobile/tablet */
+  .card {
+    padding: 16px !important;
+  }
+
+  /* Stack power flow vertically on mobile/tablet */
+  .power-flow-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .power-flow-grid > div {
+    text-align: center !important;
+  }
+
+  /* Hide arrows in power flow on mobile/tablet */
+  .power-flow-grid > div:nth-child(2),
+  .power-flow-grid > div:nth-child(4) {
+    display: none;
+  }
+
+  /* Adjust metric display on mobile/tablet */
+  .big-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .big-metric > div:first-child {
+    margin-bottom: 8px !important;
+  }
+
+  /* Reduce font size for big metrics on mobile/tablet */
+  .big-metric span[style*="font-size: 36"] {
+    font-size: 28px !important;
+  }
+
+  /* Stack device header on mobile/tablet */
+  h1, h2, h3, [style*="font-size: 26"] {
+    font-size: 20px !important;
+  }
+
+  /* Make section labels smaller */
+  [style*="font-size: 16"] {
+    font-size: 14px !important;
+  }
+
+  /* Adjust chart controls */
+  select[style*="flex: '1 1 200px'"] {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small devices */
+  body {
+    font-size: 13px;
+  }
+
+  /* Reduce card padding further */
+  .card {
+    padding: 12px !important;
+  }
+
+  /* Smaller metrics */
+  .big-metric span[style*="font-size: 36"] {
+    font-size: 24px !important;
+  }
+
+  /* Compact device headers */
+  [style*="font-size: 26"] {
+    font-size: 18px !important;
+  }
+}

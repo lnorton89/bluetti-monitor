@@ -104,7 +104,8 @@ export default function RawData() {
         </div>
       ) : (
         <Card>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)' }}>
                 {['Field Key', 'Label', 'Category', 'Value', 'Last Updated'].map(h => {
@@ -192,7 +193,8 @@ export default function RawData() {
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </Card>
       )}
     </div>

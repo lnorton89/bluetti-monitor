@@ -50,22 +50,22 @@ export default function Charts() {
       {/* Controls */}
       <Card>
         <SectionLabel><Activity size={14} style={{ marginRight: 6 }} />Add Chart</SectionLabel>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-start' }}>
           <select value={selectedDevice} onChange={e => setSelectedDevice(e.target.value)}
-            style={selectStyle}>
+            style={{ ...selectStyle, flex: '1 1 200px', minWidth: '150px' }}>
             {liveDevices.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
 
           <select defaultValue="" onChange={e => { if (e.target.value) addChart(e.target.value); e.target.value = ''; }}
-            style={selectStyle}>
+            style={{ ...selectStyle, flex: '1 1 200px', minWidth: '150px' }}>
             <option value="" disabled>Select field...</option>
             {numericFields.map(f => (
               <option key={f} value={f}>{getFieldMeta(f).label}</option>
             ))}
           </select>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500 }}>Points:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Points:</span>
             {[50, 200, 500].map(n => (
               <button key={n} onClick={() => setLimit(n)} style={{
                 padding: '6px 12px',
@@ -76,6 +76,7 @@ export default function Charts() {
                 fontSize: 13,
                 fontWeight: 600,
                 borderRadius: 3,
+                flexShrink: 0,
               }}>
                 {n}
               </button>

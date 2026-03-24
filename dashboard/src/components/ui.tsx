@@ -8,7 +8,7 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
       border: '1px solid var(--border)',
       borderRadius: 4,
       padding: '16px 20px',
-    }} className={className}>
+    }} className={`card ${className}`}>
       {children}
     </div>
   );
@@ -66,7 +66,7 @@ export function BigMetric({ label, value, unit, color = 'var(--amber)', icon: Ic
   label: string; value: string | number; unit?: string; color?: string; icon?: React.ElementType;
 }) {
   return (
-    <div>
+    <div className="big-metric">
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         {Icon && <Icon size={14} style={{ color: 'var(--text-dim)' }} />}
         <span style={{ fontFamily: 'var(--font-cond)', fontSize: 13, letterSpacing: '0.12em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
