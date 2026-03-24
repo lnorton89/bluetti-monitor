@@ -41,12 +41,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         left: 0,
         top: 0,
         width: 200,
-        height: '100vh',
+        height: '100dvh',
         background: 'var(--bg-2)',
         borderRight: '1px solid var(--border)',
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
+        paddingBottom: 8,
         zIndex: 100,
       }}>
         {/* Logo */}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bluetti Monitor</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <p class="eyebrow">Desktop Bootstrap</p>
+        <h1>Bluetti Monitor</h1>
+        <p class="lede">
+          Starting the local Docker stack and waiting for the dashboard to come online.
+        </p>
+
+        <div class="status-row">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Connecting to <code>http://localhost:8540</code></span>
+        </div>
+
+        <ol class="steps">
+          <li>Bring up <code>mosquitto</code>, <code>api</code>, and <code>dashboard</code>.</li>
+          <li>Wait for the dashboard container to report healthy enough to render.</li>
+          <li>Switch this window into the live monitoring UI automatically.</li>
+        </ol>
+      </section>
+    </main>
+    <script type="module" src="./index.ts"></script>
+  </body>
+  </html>

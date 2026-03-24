@@ -64,6 +64,19 @@ docker compose up -d
 
 This builds and starts all three containers. First run will take a minute to build the React app.
 
+### Desktop App
+
+An Electrobun desktop shell now lives at the repo root. It currently wraps the existing Dockerized stack:
+
+```powershell
+bun install
+bun run desktop:dev
+```
+
+On launch, the desktop app runs `docker compose up -d`, waits for the dashboard on `http://127.0.0.1:8540`, and then loads that UI into the native window.
+
+This is an initial integration pass, so the Docker services remain the source of truth. The next step is to move more orchestration and packaging concerns into the Electrobun app itself.
+
 ### 2. Start the Bluetooth Poller (Host)
 
 Bluetooth cannot be passed through to Docker on Windows, so this runs directly on your host machine:

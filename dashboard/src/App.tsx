@@ -24,12 +24,12 @@ function Layout() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100dvh', height: '100dvh', overflow: 'hidden' }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main style={{
         flex: 1,
         marginLeft: 200,
-        maxHeight: '100vh',
+        height: '100dvh',
         overflowY: 'auto',
         minWidth: 0,
         display: 'flex',
