@@ -18,6 +18,9 @@ interface WsStore {
   _ws:       WebSocket | null;
 }
 
+const THROTTLE_MS = 100;
+let lastUpdate = 0;
+
 export const useWsStore = create<WsStore>((set, get) => ({
   state:      {},
   connected:  false,
@@ -44,6 +47,10 @@ export const useWsStore = create<WsStore>((set, get) => ({
       }
 
       const update = msg as LiveUpdate;
+      const now = Date.now();
+      if (now - lastUpdate < THROTTLE_MS) return;
+      lastUpdate = now;
+
       set(s => ({
         lastUpdate: update.ts,
         state: {

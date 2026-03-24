@@ -1,5 +1,6 @@
 import { Wifi, ArrowRight, Sun, Plug, Battery, Zap, Gauge } from 'lucide-react';
 import { useWsStore } from '../store/ws';
+import { shallow } from 'zustand/shallow';
 import { Card, SectionLabel, BigMetric, BoolBadge } from '../components/ui';
 import { getFieldMeta, CATEGORIES, formatObjectValue, categoryIcons, categoryColors } from '../lib/fields';
 import { formatRelativeTime } from '../lib/time';
@@ -65,7 +66,7 @@ function PowerFlow({ state }: { state: Record<string, { value: string; ts: strin
 }
 
 export default function Overview() {
-  const wsState = useWsStore(s => s.state);
+  const wsState = useWsStore(s => s.state, shallow);
   const devices = Object.keys(wsState);
 
   if (devices.length === 0) {

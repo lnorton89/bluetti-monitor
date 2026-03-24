@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { fetchHistory, fetchFields } from '../lib/api';
@@ -6,7 +6,9 @@ import { getFieldMeta, categoryColors } from '../lib/fields';
 import { formatTime, formatTimeShort } from '../lib/time';
 import { Card, SectionLabel, Spinner } from '../components/ui';
 import { useWsStore } from '../store/ws';
+import { shallow } from 'zustand/shallow';
 import { Activity, TrendingUp, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const COLORS = ['var(--amber)', 'var(--blue)', 'var(--green)', '#a78bfa', '#fb7185'];
 
@@ -17,17 +19,24 @@ interface ChartConfig {
 }
 
 export default function Charts() {
-  const wsState  = useWsStore(s => s.state);
+  const location = useLocation();
+  const wsState  = useWsStore(s => s.state, shallow);
   const liveDevices = Object.keys(wsState);
 
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
   const [charts, setCharts] = useState<ChartConfig[]>([]);
   const [limit, setLimit] = useState(200);
+  const [isActive, setIsActive] = useState(false);
+
+  // Only fetch when on the /charts route
+  useEffect(() => {
+    setIsActive(location.pathname === '/charts');
+  }, [location.pathname]);
 
   const { data: fields = [] } = useQuery({
     queryKey: ['fields', selectedDevice],
     queryFn:  () => fetchFields(selectedDevice),
-    enabled:  !!selectedDevice,
+    enabled:  isActive && !!selectedDevice,
   });
 
   const numericFields = fields.filter(f => {
@@ -85,7 +94,7 @@ export default function Charts() {
         </div>
       </Card>
 
-      {charts.length === 0 && (
+      {charts.length === 0 && isActive && (
         <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 14, padding: '20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
           <TrendingUp size={18} />
           Select a field above to add a chart.
@@ -93,18 +102,19 @@ export default function Charts() {
       )}
 
       {charts.map((cfg, idx) => (
-        <ChartCard key={`${cfg.device}-${cfg.field}`} cfg={cfg} limit={limit} onRemove={() => removeChart(idx)} />
+        <ChartCard key={`${cfg.device}-${cfg.field}`} cfg={cfg} limit={limit} onRemove={() => removeChart(idx)} isActive={isActive} />
       ))}
     </div>
   );
 }
 
-function ChartCard({ cfg, limit, onRemove }: { cfg: ChartConfig; limit: number; onRemove: () => void }) {
+function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit: number; onRemove: () => void; isActive: boolean }) {
   const meta = getFieldMeta(cfg.field);
   const { data, isLoading } = useQuery({
     queryKey: ['history', cfg.device, cfg.field, limit],
     queryFn:  () => fetchHistory(cfg.device, cfg.field, limit),
-    refetchInterval: 10_000,
+    refetchInterval: isActive ? 10_000 : false,
+    enabled: isActive,
   });
 
   const chartData = (data ?? []).slice().reverse().map(p => ({

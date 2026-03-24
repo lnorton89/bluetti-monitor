@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useWsStore } from '../store/ws';
+import { shallow } from 'zustand/shallow';
 import { getFieldMeta, formatObjectValue, categoryColors, categoryIcons } from '../lib/fields';
 import { Card } from '../components/ui';
 import { formatTime } from '../lib/time';
 import { Search, Server, Clock, Tag, Code, Hash, Gauge } from 'lucide-react';
 
 export default function RawData() {
-  const wsState = useWsStore(s => s.state);
+  const wsState = useWsStore(s => s.state, shallow);
   const [search, setSearch] = useState('');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
 
