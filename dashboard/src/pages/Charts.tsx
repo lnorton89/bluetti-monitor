@@ -6,7 +6,6 @@ import { getFieldMeta, categoryColors } from '../lib/fields';
 import { formatTime, formatTimeShort } from '../lib/time';
 import { Card, SectionLabel, Spinner } from '../components/ui';
 import { useWsStore } from '../store/ws';
-import { shallow } from 'zustand/shallow';
 import { Activity, TrendingUp, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
@@ -20,7 +19,7 @@ interface ChartConfig {
 
 export default function Charts() {
   const location = useLocation();
-  const wsState  = useWsStore(s => s.state, shallow);
+  const wsState  = useWsStore(s => s.state);
   const liveDevices = Object.keys(wsState);
 
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
