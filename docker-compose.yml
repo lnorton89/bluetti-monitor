@@ -1,0 +1,39 @@
+services:
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: bluetti-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    container_name: bluetti-api
+    ports:
+      - "8000:8000"
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DB_PATH: /data/bluetti.db
+    volumes:
+      - bluetti-db:/data
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    container_name: bluetti-dashboard
+    ports:
+      - "8540:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  mosquitto-data:
+  bluetti-db:

@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap');
+
+:root {
+  --bg:         #0a0c0e;
+  --bg-2:       #111418;
+  --bg-3:       #181d22;
+  --border:     #252c34;
+  --border-hi:  #2e3840;
+  --amber:      #f59e0b;
+  --amber-dim:  #92610a;
+  --amber-glow: rgba(245,158,11,0.12);
+  --green:      #22c55e;
+  --green-dim:  #166534;
+  --red:        #ef4444;
+  --red-dim:    #7f1d1d;
+  --blue:       #38bdf8;
+  --text:       #f1f5f9;
+  --text-dim:   #94a3b8;
+  --text-muted: #64748b;
+  --font-mono:  'Share Tech Mono', monospace;
+  --font-ui:    'Barlow', sans-serif;
+  --font-cond:  'Barlow Condensed', sans-serif;
+  /* Pastel rainbow category colors */
+  --cat-input:      #f472b6;   /* Pink - Input (Solar/Grid) */
+  --cat-output:     #fbbf24;   /* Amber - Output (Loads) */
+  --cat-battery:    #34d399;   /* Green - Battery & Packs */
+  --cat-modes:      #60a5fa;   /* Blue - Modes & States */
+  --cat-system:     #a78bfa;   /* Purple - System & Misc */
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-2); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@keyframes pulse-amber {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in { animation: fade-in 0.3s ease forwards; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
