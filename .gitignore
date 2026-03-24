@@ -72,3 +72,8 @@ mosquitto/log/
 
 # Vite
 *.local
+
+# TODO files
+TODO
+TODO.md
+*.TODO
