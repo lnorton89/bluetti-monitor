@@ -57,6 +57,8 @@ mosquitto/log/
 
 # TypeScript
 *.tsbuildinfo
+/.electrobun/
+/*.lockb
 
 # Optional npm cache directory
 .npm
