@@ -38,7 +38,7 @@ export default function RawData() {
           {devices.length > 1 && (
             <div style={{ display: 'flex', gap: 8 }}>
               {devices.map(d => (
-                <button key={d} onClick={() => setSelectedDevice(d)} style={{
+                <button key={d} onClick={() => setSelectedDevice(d)} className="ui-pill-button" style={{
                   padding: '8px 16px',
                   background: device === d ? 'var(--amber-glow)' : 'var(--bg-3)',
                   border: `1px solid ${device === d ? 'var(--amber-dim)' : 'var(--border)'}`,
@@ -58,7 +58,7 @@ export default function RawData() {
               ))}
             </div>
           )}
-          <div style={{
+          <div className="search-shell" style={{
             flex: 1,
             minWidth: 220,
             background: 'var(--bg-3)',
@@ -138,7 +138,7 @@ export default function RawData() {
                 const formattedValue = formatObjectValue(fv.value);
 
                 return (
-                  <tr key={field} style={{
+                  <tr key={field} className="data-row" style={{
                     borderBottom: '1px solid var(--border)',
                     background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
                   }}>

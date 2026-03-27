@@ -27,6 +27,8 @@
   --cat-battery:    #34d399;   /* Green - Battery & Packs */
   --cat-modes:      #60a5fa;   /* Blue - Modes & States */
   --cat-system:     #a78bfa;   /* Purple - System & Misc */
+  --surface-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --surface-shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 [data-theme="light"] {
@@ -46,6 +48,8 @@
   --text:       #0f172a;
   --text-dim:   #475569;
   --text-muted: #94a3b8;
+  --surface-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --surface-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,6 +73,13 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
+body {
+  background-image:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 30%),
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 35%),
+    linear-gradient(180deg, var(--bg), var(--bg));
+}
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg-2); }
 ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
@@ -80,6 +91,21 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+}
+
+button,
+select,
+input {
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.card:focus-within,
+.search-shell:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--amber-glow);
 }
 
 /* Scanline overlay (dark mode only) */
@@ -123,6 +149,121 @@ button {
 .sidebar-nav-link:hover {
   background: var(--bg-3) !important;
   color: var(--text) !important;
+}
+
+.app-shell {
+  position: relative;
+}
+
+.app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.015) 35%, transparent 65%),
+    radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.05), transparent 40%);
+  z-index: 0;
+}
+
+.top-bar {
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--surface-shadow-soft);
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.09), transparent 28%, transparent 72%, rgba(56, 189, 248, 0.08));
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-hi);
+  box-shadow: var(--surface-shadow), 0 0 0 1px var(--amber-glow);
+}
+
+.card:hover::before,
+.card:focus-within::before {
+  opacity: 1;
+}
+
+.device-header {
+  position: relative;
+  width: fit-content;
+  text-shadow: 0 0 24px rgba(245, 158, 11, 0.15);
+}
+
+.device-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+  opacity: 0.75;
+}
+
+.metric-row {
+  border-radius: 6px;
+  padding: 8px 10px 10px;
+  margin: 0 -10px;
+  transition: background 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+
+.metric-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+  transform: translateX(4px);
+}
+
+.ui-select:hover,
+.ui-pill-button:hover,
+.ui-control-button:hover,
+.ui-icon-button:hover,
+.hamburger-btn:hover,
+.sidebar-close:hover,
+.search-shell:hover {
+  border-color: var(--border-hi) !important;
+  background: color-mix(in srgb, var(--bg-3) 86%, white 14%) !important;
+  color: var(--text) !important;
+}
+
+.ui-pill-button:hover,
+.ui-control-button:hover,
+.ui-icon-button:hover,
+.hamburger-btn:hover,
+.sidebar-close:hover {
+  transform: translateY(-1px);
+}
+
+.search-shell {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.search-shell:focus-within {
+  border-color: var(--amber-dim) !important;
+  background: color-mix(in srgb, var(--bg-3) 82%, var(--amber) 18%) !important;
+}
+
+.data-row {
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.data-row:hover {
+  background: rgba(245, 158, 11, 0.06) !important;
 }
 
 /* Responsive styles */

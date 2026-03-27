@@ -24,7 +24,7 @@ function Layout() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main style={{
         flex: 1,
@@ -36,7 +36,7 @@ function Layout() {
         flexDirection: 'column',
       }}>
         {/* Top bar */}
-        <div style={{
+        <div className="top-bar" style={{
           padding: '16px 24px',
           borderBottom: '1px solid var(--border)',
           fontFamily: 'var(--font-cond)',
@@ -70,6 +70,7 @@ function Layout() {
               flexShrink: 0,
               width: 36,
               height: 36,
+              transition: 'transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease',
             }}
           >
             <Menu size={20} />

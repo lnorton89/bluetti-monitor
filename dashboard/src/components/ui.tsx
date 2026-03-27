@@ -6,9 +6,9 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
     <div style={{
       background: 'var(--bg-2)',
       border: '1px solid var(--border)',
-      borderRadius: 4,
+      borderRadius: 8,
       padding: '16px 20px',
-    }} className={`card ${className}`}>
+    }} className={`card card-surface ${className}`}>
       {children}
     </div>
   );

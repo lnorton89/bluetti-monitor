@@ -60,11 +60,13 @@ export default function Charts() {
         <SectionLabel><Activity size={14} style={{ marginRight: 6 }} />Add Chart</SectionLabel>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-start' }}>
           <select value={selectedDevice} onChange={e => setSelectedDevice(e.target.value)}
+            className="ui-select"
             style={{ ...selectStyle, flex: '1 1 200px', minWidth: '150px' }}>
             {liveDevices.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
 
           <select defaultValue="" onChange={e => { if (e.target.value) addChart(e.target.value); e.target.value = ''; }}
+            className="ui-select"
             style={{ ...selectStyle, flex: '1 1 200px', minWidth: '150px' }}>
             <option value="" disabled>Select field...</option>
             {numericFields.map(f => (
@@ -75,7 +77,7 @@ export default function Charts() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Points:</span>
             {[50, 200, 500].map(n => (
-              <button key={n} onClick={() => setLimit(n)} style={{
+              <button key={n} onClick={() => setLimit(n)} className="ui-pill-button" style={{
                 padding: '6px 12px',
                 background: limit === n ? 'var(--amber-glow)' : 'var(--bg-3)',
                 border: `1px solid ${limit === n ? 'var(--amber-dim)' : 'var(--border)'}`,
@@ -149,7 +151,7 @@ function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit
             {cfg.device} · {cfg.field} · {chartData.length} readings
           </div>
         </div>
-        <button onClick={onRemove} style={{ color: 'var(--text-muted)', fontSize: 20, lineHeight: 1, padding: '0 6px', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <button onClick={onRemove} className="ui-icon-button" style={{ color: 'var(--text-muted)', fontSize: 20, lineHeight: 1, padding: '0 6px', background: 'none', border: 'none', cursor: 'pointer' }}>
           <X size={20} />
         </button>
       </div>

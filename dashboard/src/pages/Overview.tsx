@@ -89,9 +89,9 @@ export default function Overview() {
         }
 
         return (
-          <div key={device}>
-            {/* Device header */}
-            <div style={{
+        <div key={device}>
+          {/* Device header */}
+            <div className="device-header" style={{
               fontFamily: 'var(--font-cond)',
               fontWeight: 700,
               fontSize: 26,
@@ -125,7 +125,7 @@ export default function Overview() {
                         const isLong = !isBool && fv.value.length > 20;
                         const formattedValue = formatObjectValue(fv.value);
                         return (
-                          <div key={field} style={{
+                          <div key={field} className="metric-row" style={{
                             display: 'flex',
                             flexDirection: isLong ? 'column' : 'row',
                             justifyContent: 'space-between',
@@ -165,4 +165,3 @@ export default function Overview() {
     </div>
   );
 }
-

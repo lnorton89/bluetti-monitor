@@ -62,7 +62,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Mobile close button */}
           <button
             onClick={onClose}
-            className="sidebar-close"
+            className="sidebar-close ui-icon-button"
             style={{
               display: 'none',
               position: 'absolute',
@@ -77,6 +77,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 101,
+              transition: 'transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease',
             }}
           >
             <X size={18} />
@@ -130,7 +131,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           padding: '12px 20px',
           borderTop: '1px solid var(--border)',
         }}>
-          <button onClick={toggleTheme} style={{
+          <button onClick={toggleTheme} className="ui-control-button" style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
