@@ -1,4 +1,9 @@
 import { BrowserWindow } from "electrobun/bun";
+import {
+  discoverAC500,
+  startBluettiMqttService as launchBluettiMqttService,
+  type BluettiMqttService,
+} from "./bluetooth";
 
 const DASHBOARD_URL = "http://localhost:8540";
 const STACK_READY_TIMEOUT_MS = 90_000;
@@ -6,6 +11,8 @@ const STACK_POLL_INTERVAL_MS = 1_500;
 const STACK_COMMAND = ["docker", "compose", "up", "-d"];
 
 const appRoot = import.meta.dir.replace(/src[\\/]bun$/, "");
+
+let bluettiMqttService: BluettiMqttService | null = null;
 
 const mainWindow = new BrowserWindow({
   title: "Bluetti Monitor",
@@ -75,6 +82,13 @@ async function waitForDashboard() {
   }
 
   throw new Error(`Timed out waiting for the dashboard at ${DASHBOARD_URL}.`);
+}
+
+async function ensureBluettiMqttService() {
+  const device = await discoverAC500();
+  console.log(`[bluetooth] Starting bluetti-mqtt-node for ${device.mac}...`);
+  bluettiMqttService = await launchBluettiMqttService(device, "localhost");
+  console.log("[bluetooth] bluetti-mqtt-node started successfully");
 }
 
 function showErrorState(error: unknown) {
@@ -147,11 +161,25 @@ async function bootstrap() {
   try {
     await ensureDockerStack();
     await waitForDashboard();
+
     mainWindow.webview.loadURL(DASHBOARD_URL);
+
+    void ensureBluettiMqttService().catch((error) => {
+      console.error("[bluetooth] failed to start bluetti-mqtt-node", error);
+    });
   } catch (error) {
     console.error("[desktop] failed to start stack", error);
     showErrorState(error);
   }
 }
+
+function stopBackgroundProcesses() {
+  bluettiMqttService?.stop();
+  bluettiMqttService = null;
+}
+
+process.on("beforeExit", stopBackgroundProcesses);
+process.on("SIGINT", stopBackgroundProcesses);
+process.on("SIGTERM", stopBackgroundProcesses);
 
 void bootstrap();

@@ -7,6 +7,10 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "bluetti-mqtt-node": ["./lib/bluetti-mqtt-node/dist/index.d.ts"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
