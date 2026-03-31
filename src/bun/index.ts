@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync } from "fs";
+import { dirname, resolve } from "path";
 import { BrowserWindow } from "electrobun/bun";
 import {
   discoverAC500,
@@ -5,14 +7,35 @@ import {
   type BluettiMqttService,
 } from "./bluetooth";
 
-const DASHBOARD_URL = "http://localhost:8540";
+const API_URL = "http://127.0.0.1:8000";
+const DASHBOARD_PORT = 5173;
+const DASHBOARD_URL = `http://127.0.0.1:${DASHBOARD_PORT}`;
 const STACK_READY_TIMEOUT_MS = 90_000;
 const STACK_POLL_INTERVAL_MS = 1_500;
-const STACK_COMMAND = ["docker", "compose", "up", "-d"];
+const PROD_STACK_COMMAND = ["docker", "compose", "up", "-d"];
+const DEV_BROKER_COMMAND = ["docker", "compose", "up", "-d", "mosquitto"];
+const DEV_STOP_CONTAINERS_COMMAND = ["docker", "compose", "stop", "api", "dashboard"];
+const NPM_COMMAND = process.platform === "win32" ? "npm.cmd" : "npm";
+const DASHBOARD_READY_MARKER = '<div id="root"></div>';
 
-const appRoot = import.meta.dir.replace(/src[\\/]bun$/, "");
+const appRoot = findWorkspaceRoot();
+const apiRoot = resolve(appRoot, "api");
+const dashboardRoot = resolve(appRoot, "dashboard");
+const devDataRoot = resolve(appRoot, ".dev-data");
+const devDatabasePath = resolve(devDataRoot, "bluetti-dev.db");
+const apiRequirementsPath = resolve(apiRoot, "requirements.txt");
+const apiVenvRoot = resolve(apiRoot, ".venv");
+const apiVenvPythonPath = resolve(
+  apiVenvRoot,
+  process.platform === "win32" ? "Scripts/python.exe" : "bin/python",
+);
+const apiRequirementsStampPath = resolve(apiVenvRoot, ".requirements-stamp");
+const isLocalDev = existsSync(resolve(appRoot, "dashboard", "package.json"))
+  && existsSync(resolve(appRoot, "api", "main.py"));
 
 let bluettiMqttService: BluettiMqttService | null = null;
+let apiProcess: Bun.Subprocess | null = null;
+let dashboardProcess: Bun.Subprocess | null = null;
 
 const mainWindow = new BrowserWindow({
   title: "Bluetti Monitor",
@@ -23,6 +46,47 @@ const mainWindow = new BrowserWindow({
     x: 120,
     y: 80,
   },
+});
+
+function nudgeLoadedWebview() {
+  mainWindow.webview.executeJavascript(`
+    (() => {
+      const fireResize = () => window.dispatchEvent(new Event('resize'));
+      fireResize();
+      setTimeout(fireResize, 50);
+      setTimeout(fireResize, 150);
+      setTimeout(fireResize, 400);
+      setTimeout(() => {
+        window.dispatchEvent(new Event('orientationchange'));
+        fireResize();
+      }, 800);
+    })();
+  `);
+
+  const { width, height } = mainWindow.getSize();
+  if (width > 200 && height > 200) {
+    mainWindow.setSize(width - 1, height - 1);
+    setTimeout(() => {
+      mainWindow.setSize(width, height);
+    }, 32);
+  }
+}
+
+function scheduleWebviewNudges() {
+  const delays = [80, 220, 600, 1200];
+  for (const delay of delays) {
+    setTimeout(() => {
+      nudgeLoadedWebview();
+    }, delay);
+  }
+}
+
+mainWindow.webview.on("dom-ready", () => {
+  nudgeLoadedWebview();
+});
+
+mainWindow.webview.on("did-navigate", () => {
+  nudgeLoadedWebview();
 });
 
 async function streamProcessOutput(stream: ReadableStream<Uint8Array> | null, label: string) {
@@ -46,42 +110,169 @@ async function streamProcessOutput(stream: ReadableStream<Uint8Array> | null, la
   }
 }
 
-async function ensureDockerStack() {
-  const process = Bun.spawn(STACK_COMMAND, {
-    cwd: appRoot,
+async function runCommand(command: string[], cwd: string, label: string, extraEnv?: Record<string, string>) {
+  const process = Bun.spawn(command, {
+    cwd,
+    env: { ...Bun.env, ...extraEnv },
     stdout: "pipe",
     stderr: "pipe",
   });
 
-  void streamProcessOutput(process.stdout, "stdout");
-  void streamProcessOutput(process.stderr, "stderr");
+  void streamProcessOutput(process.stdout, `${label}:stdout`);
+  void streamProcessOutput(process.stderr, `${label}:stderr`);
 
   const exitCode = await process.exited;
   if (exitCode !== 0) {
-    throw new Error(`"${STACK_COMMAND.join(" ")}" exited with code ${exitCode}.`);
+    throw new Error(`"${command.join(" ")}" exited with code ${exitCode}.`);
   }
 }
 
-async function waitForDashboard() {
+function spawnManagedProcess(command: string[], cwd: string, label: string, extraEnv?: Record<string, string>) {
+  const process = Bun.spawn(command, {
+    cwd,
+    env: { ...Bun.env, ...extraEnv },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  void streamProcessOutput(process.stdout, `${label}:stdout`);
+  void streamProcessOutput(process.stderr, `${label}:stderr`);
+  void process.exited.then((exitCode) => {
+    console.log(`[desktop:${label}] exited with code ${exitCode}`);
+  });
+
+  return process;
+}
+
+async function isUrlReady(url: string, expectedText?: string) {
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(2_500),
+    });
+    if (!response.ok) {
+      return false;
+    }
+
+    if (expectedText === undefined) {
+      return true;
+    }
+
+    const body = await response.text();
+    return body.includes(expectedText);
+  } catch {
+    return false;
+  }
+}
+
+async function waitForUrl(url: string, label: string, expectedText?: string) {
   const deadline = Date.now() + STACK_READY_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
-    try {
-      const response = await fetch(DASHBOARD_URL, {
-        signal: AbortSignal.timeout(2_500),
-      });
-
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // Keep polling until the container is ready or we time out.
+    if (await isUrlReady(url, expectedText)) {
+      return;
     }
 
     await Bun.sleep(STACK_POLL_INTERVAL_MS);
   }
 
-  throw new Error(`Timed out waiting for the dashboard at ${DASHBOARD_URL}.`);
+  throw new Error(`Timed out waiting for the ${label} at ${url}.`);
+}
+
+async function ensureDockerStack() {
+  await runCommand(PROD_STACK_COMMAND, appRoot, "docker");
+}
+
+async function ensureDevBroker() {
+  await runCommand(DEV_STOP_CONTAINERS_COMMAND, appRoot, "docker:stop-dev-containers");
+  await runCommand(DEV_BROKER_COMMAND, appRoot, "docker:mosquitto");
+}
+
+async function resolvePythonCommand(): Promise<string[]> {
+  const candidates: string[][] = process.platform === "win32"
+    ? [["python"], ["py", "-3"], ["python3"]]
+    : [["python3"], ["python"]];
+
+  for (const candidate of candidates) {
+    const process = Bun.spawn([...candidate, "--version"], {
+      cwd: apiRoot,
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+
+    if (await process.exited === 0) {
+      return candidate;
+    }
+  }
+
+  throw new Error("Could not find a Python runtime. Install Python 3.12+ to run the API in dev mode.");
+}
+
+async function ensureApiVenv() {
+  mkdirSync(devDataRoot, { recursive: true });
+
+  const requirementsText = await Bun.file(apiRequirementsPath).text();
+  const stampText = existsSync(apiRequirementsStampPath)
+    ? await Bun.file(apiRequirementsStampPath).text()
+    : null;
+
+  if (existsSync(apiVenvPythonPath) && stampText === requirementsText) {
+    return;
+  }
+
+  const pythonCommand = await resolvePythonCommand();
+
+  if (!existsSync(apiVenvPythonPath)) {
+    await runCommand([...pythonCommand, "-m", "venv", ".venv"], apiRoot, "api:venv");
+  }
+
+  await runCommand(
+    [apiVenvPythonPath, "-m", "pip", "install", "--disable-pip-version-check", "-r", "requirements.txt"],
+    apiRoot,
+    "api:pip",
+  );
+  await Bun.write(apiRequirementsStampPath, requirementsText);
+}
+
+async function ensureApiServer() {
+  if (await isUrlReady(`${API_URL}/devices`)) {
+    return;
+  }
+
+  await ensureApiVenv();
+  apiProcess = spawnManagedProcess(
+    [apiVenvPythonPath, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
+    apiRoot,
+    "api",
+    {
+      MQTT_HOST: "127.0.0.1",
+      MQTT_PORT: "1883",
+      DB_PATH: devDatabasePath,
+    },
+  );
+  await waitForUrl(`${API_URL}/devices`, "API");
+}
+
+async function ensureDashboardServer() {
+  if (await isUrlReady(DASHBOARD_URL, DASHBOARD_READY_MARKER)) {
+    return;
+  }
+
+  dashboardProcess = spawnManagedProcess(
+    [NPM_COMMAND, "run", "dev", "--", "--host", "127.0.0.1", "--port", String(DASHBOARD_PORT)],
+    dashboardRoot,
+    "dashboard",
+    {
+      VITE_API_URL: `${API_URL}`,
+      VITE_WS_URL: "ws://127.0.0.1:8000/ws",
+    },
+  );
+  await waitForUrl(DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
+}
+
+async function ensureDevStack() {
+  await ensureDevBroker();
+  await ensureApiServer();
+  await ensureDashboardServer();
 }
 
 async function ensureBluettiMqttService() {
@@ -144,9 +335,9 @@ function showErrorState(error: unknown) {
         <main>
           <h1>Bluetti Monitor couldn't finish launching</h1>
           <p>
-            The desktop shell started, but the local Docker stack did not become ready.
-            Check that Docker Desktop is running, then start the containers manually with
-            <strong>docker compose up -d</strong> from the project root.
+            ${isLocalDev
+              ? "The desktop shell started, but the local dev stack did not become ready."
+              : "The desktop shell started, but the local Docker stack did not become ready."}
           </p>
           <code>${message.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code>
         </main>
@@ -159,10 +350,15 @@ function showErrorState(error: unknown) {
 
 async function bootstrap() {
   try {
-    await ensureDockerStack();
-    await waitForDashboard();
+    if (isLocalDev) {
+      await ensureDevStack();
+    } else {
+      await ensureDockerStack();
+      await waitForUrl(DASHBOARD_URL, "dashboard");
+    }
 
     mainWindow.webview.loadURL(DASHBOARD_URL);
+    scheduleWebviewNudges();
 
     void ensureBluettiMqttService().catch((error) => {
       console.error("[bluetooth] failed to start bluetti-mqtt-node", error);
@@ -173,9 +369,23 @@ async function bootstrap() {
   }
 }
 
+function stopManagedProcess(process: Bun.Subprocess | null, label: string) {
+  if (process === null || process.killed) {
+    return;
+  }
+
+  console.log(`[desktop:${label}] stopping`);
+  process.kill();
+}
+
 function stopBackgroundProcesses() {
   bluettiMqttService?.stop();
   bluettiMqttService = null;
+
+  stopManagedProcess(apiProcess, "api");
+  stopManagedProcess(dashboardProcess, "dashboard");
+  apiProcess = null;
+  dashboardProcess = null;
 }
 
 process.on("beforeExit", stopBackgroundProcesses);
@@ -183,3 +393,29 @@ process.on("SIGINT", stopBackgroundProcesses);
 process.on("SIGTERM", stopBackgroundProcesses);
 
 void bootstrap();
+
+function findWorkspaceRoot(): string {
+  const starts = [process.cwd(), import.meta.dir];
+
+  for (const start of starts) {
+    let current = resolve(start);
+
+    while (true) {
+      if (
+        existsSync(resolve(current, "dashboard", "package.json"))
+        && existsSync(resolve(current, "api", "main.py"))
+        && existsSync(resolve(current, "docker-compose.yml"))
+      ) {
+        return current;
+      }
+
+      const parent = dirname(current);
+      if (parent === current) {
+        break;
+      }
+      current = parent;
+    }
+  }
+
+  return process.cwd();
+}

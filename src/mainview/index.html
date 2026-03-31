@@ -12,21 +12,21 @@
         <p class="eyebrow">Desktop Bootstrap</p>
         <h1>Bluetti Monitor</h1>
         <p class="lede">
-          Starting the local Docker stack and waiting for the dashboard to come online.
+          Starting the local dev services and waiting for the monitoring UI to come online.
         </p>
 
         <div class="status-row">
           <span class="status-dot" aria-hidden="true"></span>
-          <span>Connecting to <code>http://localhost:8540</code></span>
+          <span>Connecting to <code>http://127.0.0.1:5173</code></span>
         </div>
 
         <ol class="steps">
-          <li>Bring up <code>mosquitto</code>, <code>api</code>, and <code>dashboard</code>.</li>
-          <li>Wait for the dashboard container to report healthy enough to render.</li>
+          <li>Bring up <code>mosquitto</code>, the local API, and the local dashboard.</li>
+          <li>Wait for the dashboard dev server to serve the Bluetti Monitor UI.</li>
           <li>Switch this window into the live monitoring UI automatically.</li>
         </ol>
       </section>
     </main>
-    <script type="module" src="./index.ts"></script>
+    <script type="module" src="./index.js"></script>
   </body>
   </html>

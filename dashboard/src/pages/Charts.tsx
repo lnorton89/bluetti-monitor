@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { fetchHistory, fetchFields } from '../lib/api';
 import { getFieldMeta, categoryColors } from '../lib/fields';
@@ -111,12 +111,27 @@ export default function Charts() {
 
 function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit: number; onRemove: () => void; isActive: boolean }) {
   const meta = getFieldMeta(cfg.field);
+  const queryClient = useQueryClient();
+  const latestLiveTs = useWsStore((s) => s.state[cfg.device]?.[cfg.field]?.ts ?? null);
   const { data, isLoading } = useQuery({
     queryKey: ['history', cfg.device, cfg.field, limit],
     queryFn:  () => fetchHistory(cfg.device, cfg.field, limit),
-    refetchInterval: isActive ? 10_000 : false,
     enabled: isActive,
   });
+
+  useEffect(() => {
+    if (!isActive || latestLiveTs === null) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: ['history', cfg.device, cfg.field, limit] });
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [cfg.device, cfg.field, isActive, latestLiveTs, limit, queryClient]);
 
   const chartData = (data ?? []).slice().reverse().map(p => ({
     ts:    new Date(p.ts).getTime(),

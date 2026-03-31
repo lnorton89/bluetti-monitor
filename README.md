@@ -257,6 +257,16 @@ npm run dev
 
 Vite dev server runs on `http://localhost:5173` with proxy to `localhost:8000`.
 
+### Dashboard E2E Tests
+
+```powershell
+cd dashboard
+npx playwright install chromium
+npm run test:e2e
+```
+
+The Playwright suite runs the dashboard in `?mock=1` mode so it can validate launch layout, navigation, and responsive behavior without Docker, the API, or a live Bluetti device.
+
 ### API
 
 ```powershell

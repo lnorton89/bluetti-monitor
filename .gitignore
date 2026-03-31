@@ -48,6 +48,7 @@ coverage/
 .nyc_output/
 .pytest_cache/
 .tox/
+dashboard/test-results/
 
 # Docker
 .docker/
@@ -75,6 +76,9 @@ mosquitto/log/
 
 # Vite
 *.local
+
+# Local development data
+.dev-data/
 
 # TODO files
 TODO

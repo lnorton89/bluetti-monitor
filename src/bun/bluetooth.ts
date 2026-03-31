@@ -1,16 +1,45 @@
+import { existsSync } from "fs";
+import { dirname, resolve } from "path";
 import {
   BluettiMqttServer,
   ConsoleLogger,
   WindowsHelperClient,
   createWindowsHelperRuntime,
   type DiscoveredBluetoothDevice,
+  type LogLevel,
 } from "bluetti-mqtt-node";
 
 const SCAN_RETRY_DELAY_MS = 3_000;
 const SCAN_RETRY_COUNT = 3;
 const STARTUP_GRACE_PERIOD_MS = 5_000;
-const DEFAULT_POLL_INTERVAL_MS = 5_000;
+const FAST_POLL_INTERVAL_MS = 4_000;
+const FULL_POLL_INTERVAL_MS = 30_000;
+const COMMAND_DELAY_MS = 250;
+const BUSY_PENALTY_MS = 1_250;
+const RECOVERY_STEP_MS = 75;
+const MAX_FAST_POLL_INTERVAL_MS = 12_000;
+const MAX_FULL_POLL_INTERVAL_MS = 60_000;
+const MAX_COMMAND_DELAY_MS = 1_000;
+const DEFAULT_LOG_LEVEL: LogLevel = normalizeLogLevel(Bun.env["BLUETTI_LOG_LEVEL"]);
 const FALLBACK_MAC = "24:4C:AB:2C:24:8E";
+const WORKSPACE_ROOT = findWorkspaceRoot();
+const HELPER_EXE_PATH = resolve(
+  WORKSPACE_ROOT,
+  "lib",
+  "bluetti-mqtt-node",
+  "artifacts",
+  "helper",
+  "win-x64",
+  "BluettiMqtt.BluetoothHelper.exe",
+);
+const HELPER_PROJECT_PATH = resolve(
+  WORKSPACE_ROOT,
+  "lib",
+  "bluetti-mqtt-node",
+  "helper",
+  "BluettiMqtt.BluetoothHelper",
+  "BluettiMqtt.BluetoothHelper.csproj",
+);
 
 export interface BluetoothDevice {
   mac: string;
@@ -48,14 +77,23 @@ export async function startBluettiMqttService(
 ): Promise<BluettiMqttService> {
   await assertNodeRuntimeWorks();
 
-  const helper = new WindowsHelperClient();
+  const helper = new WindowsHelperClient(resolveHelperCommand());
   const runtime = createWindowsHelperRuntime(helper);
   const brokerUrl = normalizeBrokerUrl(brokerHost);
-  const logger = new ConsoleLogger("info");
+  const logger = new ConsoleLogger(DEFAULT_LOG_LEVEL);
   const server = new BluettiMqttServer({
     addresses: [device.mac],
     transportFactory: runtime.transportFactory,
-    intervalMs: DEFAULT_POLL_INTERVAL_MS,
+    polling: {
+      fastIntervalMs: FAST_POLL_INTERVAL_MS,
+      fullIntervalMs: FULL_POLL_INTERVAL_MS,
+      commandDelayMs: COMMAND_DELAY_MS,
+      busyPenaltyMs: BUSY_PENALTY_MS,
+      recoveryStepMs: RECOVERY_STEP_MS,
+      maxFastIntervalMs: MAX_FAST_POLL_INTERVAL_MS,
+      maxFullIntervalMs: MAX_FULL_POLL_INTERVAL_MS,
+      maxCommandDelayMs: MAX_COMMAND_DELAY_MS,
+    },
     mqtt: { url: brokerUrl },
     logger,
   });
@@ -95,7 +133,7 @@ async function scanForAC500(): Promise<BluetoothDevice | null> {
   console.log("[bluetooth] Scanning for Bluetti devices...");
   await assertNodeRuntimeWorks();
 
-  const helper = new WindowsHelperClient();
+  const helper = new WindowsHelperClient(resolveHelperCommand());
   try {
     const runtime = createWindowsHelperRuntime(helper);
     const devices = await runtime.discovery?.discover();
@@ -186,4 +224,60 @@ function normalizeBrokerUrl(brokerHost: string): string {
   }
 
   return `mqtt://${brokerHost}:1883`;
+}
+
+function normalizeLogLevel(rawLevel: string | undefined): LogLevel {
+  switch (rawLevel?.toLowerCase()) {
+    case "debug":
+    case "info":
+    case "warn":
+    case "error":
+      return rawLevel.toLowerCase() as LogLevel;
+    default:
+      return "info";
+  }
+}
+
+function resolveHelperCommand(): string[] {
+  if (existsSync(HELPER_EXE_PATH)) {
+    return [HELPER_EXE_PATH];
+  }
+
+  if (existsSync(HELPER_PROJECT_PATH)) {
+    return [
+      "dotnet",
+      "run",
+      "--project",
+      HELPER_PROJECT_PATH,
+      "--verbosity",
+      "quiet",
+      "--no-launch-profile",
+    ];
+  }
+
+  throw new Error(
+    `Could not find Bluetti Windows helper. Expected either ${HELPER_EXE_PATH} or ${HELPER_PROJECT_PATH}.`,
+  );
+}
+
+function findWorkspaceRoot(): string {
+  const starts = [process.cwd(), import.meta.dir];
+
+  for (const start of starts) {
+    let current = resolve(start);
+
+    while (true) {
+      if (existsSync(resolve(current, "lib", "bluetti-mqtt-node", "package.json"))) {
+        return current;
+      }
+
+      const parent = dirname(current);
+      if (parent === current) {
+        break;
+      }
+      current = parent;
+    }
+  }
+
+  return process.cwd();
 }

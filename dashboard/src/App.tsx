@@ -1,88 +1,110 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Menu, Radio, Battery, Cpu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
-import { Menu } from 'lucide-react';
 import Overview from './pages/Overview';
-import Charts   from './pages/Charts';
-import RawData  from './pages/RawData';
+import Charts from './pages/Charts';
+import RawData from './pages/RawData';
 import { useWsStore } from './store/ws';
+import { formatRelativeTime } from './lib/time';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5_000, retry: 2 } },
 });
 
 function Layout() {
-  const connect    = useWsStore(s => s.connect);
-  const disconnect = useWsStore(s => s.disconnect);
+  const location = useLocation();
+  const connect = useWsStore((s) => s.connect);
+  const disconnect = useWsStore((s) => s.disconnect);
+  const wsState = useWsStore((s) => s.state);
+  const connected = useWsStore((s) => s.connected);
+  const lastUpdate = useWsStore((s) => s.lastUpdate);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const devices = Object.keys(wsState);
+  const primaryDevice = devices[0] ? wsState[devices[0]] : null;
+  const batteryPercent = primaryDevice?.total_battery_percent?.value ?? null;
+
+  const routeMeta = location.pathname === '/charts'
+    ? {
+        kicker: 'Historical trends',
+        title: 'Power and telemetry charts',
+      }
+    : location.pathname === '/raw'
+      ? {
+          kicker: 'Field inventory',
+          title: 'Raw AC500 data explorer',
+        }
+      : {
+          kicker: 'Desktop monitor',
+          title: 'AC500 power station monitor',
+        };
 
   useEffect(() => {
     connect();
     return () => disconnect();
-  }, []);
+  }, [connect, disconnect]);
+
+  useEffect(() => {
+    const timers = [
+      window.setTimeout(() => window.dispatchEvent(new Event('resize')), 0),
+      window.setTimeout(() => window.dispatchEvent(new Event('resize')), 80),
+      window.setTimeout(() => window.dispatchEvent(new Event('resize')), 240),
+      window.setTimeout(() => window.dispatchEvent(new Event('resize')), 600),
+    ];
+
+    return () => {
+      timers.forEach(window.clearTimeout);
+    };
+  }, [sidebarOpen]);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100dvh', height: '100dvh', overflow: 'hidden' }}>
+    <div className="app-shell">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main style={{
-        flex: 1,
-        marginLeft: 200,
-        height: '100dvh',
-        overflowY: 'auto',
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        {/* Top bar */}
-        <div className="top-bar" style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--border)',
-          fontFamily: 'var(--font-cond)',
-          fontWeight: 600,
-          fontSize: 14,
-          letterSpacing: '0.12em',
-          color: 'var(--text-muted)',
-          textTransform: 'uppercase',
-          position: 'sticky',
-          top: 0,
-          background: 'var(--bg)',
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-        }}>
-          {/* Hamburger menu button */}
+      <main className="app-main">
+        <header className="top-bar">
           <button
             onClick={() => setSidebarOpen(true)}
             className="hamburger-btn"
-            style={{
-              display: 'none',
-              background: 'var(--bg-3)',
-              border: '1px solid var(--border)',
-              borderRadius: 4,
-              color: 'var(--text)',
-              cursor: 'pointer',
-              padding: 8,
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              width: 36,
-              height: 36,
-              transition: 'transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease',
-            }}
+            aria-label="Open navigation"
           >
             <Menu size={20} />
           </button>
-          <span className="top-bar-title" style={{ flex: 1, textAlign: 'center' }}>AC500 Power Station Monitor</span>
-        </div>
-        <div style={{ padding: 24, flex: 1 }}>
-          <Routes>
-            <Route path="/"       element={<Overview />} />
-            <Route path="/charts" element={<Charts   />} />
-            <Route path="/raw"    element={<RawData  />} />
-          </Routes>
+          <div className="top-bar-copy">
+            <span className="top-bar-kicker">{routeMeta.kicker}</span>
+            <span className="top-bar-title">{routeMeta.title}</span>
+          </div>
+          <div className="top-bar-metrics">
+            <div className="top-bar-metric">
+              <Radio size={14} />
+              <span>{connected ? 'Live' : 'Offline'}</span>
+            </div>
+            <div className="top-bar-metric">
+              <Cpu size={14} />
+              <span>{devices.length} device{devices.length === 1 ? '' : 's'}</span>
+            </div>
+            {batteryPercent ? (
+              <div className="top-bar-metric">
+                <Battery size={14} />
+                <span>{batteryPercent}% battery</span>
+              </div>
+            ) : null}
+            {lastUpdate ? (
+              <div className="top-bar-metric muted">
+                <span>{formatRelativeTime(lastUpdate)}</span>
+              </div>
+            ) : null}
+          </div>
+        </header>
+        <div className="app-content">
+          <div className="app-content-inner">
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/charts" element={<Charts />} />
+              <Route path="/raw" element={<RawData />} />
+            </Routes>
+          </div>
         </div>
       </main>
     </div>
