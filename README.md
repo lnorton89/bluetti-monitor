@@ -1,6 +1,6 @@
 # Bluetti Monitor
 
-Full monitoring stack for the Bluetti AC500 power station with real-time dashboard.
+Full monitoring stack for the Bluetti AC500 power station with a real-time desktop and web dashboard.
 
 ```
 [AC500] --BLE-- [bluetti-mqtt on host] --MQTT--> [Mosquitto] --> [FastAPI] --> [Dashboard]
@@ -16,39 +16,45 @@ Full monitoring stack for the Bluetti AC500 power station with real-time dashboa
 
 ## Features
 
-- **Real-time monitoring** via WebSocket with live power flow visualization
+- **AC500-focused overview** built around the telemetry this device actually exposes
+- **Real-time monitoring** via WebSocket with live power and state updates
 - **Historical data** stored in SQLite with REST API access
-- **Categorized data views**: Input (Solar/Grid), Output, Battery, Modes, System
-- **Interactive charts** for any numeric field
+- **Interactive charts** for numeric fields with live refresh behavior
 - **Raw data table** with search and filtering
+- **Mock-mode dashboard tests** for responsive UI verification without hardware
 
 ---
 
 ## Folder Structure
 
-```
+```text
 bluetti-monitor/
-├── docker-compose.yml
-├── api/
-│   ├── Dockerfile
-│   ├── main.py              # FastAPI server + MQTT subscriber
-│   └── requirements.txt
-├── dashboard/
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── public/
-│   └── src/
-│       ├── components/      # Reusable UI components
-│       ├── pages/           # Overview, Charts, Raw Data
-│       ├── lib/
-│       │   ├── fields.ts    # Field definitions & categories
-│       │   ├── api.ts       # API client
-│       │   └── time.ts      # Time formatting utilities
-│       └── store/           # Zustand state management
-└── mosquitto/
-    └── mosquitto.conf
+|-- docker-compose.yml
+|-- api/
+|   |-- Dockerfile
+|   |-- main.py              # FastAPI server + MQTT subscriber
+|   `-- requirements.txt
+|-- dashboard/
+|   |-- Dockerfile
+|   |-- nginx.conf
+|   |-- package.json
+|   |-- vite.config.ts
+|   |-- playwright.config.ts
+|   |-- public/
+|   |-- src/
+|   |   |-- components/      # Reusable UI components
+|   |   |-- pages/           # Overview, Charts, Raw Data
+|   |   |-- lib/
+|   |   |   |-- fields.ts    # Field definitions & categories
+|   |   |   |-- api.ts       # API client + mock-mode support
+|   |   |   `-- time.ts      # Time formatting utilities
+|   |   `-- store/           # Zustand state management
+|   `-- tests/               # Playwright coverage for layout/navigation
+|-- mosquitto/
+|   `-- mosquitto.conf
+`-- src/
+    |-- bun/                 # Electrobun desktop bootstrap and orchestration
+    `-- mainview/            # Native loading screen while services start
 ```
 
 ---
@@ -62,20 +68,24 @@ cd bluetti-monitor
 docker compose up -d
 ```
 
-This builds and starts all three containers. First run will take a minute to build the React app.
+This builds and starts the Docker services. First run will take a minute to build the dashboard image.
 
 ### Desktop App
 
-An Electrobun desktop shell now lives at the repo root. It currently wraps the existing Dockerized stack:
+An Electrobun desktop shell lives at the repo root and boots the local development stack for the native window.
 
 ```powershell
 bun install
-bun run desktop:dev
+npm run desktop:start
 ```
 
-On launch, the desktop app runs `docker compose up -d`, waits for the dashboard on `http://127.0.0.1:8540`, and then loads that UI into the native window.
+For iterative work with file watching:
 
-This is an initial integration pass, so the Docker services remain the source of truth. The next step is to move more orchestration and packaging concerns into the Electrobun app itself.
+```powershell
+npm run desktop:dev
+```
+
+On launch, the desktop app starts Mosquitto in Docker, runs the local FastAPI server on `http://127.0.0.1:8000`, runs the local Vite dashboard on `http://127.0.0.1:5173`, and then loads that UI into the native window.
 
 ### 2. Start the Bluetooth Poller (Host)
 
@@ -89,31 +99,35 @@ Replace the MAC address with your AC500's address.
 
 ### 3. Open the Dashboard
 
-```
+```text
 http://localhost:8540
 ```
+
+For the desktop shell, the embedded window loads the local dev dashboard at `http://127.0.0.1:5173`.
 
 ---
 
 ## Dashboard Pages
 
 ### Overview
-Real-time power flow visualization and categorized field values:
-- **Power Flow**: Visual diagram showing solar input, grid input, battery level, and loads
-- **Input**: Solar (PV1/PV2) and grid power/voltage/current
-- **Output**: AC and DC output measurements and states
-- **Battery**: Battery level, voltage, current, temperature, and pack details
-- **Modes**: Operating modes, charging states, and power controls
-- **System**: Internal temperatures, fan status, and diagnostics
+
+AC500-specific layout built around the data this device actually reports:
+- **Hero snapshot**: battery reserve, net balance, and live device state
+- **Input Bus**: AC input and DC input power, voltage, frequency, and current
+- **Output Bus**: AC/DC output state and present load
+- **Internal Bus**: internal AC/DC electrical channels and split-phase state
+- **Switchboard and Identity**: output toggles, mode flags, firmware, serial, and connection details
 
 ### Charts
+
 Add time-series charts for any numeric field:
 - Select device and field from dropdowns
 - Choose data point limit (50/200/500)
 - Multiple charts can be displayed simultaneously
-- Charts auto-refresh every 10 seconds
+- Charts refresh when new live data arrives
 
 ### Raw Data
+
 Complete field listing with search:
 - All fields sorted by category
 - Search by field key or label
@@ -144,7 +158,7 @@ Interactive docs: `http://localhost:8000/docs`
 
 ### Example
 
-```
+```text
 GET /history/AC5002237000003358/dc_input_power?limit=100
 ```
 
@@ -212,11 +226,11 @@ Fields are organized into 5 categories:
 
 | Category | Description | Example Fields |
 |----------|-------------|----------------|
-| **Input** | Power/voltage/current entering the system | `dc_input_power`, `pv1_voltage`, `ac_input_frequency` |
+| **Input** | Power, voltage, frequency, and current entering the system | `dc_input_power`, `ac_input_voltage`, `ac_input_frequency` |
 | **Output** | Power delivered to loads | `ac_output_power`, `dc_output_on` |
-| **Battery** | Battery state and pack details | `total_battery_percent`, `pack_details1-6` |
-| **Modes** | Operating modes and control states | `ups_mode`, `grid_charge_on`, `eco_mode` |
-| **System** | Internal diagnostics | `internal_temp`, `fan_speed`, `error_code` |
+| **Battery** | Battery state and charge window | `total_battery_percent`, `battery_range_start`, `battery_range_end` |
+| **Modes** | Operating modes and control states | `ups_mode`, `grid_charge_on`, `time_control_on` |
+| **System** | Internal electrical and device diagnostics | `internal_power_one`, `dsp_version`, `serial_number` |
 
 ---
 
@@ -235,6 +249,9 @@ docker compose restart api
 
 # Rebuild after code changes
 docker compose up -d --build dashboard
+
+# Start the desktop shell
+npm run desktop:start
 
 # Stop everything
 docker compose down
@@ -256,6 +273,12 @@ npm run dev
 ```
 
 Vite dev server runs on `http://localhost:5173` with proxy to `localhost:8000`.
+
+To run the Playwright suite from the repo root:
+
+```powershell
+npm run dashboard:test
+```
 
 ### Dashboard E2E Tests
 
@@ -281,4 +304,4 @@ uvicorn main:app --reload
 
 - **Backend**: Python, FastAPI, aiomqtt, SQLite
 - **Frontend**: React, TypeScript, Vite, Zustand, Recharts
-- **Infrastructure**: Docker, Mosquitto MQTT, nginx
+- **Infrastructure**: Docker, Mosquitto MQTT, nginx, Electrobun
