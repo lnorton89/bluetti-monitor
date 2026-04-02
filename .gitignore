@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 **/node_modules/
-/lib/bluetti-mqtt-node/
 __pycache__/
 *.pyc
 *.pyo
