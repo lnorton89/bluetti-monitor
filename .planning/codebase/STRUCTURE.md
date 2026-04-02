@@ -121,6 +121,6 @@
 
 ## Important Structure Notes
 
-- `git ls-files` currently does not include `lib/bluetti-mqtt-node/`, even though root `package.json` depends on it as a workspace package.
+- `lib/bluetti-mqtt-node/` is now tracked as a git submodule, so the app repo pins a specific commit from the library repo instead of relying on a copied local snapshot.
 - The API has no internal package hierarchy yet because all tracked service logic lives in `api/main.py`.
 - The repo behaves like a multi-part application, but it is not using a formal monorepo manager beyond the root workspace declaration.

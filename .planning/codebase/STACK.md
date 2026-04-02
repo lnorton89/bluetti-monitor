@@ -5,7 +5,7 @@
 - This repository is a multi-runtime monitoring stack with a desktop shell, a Python API, a React dashboard, and a local workspace BLE-to-MQTT library.
 - The top-level package is defined in `package.json` and uses Bun plus Electrobun for the desktop entrypoint.
 - The main tracked source areas are `api/`, `dashboard/`, and `src/`.
-- A local workspace dependency lives at `lib/bluetti-mqtt-node`, but that directory is currently ignored by git via `.gitignore`.
+- A local workspace dependency lives at `lib/bluetti-mqtt-node`, and it is now tracked as a git submodule so the app can pin a specific library revision.
 
 ## Root Runtime And Tooling
 

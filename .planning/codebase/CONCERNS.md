@@ -2,12 +2,6 @@
 
 ## High Priority Risks
 
-- Local workspace dependency is effectively invisible to git.
-  - Root `package.json` depends on `lib/bluetti-mqtt-node` as a workspace package.
-  - `.gitignore` contains `/lib/bluetti-mqtt-node/`.
-  - `git ls-files` does not show any files from `lib/bluetti-mqtt-node/`.
-  - Result: a core runtime dependency can drift locally without review, history, or reproducible checkout behavior.
-
 - The non-local desktop bootstrap path appears to target the wrong dashboard URL.
   - `src/bun/index.ts` defines `DASHBOARD_URL` as `http://127.0.0.1:5173`.
   - In the non-local branch it runs full Docker startup, then still waits for and loads `DASHBOARD_URL`.
@@ -15,6 +9,10 @@
   - Result: packaged or Docker-only startup likely fails or waits on the wrong service address.
 
 ## Medium Priority Risks
+
+- The migration from the old host poller path is still incomplete.
+  - `README.md` and parts of the current setup flow still mention the older Python-based poller behavior.
+  - The intended long-term source of truth is `lib/bluetti-mqtt-node/`, but the repo still needs a full cleanup pass to remove legacy references and dependency assumptions.
 
 - The API is a single large module in `api/main.py`.
   - Persistence, MQTT ingestion, cache management, REST endpoints, and WebSocket broadcasting are all coupled together.
