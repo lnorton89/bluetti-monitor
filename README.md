@@ -61,6 +61,29 @@ bluetti-monitor/
 
 ## Setup
 
+### 0. Clone With Submodules
+
+`bluetti-mqtt-node` now lives in this repo as a git submodule at `lib/bluetti-mqtt-node`.
+
+Fresh clone:
+
+```powershell
+git clone --recurse-submodules git@github.com:lnorton89/bluetti-monitor.git
+cd bluetti-monitor
+```
+
+If you already cloned the repo:
+
+```powershell
+git submodule update --init --recursive
+```
+
+When the submodule changes upstream:
+
+```powershell
+git submodule update --remote --merge
+```
+
 ### 1. Start Docker Services
 
 ```powershell
@@ -263,6 +286,12 @@ docker compose down -v
 ---
 
 ## Development
+
+### Dependency Layout
+
+- `lib/bluetti-mqtt-node` is a separate repo tracked as a submodule.
+- If the folder looks empty or out of date, run `git submodule update --init --recursive`.
+- Changes inside `lib/bluetti-mqtt-node` must be committed and pushed from that repo, then the parent repo should commit the updated submodule pointer.
 
 ### Dashboard
 
