@@ -12,7 +12,7 @@ This roadmap completes the migration to `bluetti-mqtt-node` as the real bridge f
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Complete Bridge Migration** - Replace the legacy host-poller path in setup, docs, and startup flow
+- [x] **Phase 1: Complete Bridge Migration** - Replace the legacy host-poller path in setup, docs, and startup flow (completed 2026-04-03)
 - [ ] **Phase 2: Harden Integration Boundaries** - Remove remaining migration residue and settle runtime ownership
 - [ ] **Phase 3: Add Battery Estimates** - Derive and display time-left telemetry from live data
 - [ ] **Phase 4: Ship Mobile LAN Dashboard** - Make the dashboard comfortable to use from a phone browser
@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01: Audit and remove legacy host-poller references from docs, scripts, and setup guidance
 - [x] 01-02: Align desktop startup flow and developer commands around `bluetti-mqtt-node`
-- [ ] 01-03: Verify the new migration path with a repeatable local smoke test
+- [x] 01-03: Verify the new migration path with a repeatable local smoke test
 
 ### Phase 2: Harden Integration Boundaries
 **Goal**: Remove leftover legacy coupling, fix the remaining `bluetti-mqtt-node` migration bugs, and clarify ownership between components.
@@ -101,7 +101,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Complete Bridge Migration | 2/3 | In Progress|  |
+| 1. Complete Bridge Migration | 3/3 | Complete   | 2026-04-03 |
 | 2. Harden Integration Boundaries | 0/3 | Not started | - |
 | 3. Add Battery Estimates | 0/3 | Not started | - |
 | 4. Ship Mobile LAN Dashboard | 0/2 | Not started | - |
