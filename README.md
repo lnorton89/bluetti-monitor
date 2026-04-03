@@ -106,6 +106,22 @@ Primary dashboard URL:
 http://localhost:8540
 ```
 
+### Verification
+
+Run the migration smoke check with:
+
+```powershell
+npm run monitor:verify
+```
+
+Prerequisites: Docker running, AC500 powered on, Bluetooth available on the Windows host.
+
+Successful verification means:
+
+- the dashboard is reachable at `http://localhost:8540`
+- the API is reachable at `http://localhost:8000`
+- a one-shot `bluetti-mqtt-node` publish becomes visible through the API after the bridge runs once
+
 ### Optional Desktop Shell For Local Development
 
 The Electrobun desktop shell is still available, but it is a local development convenience layer rather than the primary app startup path.
@@ -273,6 +289,9 @@ npm run desktop:start
 
 # Start the supported browser-first monitor flow
 npm run monitor:start
+
+# Run the browser-first migration smoke check
+npm run monitor:verify
 
 # Stop everything
 docker compose down
