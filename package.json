@@ -10,6 +10,7 @@
     "desktop:dev": "electrobun dev --watch",
     "desktop:start": "electrobun dev",
     "dashboard:test": "npm --prefix dashboard run test:e2e",
+    "monitor:start": "node ./scripts/monitor/start.mjs",
     "stack:up": "docker compose up -d",
     "stack:down": "docker compose down"
   },
