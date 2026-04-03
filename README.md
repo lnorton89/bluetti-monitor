@@ -84,18 +84,31 @@ When the submodule changes upstream:
 git submodule update --remote --merge
 ```
 
-### 1. Start Docker Services
+### 1. Start the Monitor
+
+Run the supported browser-first startup path from the repo root:
 
 ```powershell
-cd bluetti-monitor
-docker compose up -d
+npm install
+npm run monitor:start
 ```
 
-This builds and starts the Docker services. First run will take a minute to build the dashboard image.
+That command:
 
-### Desktop App
+- starts the Docker-backed app services
+- resolves the Bluetti device on the Windows host with discovery first and the known fallback MAC if needed
+- launches `bluetti-mqtt-node` through the linked workspace CLI
+- prints the local dashboard URL plus any LAN URLs it discovers
 
-An Electrobun desktop shell lives at the repo root and boots the local development stack for the native window.
+Primary dashboard URL:
+
+```text
+http://localhost:8540
+```
+
+### Optional Desktop Shell For Local Development
+
+The Electrobun desktop shell is still available, but it is a local development convenience layer rather than the primary app startup path.
 
 ```powershell
 bun install
@@ -108,25 +121,7 @@ For iterative work with file watching:
 npm run desktop:dev
 ```
 
-On launch, the desktop app starts Mosquitto in Docker, runs the local FastAPI server on `http://127.0.0.1:8000`, runs the local Vite dashboard on `http://127.0.0.1:5173`, and then loads that UI into the native window.
-
-### 2. Start the Bluetooth Poller (Host)
-
-Bluetooth cannot be passed through to Docker on Windows, so this runs directly on your host machine:
-
-```powershell
-bluetti-mqtt --broker localhost 24:4C:AB:2C:24:8E
-```
-
-Replace the MAC address with your AC500's address.
-
-### 3. Open the Dashboard
-
-```text
-http://localhost:8540
-```
-
-For the desktop shell, the embedded window loads the local dev dashboard at `http://127.0.0.1:5173`.
+In local development mode the desktop shell runs the FastAPI API on `http://127.0.0.1:8000`, starts the Vite dashboard on `http://127.0.0.1:5173`, and loads that local dev UI into the native window. The browser-first monitoring flow for normal use remains `npm run monitor:start` on `http://localhost:8540`.
 
 ---
 
@@ -276,6 +271,9 @@ docker compose up -d --build dashboard
 # Start the desktop shell
 npm run desktop:start
 
+# Start the supported browser-first monitor flow
+npm run monitor:start
+
 # Stop everything
 docker compose down
 
@@ -292,6 +290,13 @@ docker compose down -v
 - `lib/bluetti-mqtt-node` is a separate repo tracked as a submodule.
 - If the folder looks empty or out of date, run `git submodule update --init --recursive`.
 - Changes inside `lib/bluetti-mqtt-node` must be committed and pushed from that repo, then the parent repo should commit the updated submodule pointer.
+
+### Supported Startup Flow
+
+- Normal monitoring uses `npm run monitor:start`.
+- That command targets the Docker-backed dashboard at `http://localhost:8540`.
+- The host bridge still runs on Windows, but it is launched for you through the linked `bluetti-mqtt-node` CLI instead of a separate manual host-poller step.
+- The desktop shell is optional local tooling and still uses the Vite dev server on `http://127.0.0.1:5173`.
 
 ### Dashboard
 
