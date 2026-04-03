@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 export const DEFAULT_FALLBACK_MAC = "24:4C:AB:2C:24:8E";
 export const BROKER_URL = "mqtt://127.0.0.1:1883";
 export const API_URL = "http://127.0.0.1:8000";
-export const DASHBOARD_URL = "http://127.0.0.1:8540";
+export const DASHBOARD_URL = "http://localhost:8540";
 export const STACK_READY_TIMEOUT_MS = 90_000;
 export const STACK_POLL_INTERVAL_MS = 1_500;
 export const DISCOVERY_TIMEOUT_MS = 20_000;
