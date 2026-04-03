@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01: Audit and remove legacy host-poller references from docs, scripts, and setup guidance
-- [ ] 01-02: Align desktop startup flow and developer commands around `bluetti-mqtt-node`
+- [x] 01-02: Align desktop startup flow and developer commands around `bluetti-mqtt-node`
 - [ ] 01-03: Verify the new migration path with a repeatable local smoke test
 
 ### Phase 2: Harden Integration Boundaries
@@ -101,7 +101,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Complete Bridge Migration | 1/3 | In Progress|  |
+| 1. Complete Bridge Migration | 2/3 | In Progress|  |
 | 2. Harden Integration Boundaries | 0/3 | Not started | - |
 | 3. Add Battery Estimates | 0/3 | Not started | - |
 | 4. Ship Mobile LAN Dashboard | 0/2 | Not started | - |
