@@ -8,8 +8,9 @@ import {
 } from "./bluetooth";
 
 const API_URL = "http://127.0.0.1:8000";
-const DASHBOARD_PORT = 5173;
-const DASHBOARD_URL = `http://127.0.0.1:${DASHBOARD_PORT}`;
+const LOCAL_DASHBOARD_PORT = 5173;
+const LOCAL_DASHBOARD_URL = `http://127.0.0.1:${LOCAL_DASHBOARD_PORT}`;
+const PROD_DASHBOARD_URL = "http://127.0.0.1:8540";
 const STACK_READY_TIMEOUT_MS = 90_000;
 const STACK_POLL_INTERVAL_MS = 1_500;
 const PROD_STACK_COMMAND = ["docker", "compose", "up", "-d"];
@@ -253,12 +254,12 @@ async function ensureApiServer() {
 }
 
 async function ensureDashboardServer() {
-  if (await isUrlReady(DASHBOARD_URL, DASHBOARD_READY_MARKER)) {
+  if (await isUrlReady(LOCAL_DASHBOARD_URL, DASHBOARD_READY_MARKER)) {
     return;
   }
 
   dashboardProcess = spawnManagedProcess(
-    [NPM_COMMAND, "run", "dev", "--", "--host", "127.0.0.1", "--port", String(DASHBOARD_PORT)],
+    [NPM_COMMAND, "run", "dev", "--", "--host", "127.0.0.1", "--port", String(LOCAL_DASHBOARD_PORT)],
     dashboardRoot,
     "dashboard",
     {
@@ -266,7 +267,7 @@ async function ensureDashboardServer() {
       VITE_WS_URL: "ws://127.0.0.1:8000/ws",
     },
   );
-  await waitForUrl(DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
+  await waitForUrl(LOCAL_DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
 }
 
 async function ensureDevStack() {
@@ -336,8 +337,8 @@ function showErrorState(error: unknown) {
           <h1>Bluetti Monitor couldn't finish launching</h1>
           <p>
             ${isLocalDev
-              ? "The desktop shell started, but the local dev stack did not become ready."
-              : "The desktop shell started, but the local Docker stack did not become ready."}
+              ? "The optional desktop shell started, but the local dev stack did not become ready."
+              : "The optional desktop shell started, but the packaged dashboard stack did not become ready."}
           </p>
           <code>${message.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code>
         </main>
@@ -349,15 +350,17 @@ function showErrorState(error: unknown) {
 }
 
 async function bootstrap() {
+  const dashboardUrl = isLocalDev ? LOCAL_DASHBOARD_URL : PROD_DASHBOARD_URL;
+
   try {
     if (isLocalDev) {
       await ensureDevStack();
     } else {
       await ensureDockerStack();
-      await waitForUrl(DASHBOARD_URL, "dashboard");
+      await waitForUrl(PROD_DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
     }
 
-    mainWindow.webview.loadURL(DASHBOARD_URL);
+    mainWindow.webview.loadURL(dashboardUrl);
     scheduleWebviewNudges();
 
     void ensureBluettiMqttService().catch((error) => {
