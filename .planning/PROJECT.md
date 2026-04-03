@@ -16,10 +16,10 @@ I can reliably see the current state of my Bluetti system in one place without f
 - ✓ Historical readings are stored in SQLite and exposed through REST endpoints — existing
 - ✓ The dashboard already provides overview, charts, and raw-data views for current telemetry — existing
 - ✓ The desktop shell can orchestrate the local monitoring stack and load the dashboard in a native window — existing
+- ✓ `bluetti-mqtt-node` now owns the documented daily-use bridge path through the root `monitor:start` and `monitor:verify` commands — validated in Phase 1
 
 ### Active
 
-- [ ] `bluetti-mqtt-node` fully replaces the old host poller path across setup, docs, startup flow, and dependencies
 - [ ] Remaining migration bugs and architecture gaps between the desktop shell, the Node bridge, and the Python API are resolved
 - [ ] The dashboard calculates runtime remaining on the current charge level and time remaining to full charge while charging
 - [ ] The dashboard becomes phone-friendly and installable as a LAN PWA
@@ -35,7 +35,8 @@ I can reliably see the current state of my Bluetti system in one place without f
 
 - This project is for my own daily Bluetti monitoring first, though it should be clean enough that other Bluetti owners could use it later.
 - The current stack is split across a Bun/Electrobun desktop shell in `src/`, a FastAPI API in `api/`, a React dashboard in `dashboard/`, and the `bluetti-mqtt-node` bridge in `lib/bluetti-mqtt-node/`.
-- The repo is in the middle of a migration away from an older Python-based host poller path. Some docs and setup assumptions still refer to that earlier approach, and the move to `bluetti-mqtt-node` is not fully finished.
+- Phase 1 completed the browser-first startup migration: the repo now has canonical `monitor:start` and `monitor:verify` commands, the README no longer teaches the old manual host-poller command, and the desktop shell is clearly optional local tooling.
+- The remaining migration work is now deeper than startup/docs cleanup: Phase 2 needs to remove leftover runtime coupling, settle ownership boundaries, and clean up any remaining Python-poller residue that is no longer part of the supported path.
 - `bluetti-mqtt-node` is now tracked as a git submodule so it can remain its own repo while still being pinned by this app.
 - Future value is not just “telemetry exists,” but “telemetry is easy to trust and useful on the devices I actually reach for,” especially my phone on the LAN.
 
@@ -50,11 +51,11 @@ I can reliably see the current state of my Bluetti system in one place without f
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Keep `bluetti-mqtt-node` as its own repo and consume it here as a git submodule | Preserves package independence while eliminating the copied-folder workflow | — Pending |
-| Treat `bluetti-mqtt-node` as the long-term source of truth for BLE and MQTT bridge behavior | The migration goal is to remove ambiguity about which component owns device polling | — Pending |
-| Keep the FastAPI API in Python for now | The current migration is about removing the old Python poller path, not rewriting the API layer | — Pending |
-| Deliver phone access as a LAN PWA instead of a native mobile app | It matches the personal-first scope and gives the fastest path to useful mobile access | — Pending |
-| Defer notifications until after the migration, battery estimates, and PWA work are stable | Alerts are useful, but only after the monitoring surface is trustworthy and accessible | — Pending |
+| Keep `bluetti-mqtt-node` as its own repo and consume it here as a git submodule | Preserves package independence while eliminating the copied-folder workflow | Validated during initialization |
+| Treat `bluetti-mqtt-node` as the long-term source of truth for BLE and MQTT bridge behavior | The migration goal is to remove ambiguity about which component owns device polling | Validated in Phase 1 startup flow |
+| Keep the FastAPI API in Python for now | The current migration is about removing the old Python poller path, not rewriting the API layer | Reaffirmed in Phase 1 |
+| Deliver phone access as a LAN PWA instead of a native mobile app | It matches the personal-first scope and gives the fastest path to useful mobile access | Planned for Phases 4-5 |
+| Defer notifications until after the migration, battery estimates, and PWA work are stable | Alerts are useful, but only after the monitoring surface is trustworthy and accessible | Deferred to later milestone work |
 
 ## Evolution
 
@@ -74,4 +75,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-02 after initialization*
+*Last updated: 2026-04-03 after Phase 1 completion*
