@@ -25,20 +25,30 @@ function Layout() {
   const devices = Object.keys(wsState);
   const primaryDevice = devices[0] ? wsState[devices[0]] : null;
   const batteryPercent = primaryDevice?.total_battery_percent?.value ?? null;
+  const dcInput = Number.parseFloat(primaryDevice?.dc_input_power?.value ?? '0') || 0;
+  const acInput = Number.parseFloat(primaryDevice?.ac_input_power?.value ?? '0') || 0;
+  const dcOutput = Number.parseFloat(primaryDevice?.dc_output_power?.value ?? '0') || 0;
+  const acOutput = Number.parseFloat(primaryDevice?.ac_output_power?.value ?? '0') || 0;
+  const inputPower = dcInput + acInput;
+  const outputPower = dcOutput + acOutput;
+  const netPower = inputPower - outputPower;
 
   const routeMeta = location.pathname === '/charts'
     ? {
         kicker: 'Historical trends',
         title: 'Power and telemetry charts',
+        summary: 'Build focused comparisons across the AC500 fields that matter, then zoom in on how load, charging, and system behavior change over time.',
       }
     : location.pathname === '/raw'
       ? {
           kicker: 'Field inventory',
           title: 'Raw AC500 data explorer',
+          summary: 'Inspect the live field footprint exactly as the stack receives it, with search and category grouping tuned for troubleshooting and trust.',
         }
       : {
           kicker: 'Desktop monitor',
           title: 'AC500 power station monitor',
+          summary: 'Track live battery, input, output, and mode state in a single workspace shaped around the real telemetry this stack actually receives.',
         };
 
   useEffect(() => {
@@ -84,7 +94,7 @@ function Layout() {
               <Cpu size={14} />
               <span>{devices.length} device{devices.length === 1 ? '' : 's'}</span>
             </div>
-            {batteryPercent ? (
+            {batteryPercent !== null ? (
               <div className="top-bar-metric">
                 <Battery size={14} />
                 <span>{batteryPercent}% battery</span>
@@ -99,6 +109,34 @@ function Layout() {
         </header>
         <div className="app-content">
           <div className="app-content-inner">
+            <section className="route-hero">
+              <div className="route-hero-copy">
+                <span className="route-hero-kicker">{routeMeta.kicker}</span>
+                <h1 className="route-hero-title">{routeMeta.title}</h1>
+                <p className="route-hero-summary">{routeMeta.summary}</p>
+              </div>
+              <div className="route-hero-stats" aria-label="Telemetry summary">
+                <div className="route-hero-stat">
+                  <span>Input</span>
+                  <strong>{inputPower} W</strong>
+                </div>
+                <div className="route-hero-stat">
+                  <span>Output</span>
+                  <strong>{outputPower} W</strong>
+                </div>
+                <div className="route-hero-stat">
+                  <span>Net</span>
+                  <strong data-balance={netPower >= 0 ? 'positive' : 'negative'}>
+                    {netPower >= 0 ? '+' : ''}
+                    {netPower} W
+                  </strong>
+                </div>
+                <div className="route-hero-stat">
+                  <span>Freshness</span>
+                  <strong>{lastUpdate ? formatRelativeTime(lastUpdate) : 'Waiting'}</strong>
+                </div>
+              </div>
+            </section>
             <Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/charts" element={<Charts />} />

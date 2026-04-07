@@ -57,6 +57,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="sidebar-tagline">AC500-focused desktop telemetry</div>
         </div>
 
+        <div className="sidebar-section-heading">Workspace</div>
         <nav className="sidebar-nav">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink
@@ -64,19 +65,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               to={to}
               end={to === '/'}
               onClick={onClose}
-              className="sidebar-nav-link"
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 20px',
-                fontSize: 15,
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? 'var(--amber)' : 'var(--text-dim)',
-                background: isActive ? 'var(--amber-glow)' : 'transparent',
-                borderLeft: `3px solid ${isActive ? 'var(--amber)' : 'transparent'}`,
-                transition: 'all 0.15s ease',
-              })}
+              className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}
             >
               <Icon size={18} />
               {label}
@@ -99,6 +88,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </span>
           </div>
           {lastUpdate && <div className="sidebar-status-time">{formatTime(lastUpdate)}</div>}
+        </div>
+
+        <div className="sidebar-section sidebar-stack-note">
+          <div className="sidebar-stack-label">Signal Path</div>
+          <div className="sidebar-stack-copy">MQTT bridge, API cache, and dashboard view aligned for daily monitoring.</div>
         </div>
       </aside>
     </>

@@ -1,25 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useLocation } from 'react-router-dom';
+import { Activity, TrendingUp, X } from 'lucide-react';
 import { fetchHistory, fetchFields } from '../lib/api';
 import { getFieldMeta, categoryColors } from '../lib/fields';
 import { formatTime, formatTimeShort } from '../lib/time';
-import { Card, SectionLabel, Spinner } from '../components/ui';
+import { Card, Spinner } from '../components/ui';
 import { useWsStore } from '../store/ws';
-import { Activity, TrendingUp, X } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 
 const COLORS = ['var(--amber)', 'var(--blue)', 'var(--green)', '#a78bfa', '#fb7185'];
 
 interface ChartConfig {
   device: string;
-  field:  string;
-  color:  string;
+  field: string;
+  color: string;
 }
 
 export default function Charts() {
   const location = useLocation();
-  const wsState  = useWsStore(s => s.state);
+  const wsState = useWsStore((s) => s.state);
   const liveDevices = Object.keys(wsState);
 
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
@@ -27,95 +27,163 @@ export default function Charts() {
   const [limit, setLimit] = useState(200);
   const [isActive, setIsActive] = useState(false);
 
-  // Only fetch when on the /charts route
   useEffect(() => {
     setIsActive(location.pathname === '/charts');
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (liveDevices.length === 0) {
+      setSelectedDevice('');
+      return;
+    }
+
+    if (!selectedDevice || !liveDevices.includes(selectedDevice)) {
+      setSelectedDevice(liveDevices[0]);
+    }
+  }, [liveDevices, selectedDevice]);
+
   const { data: fields = [] } = useQuery({
     queryKey: ['fields', selectedDevice],
-    queryFn:  () => fetchFields(selectedDevice),
-    enabled:  isActive && !!selectedDevice,
+    queryFn: () => fetchFields(selectedDevice),
+    enabled: isActive && !!selectedDevice,
   });
 
-  const numericFields = fields.filter(f => {
-    const v = wsState[selectedDevice]?.[f]?.value;
-    return v !== undefined && !isNaN(parseFloat(v));
+  const numericFields = fields.filter((field) => {
+    const value = wsState[selectedDevice]?.[field]?.value;
+    return value !== undefined && !Number.isNaN(Number.parseFloat(value));
   });
 
   function addChart(field: string) {
-    if (charts.find(c => c.device === selectedDevice && c.field === field)) return;
+    if (charts.find((chart) => chart.device === selectedDevice && chart.field === field)) {
+      return;
+    }
+
     const color = COLORS[charts.length % COLORS.length];
-    setCharts(prev => [...prev, { device: selectedDevice, field, color }]);
+    setCharts((prev) => [...prev, { device: selectedDevice, field, color }]);
   }
 
   function removeChart(idx: number) {
-    setCharts(prev => prev.filter((_, i) => i !== idx));
+    setCharts((prev) => prev.filter((_, index) => index !== idx));
+  }
+
+  if (liveDevices.length === 0) {
+    return (
+      <div className="page-stack animate-fade-in">
+        <div className="empty-state-card">
+          <div className="empty-state-title">Waiting for chart data</div>
+          <div className="empty-state-copy">
+            As soon as the live stream comes online, you can layer historical traces here for charging, load, and system behavior.
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }} className="animate-fade-in">
-      {/* Controls */}
-      <Card>
-        <SectionLabel><Activity size={14} style={{ marginRight: 6 }} />Add Chart</SectionLabel>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-start' }}>
-          <select value={selectedDevice} onChange={e => setSelectedDevice(e.target.value)}
-            className="ui-select"
-            style={{ ...selectStyle, flex: '1 1 200px', minWidth: '150px' }}>
-            {liveDevices.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+    <div className="page-stack animate-fade-in">
+      <Card className="workspace-panel">
+        <div className="workspace-panel-header">
+          <div className="workspace-panel-copy">
+            <div className="workspace-panel-kicker">Historical workspace</div>
+            <div className="workspace-panel-title">
+              <Activity size={16} />
+              <span>Build chart comparisons</span>
+            </div>
+            <p className="workspace-panel-summary">
+              Pick a device, add the numeric fields worth watching, and adjust the point count depending on whether you want fast scanning or more history.
+            </p>
+          </div>
+          <div className="workspace-panel-meta">
+            <span>{liveDevices.length} active source{liveDevices.length === 1 ? '' : 's'}</span>
+            <span>{charts.length} chart{charts.length === 1 ? '' : 's'}</span>
+          </div>
+        </div>
 
-          <select defaultValue="" onChange={e => { if (e.target.value) addChart(e.target.value); e.target.value = ''; }}
-            className="ui-select"
-            style={{ ...selectStyle, flex: '1 1 200px', minWidth: '150px' }}>
-            <option value="" disabled>Select field...</option>
-            {numericFields.map(f => (
-              <option key={f} value={f}>{getFieldMeta(f).label}</option>
+        <div className="control-grid">
+          <select
+            value={selectedDevice}
+            onChange={(event) => setSelectedDevice(event.target.value)}
+            className="ui-select workspace-select"
+            style={selectStyle}
+          >
+            {liveDevices.map((device) => (
+              <option key={device} value={device}>{device}</option>
             ))}
           </select>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>Points:</span>
-            {[50, 200, 500].map(n => (
-              <button key={n} onClick={() => setLimit(n)} className="ui-pill-button" style={{
-                padding: '6px 12px',
-                background: limit === n ? 'var(--amber-glow)' : 'var(--bg-3)',
-                border: `1px solid ${limit === n ? 'var(--amber-dim)' : 'var(--border)'}`,
-                color: limit === n ? 'var(--amber)' : 'var(--text-dim)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 13,
-                fontWeight: 600,
-                borderRadius: 3,
-                flexShrink: 0,
-              }}>
-                {n}
+          <select
+            defaultValue=""
+            onChange={(event) => {
+              if (event.target.value) {
+                addChart(event.target.value);
+              }
+              event.target.value = '';
+            }}
+            className="ui-select workspace-select"
+            style={selectStyle}
+          >
+            <option value="" disabled>Select field...</option>
+            {numericFields.map((field) => (
+              <option key={field} value={field}>{getFieldMeta(field).label}</option>
+            ))}
+          </select>
+
+          <div className="control-cluster">
+            <span className="control-cluster-label">Points</span>
+            {[50, 200, 500].map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setLimit(size)}
+                className={`ui-pill-button workspace-pill${limit === size ? ' active' : ''}`}
+              >
+                {size}
               </button>
             ))}
           </div>
         </div>
       </Card>
 
-      {charts.length === 0 && isActive && (
-        <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 14, padding: '20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <TrendingUp size={18} />
-          Select a field above to add a chart.
-        </div>
-      )}
+      {charts.length === 0 && isActive ? (
+        <Card className="workspace-empty-card">
+          <div className="workspace-empty-copy">
+            <TrendingUp size={18} />
+            <span>Select a field above to start layering trend lines.</span>
+          </div>
+        </Card>
+      ) : null}
 
       {charts.map((cfg, idx) => (
-        <ChartCard key={`${cfg.device}-${cfg.field}`} cfg={cfg} limit={limit} onRemove={() => removeChart(idx)} isActive={isActive} />
+        <ChartCard
+          key={`${cfg.device}-${cfg.field}`}
+          cfg={cfg}
+          limit={limit}
+          onRemove={() => removeChart(idx)}
+          isActive={isActive}
+        />
       ))}
     </div>
   );
 }
 
-function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit: number; onRemove: () => void; isActive: boolean }) {
+function ChartCard({
+  cfg,
+  limit,
+  onRemove,
+  isActive,
+}: {
+  cfg: ChartConfig;
+  limit: number;
+  onRemove: () => void;
+  isActive: boolean;
+}) {
   const meta = getFieldMeta(cfg.field);
   const queryClient = useQueryClient();
   const latestLiveTs = useWsStore((s) => s.state[cfg.device]?.[cfg.field]?.ts ?? null);
+
   const { data, isLoading } = useQuery({
     queryKey: ['history', cfg.device, cfg.field, limit],
-    queryFn:  () => fetchHistory(cfg.device, cfg.field, limit),
+    queryFn: () => fetchHistory(cfg.device, cfg.field, limit),
     enabled: isActive,
   });
 
@@ -133,46 +201,43 @@ function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit
     };
   }, [cfg.device, cfg.field, isActive, latestLiveTs, limit, queryClient]);
 
-  const chartData = (data ?? []).slice().reverse().map(p => ({
-    ts:    new Date(p.ts).getTime(),
-    value: parseFloat(p.value),
+  const chartData = (data ?? []).slice().reverse().map((point) => ({
+    ts: new Date(point.ts).getTime(),
+    value: Number.parseFloat(point.value),
   }));
 
   return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{ fontFamily: 'var(--font-cond)', fontWeight: 600, fontSize: 20, color: cfg.color, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <Card className="chart-card-surface">
+      <div className="chart-card-header">
+        <div className="chart-card-copy">
+          <div className="chart-card-title-row">
+            <div className="chart-card-title" style={{ color: cfg.color }}>
               <TrendingUp size={18} />
               {meta.label}
             </div>
-            <span style={{
-              fontFamily: 'var(--font-cond)',
-              fontSize: 11,
-              letterSpacing: '0.08em',
-              padding: '3px 8px',
-              borderRadius: 3,
-              background: 'var(--bg-3)',
-              color: categoryColors[meta.category] || 'var(--text-muted)',
-              border: `1px solid ${categoryColors[meta.category] || 'var(--border)'}`,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-            }}>
+            <span
+              className="data-chip"
+              style={{
+                color: categoryColors[meta.category] || 'var(--text-muted)',
+                borderColor: categoryColors[meta.category] || 'var(--border)',
+              }}
+            >
               {meta.category}
             </span>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            {cfg.device} · {cfg.field} · {chartData.length} readings
+          <div className="chart-card-meta">
+            {cfg.device} / {cfg.field} / {chartData.length} readings
           </div>
         </div>
-        <button onClick={onRemove} className="ui-icon-button" style={{ color: 'var(--text-muted)', fontSize: 20, lineHeight: 1, padding: '0 6px', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <button onClick={onRemove} className="ui-icon-button chart-remove-button" type="button">
           <X size={20} />
         </button>
       </div>
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spinner /></div>
+        <div className="chart-loading-shell">
+          <Spinner />
+        </div>
       ) : (
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
@@ -181,7 +246,7 @@ function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit
               dataKey="ts"
               type="number"
               domain={['dataMin', 'dataMax']}
-              tickFormatter={ts => formatTimeShort(ts)}
+              tickFormatter={(ts) => formatTimeShort(ts)}
               tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}
               axisLine={false}
               tickLine={false}
@@ -197,14 +262,14 @@ function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit
               contentStyle={{
                 background: 'var(--bg-3)',
                 border: '1px solid var(--border-hi)',
-                borderRadius: 4,
+                borderRadius: 12,
                 fontFamily: 'var(--font-mono)',
                 fontSize: 13,
                 color: 'var(--text)',
                 padding: '10px 14px',
               }}
-              labelFormatter={ts => formatTime(ts as number)}
-              formatter={(v) => [`${v} ${meta.unit ?? ''}`, meta.label]}
+              labelFormatter={(ts) => formatTime(ts as number)}
+              formatter={(value) => [`${value} ${meta.unit ?? ''}`, meta.label]}
             />
             <Line
               type="monotone"
@@ -221,14 +286,14 @@ function ChartCard({ cfg, limit, onRemove, isActive }: { cfg: ChartConfig; limit
   );
 }
 
-const selectStyle: React.CSSProperties = {
+const selectStyle: CSSProperties = {
   background: 'var(--bg-3)',
   border: '1px solid var(--border-hi)',
-  borderRadius: 3,
+  borderRadius: 12,
   color: 'var(--text)',
   fontFamily: 'var(--font-mono)',
   fontSize: 14,
-  padding: '8px 12px',
+  padding: '12px 14px',
   outline: 'none',
   cursor: 'pointer',
 };
