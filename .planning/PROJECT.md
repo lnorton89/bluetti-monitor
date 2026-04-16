@@ -20,11 +20,12 @@ I can reliably see the current state of my Bluetti system in one place without f
 - ✓ No legacy Python poller code remains; bridge startup and runtime verified; architecture boundaries documented with Component Ownership table — validated in Phase 2
 - ✓ Battery estimates now show runtime remaining on current charge and time to full charge while charging, with color coding by battery level — validated in Phase 3
 - ✓ Mobile PWA: dashboard works on phone browsers, sidebar drawer, responsive layout, installable as PWA — validated in Phases 4-5 (v1.0)
+- ✓ Shell unified: thin top bar, centralized route registry, mobile route signals, Playwright coverage green — validated in Phase 6
 
 ### Active
 
-- UI Cleanup And Reliability milestone planning is active for v1.1
-- The next milestone should reduce UI drift, fix half-working interactions, and make telemetry views feel trustworthy again
+- UI-01, UI-02, UI-03 completed in Phase 6 — shell coherent, navigation works
+- Phase 7: Fix Telemetry Trust States (UI-04, UI-05, UI-06) — loading, offline, stale state handling
 
 ### Out of Scope
 
@@ -61,6 +62,9 @@ I can reliably see the current state of my Bluetti system in one place without f
 | Deliver phone access as a LAN PWA instead of a native mobile app | It matches the personal-first scope and gives the fastest path to useful mobile access | Planned for Phases 4-5 |
 | Defer notifications until after the migration, battery estimates, and PWA work are stable | Alerts are useful, but only after the monitoring surface is trustworthy and accessible | Deferred to later milestone work |
 | Use v1.1 to stabilize the UI before expanding the dashboard further | The current dashboard has enough surface area; the bigger risk is drift, broken interactions, and low-trust presentation | Established for v1.1 planning |
+| Centralized route metadata in `dashboard/src/lib/routes.ts` | Route labels, shell titles, and mobile signal labels live in one registry for consistency | Validated in Phase 6 |
+| Thin persistent shell with route-specific signal chip | Page-level framing stays inside routes; shell shows route identity and one live signal | Validated in Phase 6 |
+| Page-owned signal publishing with explicit reset on unmount | Routes publish their own signals; cleanup prevents stale values from lingering | Validated in Phase 6 |
 
 ## Current Milestone: v1.1 UI Cleanup And Reliability
 
@@ -90,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-16 for milestone v1.1 initialization*
+*Last updated: 2026-04-16 after Phase 6*

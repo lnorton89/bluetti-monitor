@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Cleanup And Reliability
-status: executing
-stopped_at: Phase 6 planning complete
-last_updated: "2026-04-16T20:09:03.514Z"
+status: ready_to_plan
+stopped_at: Phase 06 complete, ready to plan Phase 07
+last_updated: "2026-04-16T23:30:00Z"
 last_activity: 2026-04-16
 progress:
-  total_phases: 4
-  completed_phases: 0
+  total_phases: 9
+  completed_phases: 6
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 25
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Phase 06 — unify-shell-and-navigation
+**Current focus:** Phase 07 — fix-telemetry-trust-states
 
 ## Current Position
 
-Phase: 06 (unify-shell-and-navigation) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
+Phase: 07 (fix-telemetry-trust-states) — Ready to plan
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-04-16
 
-Progress: [□□□□□□□□□□] 0%
+Progress: [■□□□□□□□□□] 25% (6/9 phases)
 
 ## Performance Metrics
 
@@ -50,16 +50,15 @@ Recent decisions affecting current work:
 - [Phase 1]: Migration verification is captured in `npm run monitor:verify`
 - [Milestone v1.1]: UI stabilization takes priority over adding more dashboard surface area
 - [Phase 6]: The shell is thin, sidebar-primary, and mobile shows page identity plus one route-relevant signal
+- [Phase 6]: Centralized route registry, page-owned signal publishing with explicit unmount reset
 
 ### Pending Todos
 
-- Execute Phase 6 plan 06-01 to establish the route registry, signal contract, and shell selectors
-- Execute Phase 6 plan 06-02 through 06-04 to land the thin shell, route signal wiring, and final Playwright rewrite
+- Plan Phase 7: Fix Telemetry Trust States (UI-04, UI-05, UI-06)
 
 ### Blockers/Concerns
 
-- The dashboard currently mixes several partially overlapping UI systems, which makes changes harder to reason about
-- Existing Playwright coverage is stale and must be rewritten alongside the shell refactor or feedback quality will stay low
+- None — Phase 6 completed successfully
 
 ### Quick Tasks Completed
 
@@ -73,6 +72,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-16T23:05:00.000Z
-Stopped at: Phase 6 planning complete
-Resume file: .planning/phases/06-unify-shell-and-navigation/06-01-PLAN.md
+Last session: 2026-04-16T23:30:00Z
+Stopped at: Phase 06 complete, ready to plan Phase 07
+Resume file: None
