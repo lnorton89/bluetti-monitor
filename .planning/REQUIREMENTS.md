@@ -19,15 +19,15 @@
 
 ### Battery Estimates
 
-- [ ] **BATT-01**: User can see estimated runtime remaining at the current charge and discharge state
-- [ ] **BATT-02**: User can see estimated time remaining to full charge while the system is charging
-- [ ] **BATT-03**: User sees battery estimates update from live telemetry and explain when an estimate is unavailable
+- [x] **BATT-01**: User can see estimated runtime remaining at the current charge and discharge state — v1.0
+- [x] **BATT-02**: User can see estimated time remaining to full charge while the system is charging — v1.0
+- [x] **BATT-03**: User sees battery estimates update from live telemetry and explain when an estimate is unavailable — v1.0
 
 ### Mobile PWA
 
-- [ ] **PWA-01**: User can use the dashboard from a phone browser on the local network
-- [ ] **PWA-02**: User can install the dashboard as a PWA from a supported mobile browser
-- [ ] **PWA-03**: User can read and use the core monitoring views on a small-screen layout
+- [x] **PWA-01**: User can use the dashboard from a phone browser on the local network — v1.0
+- [x] **PWA-02**: User can install the dashboard as a PWA from a supported mobile browser — v1.0
+- [x] **PWA-03**: User can read and use the core monitoring views on a small-screen layout — v1.0
 
 ## v2 Requirements
 

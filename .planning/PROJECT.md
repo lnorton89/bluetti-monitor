@@ -17,12 +17,13 @@ I can reliably see the current state of my Bluetti system in one place without f
 - ✓ The dashboard already provides overview, charts, and raw-data views for current telemetry — existing
 - ✓ The desktop shell can orchestrate the local monitoring stack and load the dashboard in a native window — existing
 - ✓ `bluetti-mqtt-node` now owns the documented daily-use bridge path through the root `monitor:start` and `monitor:verify` commands — validated in Phase 1
+- ✓ No legacy Python poller code remains; bridge startup and runtime verified; architecture boundaries documented with Component Ownership table — validated in Phase 2
+- ✓ Battery estimates now show runtime remaining on current charge and time to full charge while charging, with color coding by battery level — validated in Phase 3
+- ✓ Mobile PWA: dashboard works on phone browsers, sidebar drawer, responsive layout, installable as PWA — validated in Phases 4-5 (v1.0)
 
 ### Active
 
-- [ ] Remaining migration bugs and architecture gaps between the desktop shell, the Node bridge, and the Python API are resolved
-- [ ] The dashboard calculates runtime remaining on the current charge level and time remaining to full charge while charging
-- [ ] The dashboard becomes phone-friendly and installable as a LAN PWA
+_(None — v1.0 shipped, next milestone in planning)_
 
 ### Out of Scope
 
@@ -54,6 +55,7 @@ I can reliably see the current state of my Bluetti system in one place without f
 | Keep `bluetti-mqtt-node` as its own repo and consume it here as a git submodule | Preserves package independence while eliminating the copied-folder workflow | Validated during initialization |
 | Treat `bluetti-mqtt-node` as the long-term source of truth for BLE and MQTT bridge behavior | The migration goal is to remove ambiguity about which component owns device polling | Validated in Phase 1 startup flow |
 | Keep the FastAPI API in Python for now | The current migration is about removing the old Python poller path, not rewriting the API layer | Reaffirmed in Phase 1 |
+| Three-way component ownership (desktop shell → Node bridge → Python API) is the correct boundary model | Clean separation confirmed during integration verification; documented in README Component Ownership table | Validated in Phase 2 |
 | Deliver phone access as a LAN PWA instead of a native mobile app | It matches the personal-first scope and gives the fastest path to useful mobile access | Planned for Phases 4-5 |
 | Defer notifications until after the migration, battery estimates, and PWA work are stable | Alerts are useful, but only after the monitoring surface is trustworthy and accessible | Deferred to later milestone work |
 
@@ -75,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 after Phase 1 completion*
+*Last updated: 2026-04-16 after Phase 3 completion*
