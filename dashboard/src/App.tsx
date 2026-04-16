@@ -9,6 +9,7 @@ import Charts from './pages/Charts';
 import RawData from './pages/RawData';
 import Solar from './pages/Solar';
 import { useBatteryFullNotifications } from './lib/notifications';
+import { useShellStore } from './store/shell';
 import { useWsStore } from './store/ws';
 import { formatRelativeTime } from './lib/time';
 
@@ -23,6 +24,8 @@ function Layout() {
   const wsState = useWsStore((s) => s.state);
   const connected = useWsStore((s) => s.connected);
   const lastUpdate = useWsStore((s) => s.lastUpdate);
+  const shellRouteId = useShellStore((s) => s.routeId);
+  const shellSignalValue = useShellStore((s) => s.value);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const {
     browserNotificationPermission,
@@ -53,6 +56,9 @@ function Layout() {
       : 'Enable browser alerts';
 
   const routeMeta = getRouteMeta(location.pathname);
+  const routeSignalValue = shellRouteId === routeMeta.id && shellSignalValue
+    ? shellSignalValue
+    : '--';
 
   useEffect(() => {
     connect();
@@ -86,7 +92,11 @@ function Layout() {
           </button>
           <div className="top-bar-copy">
             <span className="top-bar-kicker">Workspace</span>
-            <span className="top-bar-title">{routeMeta.shellTitle}</span>
+            <span className="top-bar-title" data-testid="shell-title">{routeMeta.shellTitle}</span>
+          </div>
+          <div className="top-bar-metric muted" data-testid="shell-route-signal">
+            <span>{routeMeta.mobileSignalLabel}</span>
+            <strong>{routeSignalValue}</strong>
           </div>
           <div className="top-bar-metrics">
             <div className="top-bar-metric">
