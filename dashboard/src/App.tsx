@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Bell, BellOff, BellRing, Battery, Cpu, Menu, Radio } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
+import { getRouteMeta } from './lib/routes';
 import Overview from './pages/Overview';
 import Charts from './pages/Charts';
 import RawData from './pages/RawData';
@@ -51,29 +52,7 @@ function Layout() {
       ? 'Browser alerts blocked'
       : 'Enable browser alerts';
 
-  const routeMeta = location.pathname === '/charts'
-    ? {
-        kicker: 'Historical trends',
-        title: 'Power and telemetry charts',
-        summary: 'Build focused comparisons across the AC500 fields that matter, then zoom in on how load, charging, and system behavior change over time.',
-      }
-    : location.pathname === '/solar'
-      ? {
-          kicker: 'Solar workspace',
-          title: 'Solar generation and charge tracking',
-          summary: 'Monitor both PV inputs, harvest history, and battery charge progress in a dedicated workspace shaped around the AC500 telemetry already available in this stack.',
-        }
-    : location.pathname === '/raw'
-      ? {
-          kicker: 'Field inventory',
-          title: 'Raw AC500 data explorer',
-          summary: 'Inspect the live field footprint exactly as the stack receives it, with search and category grouping tuned for troubleshooting and trust.',
-        }
-      : {
-          kicker: 'Desktop monitor',
-          title: 'AC500 power station monitor',
-          summary: 'Track live battery, input, output, and mode state in a single workspace shaped around the real telemetry this stack actually receives.',
-        };
+  const routeMeta = getRouteMeta(location.pathname);
 
   useEffect(() => {
     connect();
@@ -106,8 +85,8 @@ function Layout() {
             <Menu size={20} />
           </button>
           <div className="top-bar-copy">
-            <span className="top-bar-kicker">{routeMeta.kicker}</span>
-            <span className="top-bar-title">{routeMeta.title}</span>
+            <span className="top-bar-kicker">Workspace</span>
+            <span className="top-bar-title">{routeMeta.shellTitle}</span>
           </div>
           <div className="top-bar-metrics">
             <div className="top-bar-metric">
@@ -162,7 +141,7 @@ function Layout() {
             <section className="route-hero">
               <div className="route-hero-copy">
                 <span className="route-hero-kicker">{routeMeta.kicker}</span>
-                <h1 className="route-hero-title">{routeMeta.title}</h1>
+                <h1 className="route-hero-title">{routeMeta.heroTitle}</h1>
                 <p className="route-hero-summary">{routeMeta.summary}</p>
               </div>
               <div className="route-hero-stats" aria-label="Telemetry summary">

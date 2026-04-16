@@ -1,16 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { Activity, LayoutDashboard, Moon, Sun, Table2, X, Zap } from 'lucide-react';
+import { Moon, Sun, X } from 'lucide-react';
+import { APP_ROUTES } from '../lib/routes';
 import { useWsStore } from '../store/ws';
 import { StatusDot } from './ui';
 import { formatTime } from '../lib/time';
 import { useThemeStore } from '../store/theme';
-
-const NAV = [
-  { to: '/', icon: LayoutDashboard, label: 'Overview' },
-  { to: '/charts', icon: Activity, label: 'Charts' },
-  { to: '/solar', icon: Zap, label: 'Solar' },
-  { to: '/raw', icon: Table2, label: 'Raw Data' },
-];
 
 interface SidebarProps {
   isOpen: boolean;
@@ -30,6 +24,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         onClick={onClose}
         aria-hidden={!isOpen}
         data-open={isOpen ? 'true' : 'false'}
+        data-testid="sidebar-overlay"
       />
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
@@ -59,14 +54,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <div className="sidebar-section-heading">Workspace</div>
-        <nav className="sidebar-nav">
-          {NAV.map(({ to, icon: Icon, label }) => (
+        <nav className="sidebar-nav" data-testid="sidebar-nav">
+          {APP_ROUTES.map(({ id, path, icon: Icon, label }) => (
             <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
+              key={id}
+              to={path}
+              end={path === '/'}
               onClick={onClose}
               className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}
+              data-testid={`sidebar-route-${id}`}
             >
               <Icon size={18} />
               {label}
