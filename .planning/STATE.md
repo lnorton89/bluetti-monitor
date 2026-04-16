@@ -1,58 +1,40 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-16T18:59:55.218Z"
+milestone: v1.1
+milestone_name: ui-cleanup-and-reliability
+status: defining_requirements
+stopped_at: Milestone research complete
+last_updated: "2026-04-16T21:00:00.000Z"
 last_activity: 2026-04-16
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-02)
+See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Phase 05 — installable-pwa-polish
+**Current focus:** Milestone v1.1 — UI Cleanup And Reliability
 
 ## Current Position
 
-Phase: 05 (installable-pwa-polish) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 05
-Last activity: 2026-04-16
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-16 — Milestone v1.1 started
 
-Progress: [████████░░] 87%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
-**Velocity:**
-
-- Total plans completed: 13
-- Average duration: 1 min
-- Total execution time: 0.1 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1 | 3 | 3 min | 1 min |
-| 2 | 3 | - | - |
-| 3 | 3 | - | - |
-| 4 | 4 | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: 04-01, 04-02, 05-01, 05-02
-- Trend: Completing milestone
+Previous milestone metrics are preserved in the archived v1.0 roadmap and milestone notes.
 
 ## Accumulated Context
 
@@ -66,15 +48,17 @@ Recent decisions affecting current work:
 - [Initialization]: Notifications are deferred until after migration and PWA stabilization
 - [Phase 1]: The supported daily-use path is browser-first through `npm run monitor:start`
 - [Phase 1]: Migration verification is captured in `npm run monitor:verify`
+- [Milestone v1.1]: UI stabilization takes priority over adding more dashboard surface area
 
 ### Pending Todos
 
-None yet.
+- Convert UI cleanup feedback into milestone-scoped requirements and roadmap phases
+- Audit shared shell, page state handling, and responsive behavior before new feature expansion
 
 ### Blockers/Concerns
 
-- Phase 2 still needs to remove leftover Python-poller code and dependency residue beyond the user-facing startup/docs path
-- Runtime ownership between the desktop shell, Node bridge, and Python API still needs to be simplified for daily-use reliability
+- The dashboard currently mixes several partially overlapping UI systems, which makes changes harder to reason about
+- Existing pages may look polished in isolation while still presenting stale, confusing, or inconsistent telemetry states
 
 ### Quick Tasks Completed
 
@@ -88,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-16T07:49:05.017Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-ship-mobile-lan-dashboard/04-CONTEXT.md
+Last session: 2026-04-16T21:00:00.000Z
+Stopped at: Milestone requirements planning
+Resume file: .planning/ROADMAP.md

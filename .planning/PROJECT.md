@@ -23,7 +23,8 @@ I can reliably see the current state of my Bluetti system in one place without f
 
 ### Active
 
-_(None — v1.0 shipped, next milestone in planning)_
+- UI Cleanup And Reliability milestone planning is active for v1.1
+- The next milestone should reduce UI drift, fix half-working interactions, and make telemetry views feel trustworthy again
 
 ### Out of Scope
 
@@ -40,6 +41,7 @@ _(None — v1.0 shipped, next milestone in planning)_
 - The remaining migration work is now deeper than startup/docs cleanup: Phase 2 needs to remove leftover runtime coupling, settle ownership boundaries, and clean up any remaining Python-poller residue that is no longer part of the supported path.
 - `bluetti-mqtt-node` is now tracked as a git submodule so it can remain its own repo while still being pinned by this app.
 - Future value is not just “telemetry exists,” but “telemetry is easy to trust and useful on the devices I actually reach for,” especially my phone on the LAN.
+- v1.0 proved the stack can cover the major monitoring surfaces, but the dashboard now needs a coherence pass so those surfaces feel dependable instead of partially stitched together.
 
 ## Constraints
 
@@ -58,6 +60,17 @@ _(None — v1.0 shipped, next milestone in planning)_
 | Three-way component ownership (desktop shell → Node bridge → Python API) is the correct boundary model | Clean separation confirmed during integration verification; documented in README Component Ownership table | Validated in Phase 2 |
 | Deliver phone access as a LAN PWA instead of a native mobile app | It matches the personal-first scope and gives the fastest path to useful mobile access | Planned for Phases 4-5 |
 | Defer notifications until after the migration, battery estimates, and PWA work are stable | Alerts are useful, but only after the monitoring surface is trustworthy and accessible | Deferred to later milestone work |
+| Use v1.1 to stabilize the UI before expanding the dashboard further | The current dashboard has enough surface area; the bigger risk is drift, broken interactions, and low-trust presentation | Established for v1.1 planning |
+
+## Current Milestone: v1.1 UI Cleanup And Reliability
+
+**Goal:** Make the dashboard feel coherent, trustworthy, and finished by fixing broken or confusing UI behavior before adding more surface area.
+
+**Target features:**
+- Repair half-working or incorrect UI interactions across the dashboard
+- Unify layout, hierarchy, spacing, and visual language so the app stops feeling jumbled
+- Improve state handling for loading, empty, stale, and error conditions so screens behave predictably
+- Tighten responsive behavior and component consistency across desktop and mobile views
 
 ## Evolution
 
@@ -77,4 +90,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-16 after Phase 3 completion*
+*Last updated: 2026-04-16 for milestone v1.1 initialization*
