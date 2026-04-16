@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: ui-cleanup-and-reliability
-status: ui_spec_approved
-stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-04-16T22:15:00.000Z"
+status: planned
+stopped_at: Phase 6 planning complete
+last_updated: "2026-04-16T23:05:00.000Z"
 last_activity: 2026-04-16
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
-  total_plans: 0
+  total_plans: 4
   completed_plans: 0
   percent: 0
 ---
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Milestone v1.1 — UI Cleanup And Reliability
+**Current focus:** Milestone v1.1 - UI Cleanup And Reliability
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Phase 6 UI-SPEC approved
-Last activity: 2026-04-16 — Phase 6 UI-SPEC approved
+Phase: 6 - Unify Shell And Navigation
+Plan: 06-01 through 06-04 ready
+Status: Planned
+Last activity: 2026-04-16 - Phase 6 plans and validation strategy created
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [□□□□□□□□□□] 0%
 
 ## Performance Metrics
 
@@ -49,16 +49,17 @@ Recent decisions affecting current work:
 - [Phase 1]: The supported daily-use path is browser-first through `npm run monitor:start`
 - [Phase 1]: Migration verification is captured in `npm run monitor:verify`
 - [Milestone v1.1]: UI stabilization takes priority over adding more dashboard surface area
+- [Phase 6]: The shell is thin, sidebar-primary, and mobile shows page identity plus one route-relevant signal
 
 ### Pending Todos
 
-- Plan Phase 6 implementation from the captured shell, navigation, and UI contract decisions
-- Audit current shell duplication in `dashboard/src/App.tsx`, `dashboard/src/components/Sidebar.tsx`, and `dashboard/src/index.css`
+- Execute Phase 6 plan 06-01 to establish the route registry, signal contract, and shell selectors
+- Execute Phase 6 plan 06-02 through 06-04 to land the thin shell, route signal wiring, and final Playwright rewrite
 
 ### Blockers/Concerns
 
 - The dashboard currently mixes several partially overlapping UI systems, which makes changes harder to reason about
-- Existing pages may look polished in isolation while still presenting stale, confusing, or inconsistent telemetry states
+- Existing Playwright coverage is stale and must be rewritten alongside the shell refactor or feedback quality will stay low
 
 ### Quick Tasks Completed
 
@@ -72,6 +73,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-16T22:15:00.000Z
-Stopped at: Phase 6 UI-SPEC approved
-Resume file: .planning/phases/06-unify-shell-and-navigation/06-UI-SPEC.md
+Last session: 2026-04-16T23:05:00.000Z
+Stopped at: Phase 6 planning complete
+Resume file: .planning/phases/06-unify-shell-and-navigation/06-01-PLAN.md
