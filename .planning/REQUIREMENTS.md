@@ -9,7 +9,7 @@
 
 - [x] **MIGR-01**: User can start the monitor with `bluetti-mqtt-node` as the only BLE and MQTT bridge in the daily-use monitoring flow
 - [x] **MIGR-02**: User can follow repo setup steps, docs, and developer commands without encountering references to the old Python host poller
-- [ ] **MIGR-03**: Legacy Python poller dependencies and integration code are removed from the app repo, except for the FastAPI API service itself
+- [x] **MIGR-03**: Legacy Python poller dependencies and integration code are removed from the app repo, except for the FastAPI API service itself
 
 ### Integration
 
@@ -60,7 +60,7 @@
 |-------------|-------|--------|
 | MIGR-01 | Phase 1 | Complete (2026-04-03) |
 | MIGR-02 | Phase 1 | Complete (2026-04-03) |
-| MIGR-03 | Phase 2 | Pending |
+| MIGR-03 | Phase 2 | Complete |
 | INTG-01 | Phase 2 | Pending |
 | INTG-02 | Phase 2 | Pending |
 | INTG-03 | Phase 2 | Pending |
