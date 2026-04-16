@@ -49,6 +49,7 @@ coverage/
 .pytest_cache/
 .tox/
 dashboard/test-results/
+dashboard/dev-dist/
 
 # Docker
 .docker/
