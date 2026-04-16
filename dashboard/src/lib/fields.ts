@@ -20,7 +20,7 @@ const FIELDS: Record<string, FieldMeta> = {
   pv2_power:             { label: 'PV2 Power',         unit: 'W',  category: 'Input', numeric: true },
   pv_input_power:        { label: 'PV Input Power',    unit: 'W',  category: 'Input', numeric: true },
   solar_power:           { label: 'Solar Power',       unit: 'W',  category: 'Input', numeric: true },
-  power_generation:      { label: 'Power Generation',  unit: 'W',  category: 'Input', numeric: true },
+  power_generation:      { label: 'Generated Energy',  unit: 'kWh',category: 'Input', numeric: true },
   
   dc_input_voltage1:     { label: 'PV1 Voltage',       unit: 'V',  category: 'Input', numeric: true },
   dc_input_voltage2:     { label: 'PV2 Voltage',       unit: 'V',  category: 'Input', numeric: true },

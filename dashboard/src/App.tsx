@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Menu, Radio, Battery, Cpu } from 'lucide-react';
+import { Bell, BellOff, BellRing, Battery, Cpu, Menu, Radio } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import Overview from './pages/Overview';
 import Charts from './pages/Charts';
 import RawData from './pages/RawData';
+import Solar from './pages/Solar';
+import { useBatteryFullNotifications } from './lib/notifications';
 import { useWsStore } from './store/ws';
 import { formatRelativeTime } from './lib/time';
 
@@ -21,6 +23,11 @@ function Layout() {
   const connected = useWsStore((s) => s.connected);
   const lastUpdate = useWsStore((s) => s.lastUpdate);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const {
+    browserNotificationPermission,
+    desktopNotificationsAvailable,
+    requestBrowserNotifications,
+  } = useBatteryFullNotifications(wsState);
 
   const devices = Object.keys(wsState);
   const primaryDevice = devices[0] ? wsState[devices[0]] : null;
@@ -32,6 +39,17 @@ function Layout() {
   const inputPower = dcInput + acInput;
   const outputPower = dcOutput + acOutput;
   const netPower = inputPower - outputPower;
+  const BrowserNotificationIcon = browserNotificationPermission === 'granted'
+    ? BellRing
+    : browserNotificationPermission === 'denied'
+      ? BellOff
+      : Bell;
+  const showBrowserNotificationControl = browserNotificationPermission !== 'unsupported';
+  const browserNotificationLabel = browserNotificationPermission === 'granted'
+    ? 'Browser alerts armed'
+    : browserNotificationPermission === 'denied'
+      ? 'Browser alerts blocked'
+      : 'Enable browser alerts';
 
   const routeMeta = location.pathname === '/charts'
     ? {
@@ -39,6 +57,12 @@ function Layout() {
         title: 'Power and telemetry charts',
         summary: 'Build focused comparisons across the AC500 fields that matter, then zoom in on how load, charging, and system behavior change over time.',
       }
+    : location.pathname === '/solar'
+      ? {
+          kicker: 'Solar workspace',
+          title: 'Solar generation and charge tracking',
+          summary: 'Monitor both PV inputs, harvest history, and battery charge progress in a dedicated workspace shaped around the AC500 telemetry already available in this stack.',
+        }
     : location.pathname === '/raw'
       ? {
           kicker: 'Field inventory',
@@ -94,6 +118,32 @@ function Layout() {
               <Cpu size={14} />
               <span>{devices.length} device{devices.length === 1 ? '' : 's'}</span>
             </div>
+            {desktopNotificationsAvailable ? (
+              <div className="top-bar-metric">
+                <BellRing size={14} />
+                <span>Desktop alerts armed</span>
+              </div>
+            ) : null}
+            {showBrowserNotificationControl ? (
+              browserNotificationPermission === 'default' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void requestBrowserNotifications();
+                  }}
+                  className="top-bar-metric"
+                  aria-label="Enable browser alerts"
+                >
+                  <Bell size={14} />
+                  <span>{browserNotificationLabel}</span>
+                </button>
+              ) : (
+                <div className="top-bar-metric">
+                  <BrowserNotificationIcon size={14} />
+                  <span>{browserNotificationLabel}</span>
+                </div>
+              )
+            ) : null}
             {batteryPercent !== null ? (
               <div className="top-bar-metric">
                 <Battery size={14} />
@@ -140,6 +190,7 @@ function Layout() {
             <Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/charts" element={<Charts />} />
+              <Route path="/solar" element={<Solar />} />
               <Route path="/raw" element={<RawData />} />
             </Routes>
           </div>

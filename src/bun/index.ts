@@ -1,11 +1,13 @@
 import { existsSync, mkdirSync } from "fs";
 import { dirname, resolve } from "path";
 import { BrowserWindow } from "electrobun/bun";
+import { Utils } from "electrobun/bun";
 import {
   discoverAC500,
   startBluettiMqttService as launchBluettiMqttService,
   type BluettiMqttService,
 } from "./bluetooth";
+import { buildWindowTitle, type AllState } from "./titlebar";
 
 const API_URL = "http://127.0.0.1:8000";
 const LOCAL_DASHBOARD_PORT = 5173;
@@ -18,6 +20,8 @@ const DEV_BROKER_COMMAND = ["docker", "compose", "up", "-d", "mosquitto"];
 const DEV_STOP_CONTAINERS_COMMAND = ["docker", "compose", "stop", "api", "dashboard"];
 const NPM_COMMAND = process.platform === "win32" ? "npm.cmd" : "npm";
 const DASHBOARD_READY_MARKER = '<div id="root"></div>';
+const DESKTOP_NOTIFICATION_SUBTITLE = "Bluetti Monitor";
+const TITLEBAR_RECONNECT_DELAY_MS = 1_500;
 
 const appRoot = findWorkspaceRoot();
 const apiRoot = resolve(appRoot, "api");
@@ -37,6 +41,21 @@ const isLocalDev = existsSync(resolve(appRoot, "dashboard", "package.json"))
 let bluettiMqttService: BluettiMqttService | null = null;
 let apiProcess: Bun.Subprocess | null = null;
 let dashboardProcess: Bun.Subprocess | null = null;
+let titlebarSocket: WebSocket | null = null;
+let titlebarState: AllState = {};
+let isShuttingDown = false;
+
+type TitlebarSnapshotMessage = {
+  type: "snapshot";
+  data: AllState;
+};
+
+type TitlebarUpdateMessage = {
+  device: string;
+  field: string;
+  value: string;
+  ts: string;
+};
 
 const mainWindow = new BrowserWindow({
   title: "Bluetti Monitor",
@@ -48,6 +67,41 @@ const mainWindow = new BrowserWindow({
     y: 80,
   },
 });
+
+type BatteryFullHostMessage = {
+  body?: string;
+  silent?: boolean;
+  subtitle?: string;
+  title?: string;
+  type?: string;
+};
+
+const desktopHostEvents = mainWindow.webview as typeof mainWindow.webview & {
+  on: (name: "host-message", handler: (event: { data?: { detail?: unknown } }) => void) => void;
+};
+
+desktopHostEvents.on("host-message", (event: { data?: { detail?: unknown } }) => {
+  const detail = event.data?.detail;
+
+  if (!detail || typeof detail !== "object") {
+    return;
+  }
+
+  const message = detail as BatteryFullHostMessage;
+
+  if (message.type !== "battery-full" || typeof message.title !== "string") {
+    return;
+  }
+
+  Utils.showNotification({
+    title: message.title,
+    body: message.body,
+    subtitle: message.subtitle ?? DESKTOP_NOTIFICATION_SUBTITLE,
+    silent: message.silent,
+  });
+});
+
+mainWindow.setTitle(buildWindowTitle(titlebarState));
 
 function nudgeLoadedWebview() {
   mainWindow.webview.executeJavascript(`
@@ -360,6 +414,7 @@ async function bootstrap() {
       await waitForUrl(PROD_DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
     }
 
+    connectTitlebarTelemetry();
     mainWindow.webview.loadURL(dashboardUrl);
     scheduleWebviewNudges();
 
@@ -382,6 +437,10 @@ function stopManagedProcess(process: Bun.Subprocess | null, label: string) {
 }
 
 function stopBackgroundProcesses() {
+  isShuttingDown = true;
+  titlebarSocket?.close();
+  titlebarSocket = null;
+
   bluettiMqttService?.stop();
   bluettiMqttService = null;
 
@@ -396,6 +455,105 @@ process.on("SIGINT", stopBackgroundProcesses);
 process.on("SIGTERM", stopBackgroundProcesses);
 
 void bootstrap();
+
+function connectTitlebarTelemetry() {
+  titlebarSocket?.close();
+
+  const socket = new WebSocket(getApiWebSocketUrl(API_URL));
+  titlebarSocket = socket;
+
+  socket.addEventListener("message", (event) => {
+    const payload = parseSocketPayload(event.data);
+
+    if (isSnapshotMessage(payload)) {
+      titlebarState = payload.data;
+      refreshWindowTitle();
+      return;
+    }
+
+    if (isUpdateMessage(payload)) {
+      const deviceState = titlebarState[payload.device] ?? {};
+      deviceState[payload.field] = { value: payload.value, ts: payload.ts };
+      titlebarState[payload.device] = deviceState;
+      refreshWindowTitle();
+    }
+  });
+
+  socket.addEventListener("error", (event) => {
+    console.warn("[desktop:titlebar] telemetry websocket error", event);
+  });
+
+  socket.addEventListener("close", () => {
+    if (titlebarSocket !== socket) {
+      return;
+    }
+
+    titlebarSocket = null;
+
+    if (isShuttingDown) {
+      return;
+    }
+
+    setTimeout(() => {
+      if (!isShuttingDown) {
+        connectTitlebarTelemetry();
+      }
+    }, TITLEBAR_RECONNECT_DELAY_MS);
+  });
+}
+
+function refreshWindowTitle() {
+  mainWindow.setTitle(buildWindowTitle(titlebarState));
+}
+
+function getApiWebSocketUrl(apiUrl: string) {
+  const url = new URL(apiUrl);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.pathname = "/ws";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
+function parseSocketPayload(payload: unknown): unknown {
+  if (typeof payload !== "string") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(payload);
+  } catch (error) {
+    console.warn("[desktop:titlebar] failed to parse telemetry websocket payload", error);
+    return null;
+  }
+}
+
+function isAllState(value: unknown): value is AllState {
+  return typeof value === "object" && value !== null;
+}
+
+function isSnapshotMessage(value: unknown): value is TitlebarSnapshotMessage {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return record["type"] === "snapshot" && isAllState(record["data"]);
+}
+
+function isUpdateMessage(value: unknown): value is TitlebarUpdateMessage {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record["device"] === "string"
+    && typeof record["field"] === "string"
+    && typeof record["value"] === "string"
+    && typeof record["ts"] === "string"
+  );
+}
 
 function findWorkspaceRoot(): string {
   const starts = [process.cwd(), import.meta.dir];

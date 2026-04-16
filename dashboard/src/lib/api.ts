@@ -24,6 +24,11 @@ export interface HistoryPoint {
   ts: string;
 }
 
+export interface FetchHistoryOptions {
+  limit?: number;
+  since?: string;
+}
+
 export const fetchStatus = () =>
   IS_MOCK_MODE ? Promise.resolve(mockState) : api.get<AllState>('/status').then((r) => r.data);
 
@@ -36,7 +41,14 @@ export const fetchFields = (device: string) =>
 export const fetchDevice = (device: string) =>
   IS_MOCK_MODE ? Promise.resolve(mockState[device] ?? {}) : api.get<DeviceState>(`/status/${device}`).then((r) => r.data);
 
-export const fetchHistory = (device: string, field: string, limit = 500) =>
-  IS_MOCK_MODE
-    ? Promise.resolve(getMockHistory(field, limit))
-    : api.get<HistoryPoint[]>(`/history/${device}/${field}`, { params: { limit } }).then((r) => r.data);
+export const fetchHistory = (
+  device: string,
+  field: string,
+  options: number | FetchHistoryOptions = 500,
+) => {
+  const resolved = typeof options === 'number' ? { limit: options } : options;
+
+  return IS_MOCK_MODE
+    ? Promise.resolve(getMockHistory(field, resolved))
+    : api.get<HistoryPoint[]>(`/history/${device}/${field}`, { params: resolved }).then((r) => r.data);
+};

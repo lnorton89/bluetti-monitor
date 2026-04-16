@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Activity, LayoutDashboard, Moon, Sun, Table2, X } from 'lucide-react';
+import { Activity, LayoutDashboard, Moon, Sun, Table2, X, Zap } from 'lucide-react';
 import { useWsStore } from '../store/ws';
 import { StatusDot } from './ui';
 import { formatTime } from '../lib/time';
@@ -8,6 +8,7 @@ import { useThemeStore } from '../store/theme';
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Overview' },
   { to: '/charts', icon: Activity, label: 'Charts' },
+  { to: '/solar', icon: Zap, label: 'Solar' },
   { to: '/raw', icon: Table2, label: 'Raw Data' },
 ];
 

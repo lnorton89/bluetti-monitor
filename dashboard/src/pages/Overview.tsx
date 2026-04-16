@@ -17,6 +17,7 @@ import {
 import { useWsStore } from '../store/ws';
 import { BoolBadge, Card } from '../components/ui';
 import { formatRelativeTime } from '../lib/time';
+import { BatteryEstimates } from '../components/BatteryEstimates';
 
 type FieldValue = { value: string; ts: string };
 type DeviceState = Record<string, FieldValue>;
@@ -281,6 +282,8 @@ function Hero({ state }: { state: DeviceState }) {
                 {formatNumber(net)} W
               </strong>
             </div>
+
+            <BatteryEstimates state={state} />
           </div>
 
           {statusChips.length > 0 ? (
@@ -316,8 +319,8 @@ function Hero({ state }: { state: DeviceState }) {
             </div>
             {generation !== null ? (
               <div className="power-node-split">
-                <span>Generation</span>
-                <strong>{formatNumber(generation, 1)} W</strong>
+              <span>Generated energy</span>
+              <strong>{formatNumber(generation, 1)} kWh</strong>
               </div>
             ) : null}
           </div>
@@ -391,9 +394,9 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
       accent: 'var(--cat-battery)',
     },
     {
-      label: 'Generation',
-      value: formatMetric(getNumber(state, 'power_generation'), ' W', 1),
-      detail: 'Reported output generation',
+      label: 'Generated Energy',
+      value: formatMetric(getNumber(state, 'power_generation'), ' kWh', 1),
+      detail: 'Cumulative solar generation',
       accent: 'var(--cat-input)',
     },
     {
