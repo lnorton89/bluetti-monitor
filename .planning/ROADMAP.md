@@ -62,9 +62,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Define estimate inputs and derived-metric logic from available telemetry
-- [ ] 03-02: Expose derived estimates to the dashboard data flow
-- [ ] 03-03: Present runtime and charge estimates clearly in the UI with edge-case handling
+- [x] 03-01: Define estimate inputs and derived-metric logic from available telemetry
+- [x] 03-02: Expose derived estimates to the dashboard data flow
+- [x] 03-03: Present runtime and charge estimates clearly in the UI with edge-case handling
 
 ### Phase 4: Ship Mobile LAN Dashboard
 **Goal**: Make the existing dashboard genuinely usable from a phone browser on the local network.
