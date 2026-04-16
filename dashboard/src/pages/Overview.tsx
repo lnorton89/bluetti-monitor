@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   ArrowDownRight,
   ArrowRight,
@@ -15,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useWsStore } from '../store/ws';
+import { useShellStore } from '../store/shell';
 import { BoolBadge, Card } from '../components/ui';
 import { formatRelativeTime } from '../lib/time';
 import { BatteryEstimates } from '../components/BatteryEstimates';
@@ -586,7 +588,20 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
 export default function Overview() {
   const wsState = useWsStore((s) => s.state);
   const connected = useWsStore((s) => s.connected);
+  const setRouteSignal = useShellStore((s) => s.setRouteSignal);
+  const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
   const devices = Object.keys(wsState);
+  const primaryState = devices[0] ? wsState[devices[0]] : null;
+  const primaryBattery = primaryState ? getNumber(primaryState, 'total_battery_percent') : null;
+
+  useEffect(() => {
+    const value = primaryBattery === null ? '-- reserve' : `${formatNumber(primaryBattery)}% reserve`;
+    setRouteSignal('overview', value);
+
+    return () => {
+      resetRouteSignal('overview');
+    };
+  }, [primaryBattery, resetRouteSignal, setRouteSignal]);
 
   if (devices.length === 0) {
     return (

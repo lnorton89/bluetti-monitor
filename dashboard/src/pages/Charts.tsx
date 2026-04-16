@@ -49,6 +49,7 @@ import {
 import { categoryColors, formatValue, getFieldMeta } from '../lib/fields';
 import { formatTime } from '../lib/time';
 import { Card, Spinner } from '../components/ui';
+import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 
 const CHART_COLORS = ['#38bdf8', '#f59e0b', '#34d399', '#f472b6', '#a78bfa', '#f87171'];
@@ -81,6 +82,8 @@ type ComparisonPayload = {
 export default function Charts() {
   const location = useLocation();
   const wsState = useWsStore((state) => state.state);
+  const setRouteSignal = useShellStore((state) => state.setRouteSignal);
+  const resetRouteSignal = useShellStore((state) => state.resetRouteSignal);
   const liveDevices = Object.keys(wsState);
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
   const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
@@ -106,6 +109,14 @@ export default function Charts() {
 
   const range = RANGE_PRESETS.find((preset) => preset.id === rangeId) ?? RANGE_PRESETS[2];
   const sinceIso = new Date(Date.now() - range.minutes * 60_000).toISOString();
+
+  useEffect(() => {
+    setRouteSignal('charts', range.label);
+
+    return () => {
+      resetRouteSignal('charts');
+    };
+  }, [range.label, resetRouteSignal, setRouteSignal]);
 
   const { data: fields = [], isLoading: isLoadingFields } = useQuery({
     queryKey: ['fields', selectedDevice],
