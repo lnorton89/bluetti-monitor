@@ -20,8 +20,8 @@
 
 ### v1.1 UI Cleanup And Reliability [Planned]
 
-- [ ] Phase 6: Unify Shell And Navigation (0/0) — planned
-- [ ] Phase 7: Fix Telemetry Trust States (0/0) — planned
+- [x] Phase 6: Unify Shell And Navigation (0/0) — completed
+- [ ] Phase 7: Fix Telemetry Trust States (2/2) — planned
 - [ ] Phase 8: Consolidate Shared UI Surfaces (0/0) — planned
 - [ ] Phase 9: Finish Responsive Reliability Pass (0/0) — planned
 
@@ -90,8 +90,8 @@ Success criteria:
 | 3. Add Battery Estimates | 3/3 | Complete | 2026-04-16 |
 | 4. Ship Mobile LAN Dashboard | 2/2 | Complete | 2026-04-16 |
 | 5. Installable PWA Polish | 2/2 | Complete | 2026-04-16 |
-| 6. Unify Shell And Navigation | 0/0 | Planned | — |
-| 7. Fix Telemetry Trust States | 0/0 | Planned | — |
+| 6. Unify Shell And Navigation | 0/0 | Complete | 2026-04-16 |
+| 7. Fix Telemetry Trust States | 2/2 | Planned | — |
 | 8. Consolidate Shared UI Surfaces | 0/0 | Planned | — |
 | 9. Finish Responsive Reliability Pass | 0/0 | Planned | — |
 
