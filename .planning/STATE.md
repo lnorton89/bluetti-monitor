@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Cleanup And Reliability
-status: executing
-stopped_at: Phase 07 planned, ready to execute
-last_updated: "2026-04-16T21:05:25.487Z"
-last_activity: 2026-04-16 -- Phase 07 execution started
+status: planning
+stopped_at: Phase 08 planned, ready to execute
+last_updated: "2026-04-17T03:10:00.000Z"
+last_activity: 2026-04-17 -- Phase 08 planned
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 6
+  total_plans: 9
   completed_plans: 4
-  percent: 67
+  percent: 44
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Phase 07 — fix-telemetry-trust-states
+**Current focus:** Phase 08 — consolidate-shared-ui-surfaces
 
 ## Current Position
 
-Phase: 07 (fix-telemetry-trust-states) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 07
-Last activity: 2026-04-16 -- Phase 07 execution started
+Phase: 08 (consolidate-shared-ui-surfaces) — PLANNED
+Plan: 1 of 3
+Status: Phase 08 planned, ready to execute
+Last activity: 2026-04-17 -- Phase 08 plan created
 
-Progress: [■□□□□□□□□□] 25% (6/9 phases)
+Progress: [■■□□□□□□□□] 44% (4/9 plans complete across 2 phases)
 
 ## Performance Metrics
 
@@ -55,10 +55,11 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - Execute Phase 7: Fix Telemetry Trust States (UI-04, UI-05, UI-06)
+- Execute Phase 8: Consolidate Shared UI Surfaces (UI-07, UI-08, UI-09)
 
 ### Blockers/Concerns
 
-- None — Phase 6 completed successfully
+- None — Phase 6 completed successfully, Phase 7 executed, Phase 8 planned
 
 ### Quick Tasks Completed
 
@@ -67,11 +68,11 @@ Recent decisions affecting current work:
 | 260407-hqx | Improve the dashboard UI polish and hierarchy for the Bluetti monitor overview and shell | 2026-04-07 | c6188b4 | [260407-hqx-improve-the-dashboard-ui-polish-and-hier](./quick/260407-hqx-improve-the-dashboard-ui-polish-and-hier/) |
 | 260407-tfy | Completely refactor the charts page to feel like a telemetry analytics workspace with GA-style summaries, grouped insights, and comparisons built from the actual Bluetti data model | 2026-04-08 | uncommitted | [260407-tfy-completely-refactor-the-charts-page-to-f](./quick/260407-tfy-completely-refactor-the-charts-page-to-f/) |
 | 260409-gpo | Build a dedicated solar dashboard page with live stats, charts, both solar inputs, and battery full-charge estimates using existing telemetry while matching the home and charts design language | 2026-04-09 | uncommitted | [260409-gpo-build-a-dedicated-solar-dashboard-page-w](./quick/260409-gpo-build-a-dedicated-solar-dashboard-page-w/) |
-| 260413-ply | implement browser and windows notifcations when battery reaches full state of charge | 2026-04-14 | uncommitted | [260413-ply-implement-browser-and-windows-notifcatio](./quick/260413-ply-implement-browser-and-windows-notifcatio/) |
-| 260413-pug | make the titlebar of the electrobun app display current mode and battery soc | 2026-04-13 | uncommitted | [260413-pug-make-the-titlebar-of-the-electrobun-app-](./quick/260413-pug-make-the-titlebar-of-the-electrobun-app-/) |
+| 260413-ply | implement browser and windows notifcations when battery reaches full state of charge | 2026-04-14 | uncommitted | [260413-ply-implement-browser-and-windows-notifcatio](./260413-ply-implement-browser-and-windows-notifcatio/) |
+| 260413-pug | make the titlebar of the electrobun app display current mode and battery soc | 2026-04-13 | uncommitted | [260413-pug-make-the-titlebar-of-the-electrobun-app-](./260413-pug-make-the-titlebar-of-the-electrobun-app-/) |
 
 ## Session Continuity
 
-Last session: 2026-04-17T00:10:00Z
-Stopped at: Phase 07 planned, ready to execute
-Resume file: .planning/phases/07-fix-telemetry-trust-states/07-01-PLAN.md
+Last session: 2026-04-17T03:10:00Z
+Stopped at: Phase 08 planned, ready to execute
+Resume file: .planning/phases/08-consolidate-shared-ui-surfaces/08-01-PLAN.md
