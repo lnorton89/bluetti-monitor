@@ -9,5 +9,8 @@ test('captures initial layout before and after resize', async ({ page }) => {
   await page.setViewportSize({ width: 1500, height: 960 });
   await page.screenshot({ path: 'test-results/initial-layout-after.png', fullPage: true });
 
-  await expect(page.getByText('AC500 Power Station Monitor')).toBeVisible();
+  await expect(page.getByTestId('shell-title')).toBeVisible();
+  await expect(page.locator('.route-hero')).toHaveCount(0);
+  await expect(page.locator('.top-bar')).toBeVisible();
+  await expect(page.locator('.device-header')).toBeVisible();
 });
