@@ -1,10 +1,11 @@
 ---
 phase: 06
 slug: unify-shell-and-navigation
-status: draft
+status: approved
 shadcn_initialized: false
 preset: nova
 created: 2026-04-16
+reviewed_at: 2026-04-16T00:00:00-07:00
 ---
 
 # Phase 06 - UI Design Contract
@@ -29,6 +30,7 @@ created: 2026-04-16
 
 - Use a thin persistent shell only. The shell owns navigation, connection state, freshness, battery, device count, and notification readiness.
 - Remove the persistent route hero from the shell. Route pages own their own page header and contextual framing.
+- The primary focal point should be route identity in the shell first, then the page-owned header block immediately below it. Shell status items must support that identity, not compete with it.
 - Keep one route registry as the source of truth for path, label, icon, mobile title, and mobile single-signal mapping.
 - Keep desktop navigation as a fixed left sidebar.
 - Keep mobile navigation as a drawer version of the same sidebar content. Do not add a second mobile nav model.
@@ -46,6 +48,7 @@ created: 2026-04-16
 - Desktop sidebar width: 200px.
 - Mobile drawer width: `min(280px, calc(100vw - 56px))`.
 - Top bar stays sticky.
+- Icon-only controls such as the hamburger and drawer close actions must keep explicit accessible labels and remain visually paired with route identity or nearby text on layouts where ambiguity would increase.
 - Hamburger, drawer close, and nav rows must stay at or above 44px touch height on mobile.
 - Active route state must be visible in both desktop and mobile nav through the same label, icon, and highlighted container treatment.
 - Drawer closes on overlay click, close button click, and route selection.
@@ -165,4 +168,4 @@ Accent reserved for: active navigation item, current-route identity marker, keyb
 - [ ] Dimension 5 Spacing: PASS
 - [ ] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-04-16
