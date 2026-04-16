@@ -91,8 +91,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: Add manifest, icons, and installability support for the dashboard
-- [ ] 05-02: Validate installed-PWA behavior, update flow, and LAN usage expectations
+- [x] 05-01: Add manifest, icons, and installability support for the dashboard
+- [x] 05-02: Validate installed-PWA behavior, update flow, and LAN usage expectations
 
 ## Progress
 
