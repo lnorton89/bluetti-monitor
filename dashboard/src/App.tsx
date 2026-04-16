@@ -36,13 +36,6 @@ function Layout() {
   const devices = Object.keys(wsState);
   const primaryDevice = devices[0] ? wsState[devices[0]] : null;
   const batteryPercent = primaryDevice?.total_battery_percent?.value ?? null;
-  const dcInput = Number.parseFloat(primaryDevice?.dc_input_power?.value ?? '0') || 0;
-  const acInput = Number.parseFloat(primaryDevice?.ac_input_power?.value ?? '0') || 0;
-  const dcOutput = Number.parseFloat(primaryDevice?.dc_output_power?.value ?? '0') || 0;
-  const acOutput = Number.parseFloat(primaryDevice?.ac_output_power?.value ?? '0') || 0;
-  const inputPower = dcInput + acInput;
-  const outputPower = dcOutput + acOutput;
-  const netPower = inputPower - outputPower;
   const BrowserNotificationIcon = browserNotificationPermission === 'granted'
     ? BellRing
     : browserNotificationPermission === 'denied'
@@ -86,7 +79,7 @@ function Layout() {
           <button
             onClick={() => setSidebarOpen(true)}
             className="hamburger-btn"
-            aria-label="Open navigation"
+            aria-label="Open Navigation"
           >
             <Menu size={20} />
           </button>
@@ -99,16 +92,16 @@ function Layout() {
             <strong>{routeSignalValue}</strong>
           </div>
           <div className="top-bar-metrics">
-            <div className="top-bar-metric">
+            <div className="top-bar-metric" data-testid="shell-status-connection">
               <Radio size={14} />
               <span>{connected ? 'Live' : 'Offline'}</span>
             </div>
-            <div className="top-bar-metric">
+            <div className="top-bar-metric" data-testid="shell-status-devices">
               <Cpu size={14} />
               <span>{devices.length} device{devices.length === 1 ? '' : 's'}</span>
             </div>
             {desktopNotificationsAvailable ? (
-              <div className="top-bar-metric">
+              <div className="top-bar-metric" data-testid="shell-status-notifications">
                 <BellRing size={14} />
                 <span>Desktop alerts armed</span>
               </div>
@@ -122,25 +115,26 @@ function Layout() {
                   }}
                   className="top-bar-metric"
                   aria-label="Enable browser alerts"
+                  data-testid="shell-status-notifications"
                 >
                   <Bell size={14} />
                   <span>{browserNotificationLabel}</span>
                 </button>
               ) : (
-                <div className="top-bar-metric">
+                <div className="top-bar-metric" data-testid="shell-status-notifications">
                   <BrowserNotificationIcon size={14} />
                   <span>{browserNotificationLabel}</span>
                 </div>
               )
             ) : null}
             {batteryPercent !== null ? (
-              <div className="top-bar-metric">
+              <div className="top-bar-metric" data-testid="shell-status-battery">
                 <Battery size={14} />
                 <span>{batteryPercent}% battery</span>
               </div>
             ) : null}
             {lastUpdate ? (
-              <div className="top-bar-metric muted">
+              <div className="top-bar-metric muted" data-testid="shell-status-freshness">
                 <span>{formatRelativeTime(lastUpdate)}</span>
               </div>
             ) : null}
@@ -148,34 +142,6 @@ function Layout() {
         </header>
         <div className="app-content">
           <div className="app-content-inner">
-            <section className="route-hero">
-              <div className="route-hero-copy">
-                <span className="route-hero-kicker">{routeMeta.kicker}</span>
-                <h1 className="route-hero-title">{routeMeta.heroTitle}</h1>
-                <p className="route-hero-summary">{routeMeta.summary}</p>
-              </div>
-              <div className="route-hero-stats" aria-label="Telemetry summary">
-                <div className="route-hero-stat">
-                  <span>Input</span>
-                  <strong>{inputPower} W</strong>
-                </div>
-                <div className="route-hero-stat">
-                  <span>Output</span>
-                  <strong>{outputPower} W</strong>
-                </div>
-                <div className="route-hero-stat">
-                  <span>Net</span>
-                  <strong data-balance={netPower >= 0 ? 'positive' : 'negative'}>
-                    {netPower >= 0 ? '+' : ''}
-                    {netPower} W
-                  </strong>
-                </div>
-                <div className="route-hero-stat">
-                  <span>Freshness</span>
-                  <strong>{lastUpdate ? formatRelativeTime(lastUpdate) : 'Waiting'}</strong>
-                </div>
-              </div>
-            </section>
             <Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/charts" element={<Charts />} />
