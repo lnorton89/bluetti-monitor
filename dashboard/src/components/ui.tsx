@@ -1,4 +1,5 @@
 import React from 'react';
+export { SkeletonCard } from './SkeletonCard';
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
