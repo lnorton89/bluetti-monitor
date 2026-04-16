@@ -49,7 +49,7 @@ Plans:
 Plans:
 - [x] 02-01: Remove remaining legacy Python poller dependencies and dead integration code
 - [x] 02-02: Fix bridge startup, polling, and runtime bugs needed for daily use
-- [ ] 02-03: Add regression checks and document the final architecture boundaries
+- [x] 02-03: Add regression checks and document the final architecture boundaries
 
 ### Phase 3: Add Battery Estimates
 **Goal**: Turn live telemetry into useful runtime and charging estimates inside the dashboard.

@@ -12,6 +12,16 @@ Full monitoring stack for the Bluetti AC500 power station with a real-time deskt
 | `api` | FastAPI REST + WebSocket server | 8000 |
 | `dashboard` | React monitoring UI | 8540 |
 
+### Component Ownership
+
+| Component | Responsibility | Entry Point |
+|-----------|----------------|-------------|
+| Desktop shell (`src/bun/`) | Stack orchestration, service startup, Bluetooth launch | `npm run desktop:dev` |
+| Node bridge (`bluetti-mqtt-node`) | BLE device polling, MQTT publishing | `bluetti-mqtt-node --broker mqtt://localhost:1883 <MAC>` |
+| Python API (`api/`) | MQTT subscription, data persistence, REST/WebSocket serving | `uvicorn main:app --reload` |
+
+Each component owns one clear part of the runtime flow with no duplicate BLE or MQTT code paths.
+
 ---
 
 ## Features
