@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: ui-cleanup-and-reliability
-status: context_gathered
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-16T21:30:00.000Z"
+status: ui_spec_approved
+stopped_at: Phase 6 UI-SPEC approved
+last_updated: "2026-04-16T22:15:00.000Z"
 last_activity: 2026-04-16
 progress:
   total_phases: 0
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 
 Phase: Not started (defining requirements)
 Plan: —
-Status: Phase 6 context gathered
-Last activity: 2026-04-16 — Phase 6 context gathered
+Status: Phase 6 UI-SPEC approved
+Last activity: 2026-04-16 — Phase 6 UI-SPEC approved
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,7 +52,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Plan Phase 6 implementation from the captured shell and navigation decisions
+- Plan Phase 6 implementation from the captured shell, navigation, and UI contract decisions
 - Audit current shell duplication in `dashboard/src/App.tsx`, `dashboard/src/components/Sidebar.tsx`, and `dashboard/src/index.css`
 
 ### Blockers/Concerns
@@ -72,6 +72,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-04-16T21:30:00.000Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-unify-shell-and-navigation/06-CONTEXT.md
+Last session: 2026-04-16T22:15:00.000Z
+Stopped at: Phase 6 UI-SPEC approved
+Resume file: .planning/phases/06-unify-shell-and-navigation/06-UI-SPEC.md
