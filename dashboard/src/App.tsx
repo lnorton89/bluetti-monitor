@@ -11,6 +11,7 @@ import Solar from './pages/Solar';
 import { useBatteryFullNotifications } from './lib/notifications';
 import { useShellStore } from './store/shell';
 import { useWsStore } from './store/ws';
+import { useTelemetryState } from './hooks/useTelemetryState';
 import { formatRelativeTime } from './lib/time';
 
 const queryClient = new QueryClient({
@@ -27,6 +28,10 @@ function Layout() {
   const shellRouteId = useShellStore((s) => s.routeId);
   const shellSignalValue = useShellStore((s) => s.value);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Telemetry state for stale indicator in shell
+  const { isStale, staleSeverity } = useTelemetryState();
+
   const {
     browserNotificationPermission,
     desktopNotificationsAvailable,
@@ -134,8 +139,18 @@ function Layout() {
               </div>
             ) : null}
             {lastUpdate ? (
-              <div className="top-bar-metric muted" data-testid="shell-status-freshness">
-                <span>{formatRelativeTime(lastUpdate)}</span>
+              <div
+                className="top-bar-metric muted"
+                data-testid="shell-status-freshness"
+                style={{
+                  color: isStale && staleSeverity === 'stale'
+                    ? 'var(--red)'
+                    : isStale && staleSeverity === 'aging'
+                      ? 'var(--amber)'
+                      : undefined
+                }}
+              >
+                <span>{isStale && staleSeverity === 'stale' ? 'Stale: ' : ''}{formatRelativeTime(lastUpdate)}</span>
               </div>
             ) : null}
           </div>
