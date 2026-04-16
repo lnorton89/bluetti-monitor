@@ -18,6 +18,7 @@ import { fetchFields, fetchHistory, type DeviceState, type HistoryPoint } from '
 import { buildCoverageLabel } from '../lib/chartAnalytics';
 import { formatTime } from '../lib/time';
 import { Card, Spinner } from '../components/ui';
+import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 
 const RANGE_PRESETS = [
@@ -98,6 +99,8 @@ type SeriesSummary = {
 export default function Solar() {
   const location = useLocation();
   const wsState = useWsStore((state) => state.state);
+  const setRouteSignal = useShellStore((state) => state.setRouteSignal);
+  const resetRouteSignal = useShellStore((state) => state.resetRouteSignal);
   const liveDevices = Object.keys(wsState);
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
   const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
@@ -174,6 +177,13 @@ export default function Solar() {
   const timeline = solarQuery.data?.timeline ?? [];
   const resolved = solarQuery.data?.resolvedFields ?? resolvedFields;
   const liveSnapshot = buildLiveSnapshot(liveState, resolved);
+  useEffect(() => {
+    setRouteSignal('solar', formatMetricValue(liveSnapshot.totalSolar, 'W'));
+
+    return () => {
+      resetRouteSignal('solar');
+    };
+  }, [liveSnapshot.totalSolar, resetRouteSignal, setRouteSignal]);
   const totalSolarSummary = summarizeSeries(timeline, 'totalSolar');
   const pv1Summary = summarizeSeries(timeline, 'pv1Power');
   const pv2Summary = summarizeSeries(timeline, 'pv2Power');

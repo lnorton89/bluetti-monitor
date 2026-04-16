@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Search, Server, Clock, Tag, Code, Hash, Gauge } from 'lucide-react';
+import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 import { getFieldMeta, formatObjectValue, categoryColors, categoryIcons } from '../lib/fields';
 import { Card } from '../components/ui';
@@ -7,6 +8,8 @@ import { formatTime } from '../lib/time';
 
 export default function RawData() {
   const wsState = useWsStore((s) => s.state);
+  const setRouteSignal = useShellStore((s) => s.setRouteSignal);
+  const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
   const [search, setSearch] = useState('');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
 
@@ -49,6 +52,14 @@ export default function RawData() {
       return left[0].localeCompare(right[0]);
     });
   }, [deferredSearch, fields]);
+
+  useEffect(() => {
+    setRouteSignal('raw', `${filtered.length} visible`);
+
+    return () => {
+      resetRouteSignal('raw');
+    };
+  }, [filtered.length, resetRouteSignal, setRouteSignal]);
 
   if (devices.length === 0) {
     return (
