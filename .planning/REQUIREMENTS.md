@@ -13,7 +13,7 @@
 
 ### Integration
 
-- [ ] **INTG-01**: User gets reliable live AC500 monitoring from the `bluetti-mqtt-node` bridge during normal startup and steady-state polling
+- [x] **INTG-01**: User gets reliable live AC500 monitoring from the `bluetti-mqtt-node` bridge during normal startup and steady-state polling
 - [ ] **INTG-02**: User benefits from a clear runtime boundary where the desktop shell, Node bridge, and Python API do not duplicate BLE or MQTT responsibilities
 - [ ] **INTG-03**: User can verify the migration path with tests or repeatable checks that cover startup and live telemetry flow
 
@@ -61,7 +61,7 @@
 | MIGR-01 | Phase 1 | Complete (2026-04-03) |
 | MIGR-02 | Phase 1 | Complete (2026-04-03) |
 | MIGR-03 | Phase 2 | Complete |
-| INTG-01 | Phase 2 | Pending |
+| INTG-01 | Phase 2 | Complete |
 | INTG-02 | Phase 2 | Pending |
 | INTG-03 | Phase 2 | Pending |
 | BATT-01 | Phase 3 | Pending |
