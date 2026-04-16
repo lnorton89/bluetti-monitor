@@ -251,107 +251,6 @@ input:focus-visible,
   text-overflow: ellipsis;
 }
 
-.route-hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
-  gap: 18px;
-  padding: 22px 24px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.1), transparent 24%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 92%, transparent), color-mix(in srgb, var(--bg-3) 90%, transparent));
-  box-shadow: var(--surface-shadow-soft);
-}
-
-.route-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(120deg, rgba(255,255,255,0.05), transparent 42%, transparent 62%, rgba(255,255,255,0.02));
-}
-
-.route-hero-copy,
-.route-hero-stats {
-  position: relative;
-  z-index: 1;
-}
-
-.route-hero-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.route-hero-kicker {
-  color: var(--text-muted);
-  font-family: var(--font-cond);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.route-hero-title {
-  font-family: var(--font-cond);
-  font-size: clamp(30px, 4vw, 42px);
-  line-height: 0.95;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.route-hero-summary {
-  max-width: 60ch;
-  color: var(--text-dim);
-  font-size: 15px;
-}
-
-.route-hero-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-self: stretch;
-}
-
-.route-hero-stat {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 108px;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-2) 80%, transparent);
-}
-
-.route-hero-stat span {
-  color: var(--text-muted);
-  font-family: var(--font-cond);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.route-hero-stat strong {
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: clamp(20px, 2vw, 26px);
-  font-weight: 400;
-  overflow-wrap: anywhere;
-}
-
-.route-hero-stat strong[data-balance="positive"] {
-  color: var(--green);
-}
-
-.route-hero-stat strong[data-balance="negative"] {
-  color: var(--amber);
-}
-
 .top-bar-metrics {
   display: flex;
   align-items: center;
@@ -387,6 +286,16 @@ input:focus-visible,
   font-family: var(--font-mono);
   letter-spacing: 0.02em;
   text-transform: none;
+}
+
+.top-bar-signal {
+  min-height: 44px;
+}
+
+.top-bar-signal strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .sidebar-overlay {
@@ -447,6 +356,7 @@ input:focus-visible,
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 44px;
   margin-bottom: 6px;
   padding: 12px 14px;
   border: 1px solid transparent;
@@ -556,8 +466,8 @@ input:focus-visible,
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
 }
 
 .card {
@@ -2218,6 +2128,7 @@ input:focus-visible,
 
   .top-bar {
     align-items: flex-start;
+    flex-wrap: wrap;
     padding: 12px 16px !important;
   }
 
@@ -2229,12 +2140,15 @@ input:focus-visible,
     font-size: 17px;
   }
 
-  .top-bar-metrics {
+  .top-bar-signal {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: space-between;
   }
 
-  .route-hero,
+  .top-bar-metrics {
+    display: none;
+  }
+
   .control-grid,
   .analytics-score-grid,
   .analytics-insights-grid,
@@ -2243,10 +2157,6 @@ input:focus-visible,
   .solar-insights-grid,
   .solar-detail-grid {
     grid-template-columns: 1fr;
-  }
-
-  .route-hero-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .app-content {
@@ -2360,18 +2270,6 @@ input:focus-visible,
 
   .top-bar {
     gap: 12px;
-  }
-
-  .route-hero {
-    padding: 18px 16px;
-  }
-
-  .route-hero-title {
-    font-size: 28px;
-  }
-
-  .route-hero-stats {
-    grid-template-columns: 1fr;
   }
 
   .top-bar-metric {

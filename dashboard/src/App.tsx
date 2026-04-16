@@ -87,7 +87,7 @@ function Layout() {
             <span className="top-bar-kicker">Workspace</span>
             <span className="top-bar-title" data-testid="shell-title">{routeMeta.shellTitle}</span>
           </div>
-          <div className="top-bar-metric muted" data-testid="shell-route-signal">
+          <div className="top-bar-metric muted top-bar-signal" data-testid="shell-route-signal">
             <span>{routeMeta.mobileSignalLabel}</span>
             <strong>{routeSignalValue}</strong>
           </div>
