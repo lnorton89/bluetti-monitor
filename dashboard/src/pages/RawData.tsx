@@ -1,19 +1,23 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Search, Server, Clock, Tag, Code, Hash, Gauge } from 'lucide-react';
+import { Search, Server, Clock, Tag, Code, Hash, Gauge, RefreshCw, Wifi } from 'lucide-react';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 import { getFieldMeta, formatObjectValue, categoryColors, categoryIcons } from '../lib/fields';
 import { Card } from '../components/ui';
+import { SkeletonCard } from '../components/SkeletonCard';
+import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatTime } from '../lib/time';
 
 export default function RawData() {
   const wsState = useWsStore((s) => s.state);
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
+
+  // Telemetry state for loading/offline/stale detection
+  const { isLoading, isOffline, isStale, staleSeverity, reconnect, devices } = useTelemetryState();
+
   const [search, setSearch] = useState('');
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
-
-  const devices = Object.keys(wsState);
   const device = selectedDevice ?? devices[0] ?? '';
   const fields = wsState[device] ?? {};
   const deferredSearch = useDeferredValue(search);
@@ -61,6 +65,16 @@ export default function RawData() {
     };
   }, [filtered.length, resetRouteSignal, setRouteSignal]);
 
+  // Show loading skeleton on initial load
+  if (isLoading) {
+    return (
+      <div className="page-stack animate-fade-in">
+        <SkeletonCard lines={8} />
+        <SkeletonCard lines={5} />
+      </div>
+    );
+  }
+
   if (devices.length === 0) {
     return (
       <div className="page-stack animate-fade-in">
@@ -76,6 +90,28 @@ export default function RawData() {
 
   return (
     <div className="page-stack animate-fade-in">
+      {/* Offline banner when disconnected */}
+      {isOffline && (
+        <div className="offline-banner">
+          <span>
+            <Wifi size={16} />
+            Connection lost. Reconnecting...
+          </span>
+          <button onClick={reconnect}>
+            <RefreshCw size={14} style={{ marginRight: 6 }} />
+            Retry now
+          </button>
+        </div>
+      )}
+
+      {/* Stale data indicator */}
+      {isStale && staleSeverity && (
+        <div className="stale-indicator" data-severity={staleSeverity}>
+          <RefreshCw size={12} />
+          <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>
+        </div>
+      )}
+
       <Card className="workspace-panel">
         <div className="workspace-panel-header">
           <div className="workspace-panel-copy">

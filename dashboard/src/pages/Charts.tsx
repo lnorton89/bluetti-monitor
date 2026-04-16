@@ -31,8 +31,10 @@ import {
   Layers3,
   LineChart as LineChartIcon,
   Plus,
+  RefreshCw,
   Search,
   Sun,
+  Wifi,
   X,
   Zap,
 } from 'lucide-react';
@@ -49,6 +51,8 @@ import {
 import { categoryColors, formatValue, getFieldMeta } from '../lib/fields';
 import { formatTime } from '../lib/time';
 import { Card, Spinner } from '../components/ui';
+import { SkeletonCard } from '../components/SkeletonCard';
+import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 
@@ -85,6 +89,10 @@ export default function Charts() {
   const setRouteSignal = useShellStore((state) => state.setRouteSignal);
   const resetRouteSignal = useShellStore((state) => state.resetRouteSignal);
   const liveDevices = Object.keys(wsState);
+
+  // Telemetry state for loading/offline/stale detection
+  const { isLoading, isOffline, isStale, staleSeverity, reconnect } = useTelemetryState();
+
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
   const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
   const [focus, setFocus] = useState<FocusId>('balance');
@@ -248,6 +256,36 @@ export default function Charts() {
 
   return (
     <div className="page-stack animate-fade-in">
+      {/* Show loading skeleton on initial load */}
+      {isLoading && (
+        <>
+          <SkeletonCard lines={6} />
+          <SkeletonCard lines={4} />
+        </>
+      )}
+
+      {/* Offline banner when disconnected */}
+      {isOffline && (
+        <div className="offline-banner">
+          <span>
+            <Wifi size={16} />
+            Connection lost. Reconnecting...
+          </span>
+          <button onClick={reconnect}>
+            <RefreshCw size={14} style={{ marginRight: 6 }} />
+            Retry now
+          </button>
+        </div>
+      )}
+
+      {/* Stale data indicator */}
+      {isStale && staleSeverity && (
+        <div className="stale-indicator" data-severity={staleSeverity}>
+          <RefreshCw size={12} />
+          <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>
+        </div>
+      )}
+
       <Card className="analytics-hero-card">
         <div className="analytics-hero-top">
           <div className="analytics-hero-copy">

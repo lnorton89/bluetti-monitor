@@ -9,6 +9,7 @@ import {
   Info,
   MoonStar,
   Plug,
+  RefreshCw,
   ShieldCheck,
   Split,
   Sun,
@@ -18,6 +19,8 @@ import {
 import { useWsStore } from '../store/ws';
 import { useShellStore } from '../store/shell';
 import { BoolBadge, Card } from '../components/ui';
+import { SkeletonCard } from '../components/SkeletonCard';
+import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { BatteryEstimates } from '../components/BatteryEstimates';
 
@@ -590,7 +593,13 @@ export default function Overview() {
   const connected = useWsStore((s) => s.connected);
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
-  const devices = Object.keys(wsState);
+
+  // Telemetry state for loading/offline/stale detection
+  const { isLoading, isOffline, isStale, staleSeverity, reconnect, devices } = useTelemetryState();
+
+  // Stale indicator - show above content when data is aging/stale
+  const showStaleIndicator = isStale && staleSeverity;
+
   const primaryState = devices[0] ? wsState[devices[0]] : null;
   const primaryBattery = primaryState ? getNumber(primaryState, 'total_battery_percent') : null;
 
@@ -603,27 +612,57 @@ export default function Overview() {
     };
   }, [primaryBattery, resetRouteSignal, setRouteSignal]);
 
-  if (devices.length === 0) {
+  // Show loading skeleton on initial load
+  if (isLoading) {
     return (
-      <div className="empty-state-card">
-        <div className="empty-state-title">Waiting for live data</div>
-        <div className="empty-state-copy">
-          Start `bluetti-mqtt`, confirm the broker connection, and this dashboard will begin filling in automatically.
-        </div>
+      <div className="overview-page animate-fade-in">
+        <SkeletonCard lines={8} />
+        <SkeletonCard lines={5} />
       </div>
     );
   }
 
   return (
     <div className="overview-page animate-fade-in">
-      {devices.map((deviceId) => (
-        <Ac500Overview
-          key={deviceId}
-          deviceId={deviceId}
-          state={wsState[deviceId]}
-          connected={connected}
-        />
-      ))}
+      {/* Stale data indicator */}
+      {showStaleIndicator && (
+        <div className="stale-indicator" data-severity={staleSeverity!}>
+          <RefreshCw size={12} />
+          <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>
+        </div>
+      )}
+
+      {/* Offline banner when disconnected */}
+      {isOffline && (
+        <div className="offline-banner">
+          <span>
+            <Wifi size={16} />
+            Connection lost. Reconnecting...
+          </span>
+          <button onClick={reconnect}>
+            <RefreshCw size={14} style={{ marginRight: 6 }} />
+            Retry now
+          </button>
+        </div>
+      )}
+
+      {devices.length === 0 ? (
+        <div className="empty-state-card">
+          <div className="empty-state-title">Waiting for live data</div>
+          <div className="empty-state-copy">
+            Start `bluetti-mqtt`, confirm the broker connection, and this dashboard will begin filling in automatically.
+          </div>
+        </div>
+      ) : (
+        devices.map((deviceId) => (
+          <Ac500Overview
+            key={deviceId}
+            deviceId={deviceId}
+            state={wsState[deviceId]}
+            connected={connected}
+          />
+        ))
+      )}
     </div>
   );
 }

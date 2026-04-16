@@ -13,11 +13,13 @@ import {
   YAxis,
 } from 'recharts';
 import { useLocation } from 'react-router-dom';
-import { Battery, Gauge, LineChart as LineChartIcon, Sun, Zap } from 'lucide-react';
+import { Battery, Gauge, LineChart as LineChartIcon, RefreshCw, Sun, Wifi, Zap } from 'lucide-react';
 import { fetchFields, fetchHistory, type DeviceState, type HistoryPoint } from '../lib/api';
 import { buildCoverageLabel } from '../lib/chartAnalytics';
 import { formatTime } from '../lib/time';
 import { Card, Spinner } from '../components/ui';
+import { SkeletonCard } from '../components/SkeletonCard';
+import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 
@@ -102,6 +104,10 @@ export default function Solar() {
   const setRouteSignal = useShellStore((state) => state.setRouteSignal);
   const resetRouteSignal = useShellStore((state) => state.resetRouteSignal);
   const liveDevices = Object.keys(wsState);
+
+  // Telemetry state for loading/offline/stale detection
+  const { isLoading, isOffline, isStale, staleSeverity, reconnect } = useTelemetryState();
+
   const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
   const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
   const [focus, setFocus] = useState<FocusId>('generation');
@@ -213,6 +219,36 @@ export default function Solar() {
 
   return (
     <div className="page-stack animate-fade-in">
+      {/* Show loading skeleton on initial load */}
+      {isLoading && (
+        <>
+          <SkeletonCard lines={6} />
+          <SkeletonCard lines={4} />
+        </>
+      )}
+
+      {/* Offline banner when disconnected */}
+      {isOffline && (
+        <div className="offline-banner">
+          <span>
+            <Wifi size={16} />
+            Connection lost. Reconnecting...
+          </span>
+          <button onClick={reconnect}>
+            <RefreshCw size={14} style={{ marginRight: 6 }} />
+            Retry now
+          </button>
+        </div>
+      )}
+
+      {/* Stale data indicator */}
+      {isStale && staleSeverity && (
+        <div className="stale-indicator" data-severity={staleSeverity}>
+          <RefreshCw size={12} />
+          <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>
+        </div>
+      )}
+
       <Card className="analytics-hero-card solar-hero-card">
         <div className="analytics-hero-top">
           <div className="analytics-hero-copy">
