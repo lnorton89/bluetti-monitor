@@ -833,6 +833,46 @@ input:focus-visible,
   font-size: 13px;
 }
 
+.battery-estimates {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-2);
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.estimate-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.estimate-item.charging .estimate-icon {
+  color: var(--green);
+}
+
+.estimate-icon {
+  color: var(--text-dim);
+}
+
+.estimate-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.estimate-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.estimate-item.charging .estimate-value {
+  color: var(--green);
+}
+
 .power-flow-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
@@ -1519,6 +1559,494 @@ input:focus-visible,
   padding: 40px;
 }
 
+.analytics-hero-card,
+.analytics-report-card,
+.analytics-custom-card,
+.analytics-explorer-card,
+.analytics-score-card,
+.analytics-insight-card {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 95%, transparent), color-mix(in srgb, var(--bg-3) 90%, transparent));
+}
+
+.analytics-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.analytics-hero-top,
+.analytics-report-head,
+.analytics-field-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.analytics-hero-copy,
+.analytics-field-copy,
+.analytics-report-body,
+.analytics-chart-shell,
+.analytics-field-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-hero-copy {
+  gap: 8px;
+  min-width: 0;
+}
+
+.analytics-hero-title,
+.analytics-report-title {
+  color: var(--text);
+  font-family: var(--font-cond);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.analytics-hero-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+}
+
+.analytics-report-title {
+  font-size: 22px;
+}
+
+.analytics-toolbar,
+.analytics-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.analytics-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-3) 84%, transparent);
+  flex-wrap: wrap;
+}
+
+.analytics-focus-strip {
+  flex: 1 1 420px;
+}
+
+.analytics-segment-button,
+.analytics-field-action,
+.analytics-selection-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.analytics-segment-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-cond);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-segment-button.active,
+.analytics-field-action.active {
+  background: var(--amber-glow);
+  border-color: color-mix(in srgb, var(--amber) 44%, var(--border));
+  color: var(--amber);
+}
+
+.analytics-score-grid,
+.analytics-insights-grid,
+.analytics-detail-grid,
+.analytics-side-stats {
+  display: grid;
+  gap: 16px;
+}
+
+.analytics-score-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.analytics-insights-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.analytics-detail-grid {
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+}
+
+.analytics-side-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analytics-score-label,
+.analytics-score-trend,
+.analytics-score-detail,
+.analytics-insight-label,
+.analytics-insight-detail,
+.analytics-report-copy,
+.analytics-field-meta,
+.analytics-side-stat small {
+  color: var(--text-dim);
+}
+
+.analytics-score-label,
+.analytics-insight-label,
+.analytics-report-meta,
+.analytics-side-stat span {
+  font-family: var(--font-cond);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.analytics-score-value,
+.analytics-insight-value,
+.analytics-side-stat strong {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+.analytics-score-value {
+  margin-top: 14px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1;
+}
+
+.analytics-score-trend {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.analytics-score-detail,
+.analytics-insight-detail,
+.analytics-report-copy,
+.analytics-side-stat small {
+  font-size: 13px;
+}
+
+.analytics-insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.analytics-insight-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analytics-insight-value {
+  font-size: 26px;
+  line-height: 1.05;
+}
+
+.analytics-report-copy {
+  margin-top: 8px;
+  max-width: 62ch;
+}
+
+.analytics-report-meta {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.analytics-report-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-3) 86%, transparent);
+}
+
+.analytics-report-body {
+  gap: 18px;
+}
+
+.analytics-chart-shell {
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-3) 88%, transparent);
+}
+
+.analytics-chart-shell.compact {
+  min-height: 320px;
+}
+
+.analytics-side-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 112px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-3) 84%, transparent);
+}
+
+.analytics-side-stat strong {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.analytics-inline-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+}
+
+.analytics-selection-row {
+  gap: 10px;
+}
+
+.analytics-selection-chip {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-3) 84%, transparent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.analytics-field-list {
+  gap: 10px;
+  max-height: 720px;
+  overflow: auto;
+}
+
+.analytics-field-row {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-3) 84%, transparent);
+}
+
+.analytics-field-copy {
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.analytics-field-topline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.analytics-field-topline strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.analytics-field-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.analytics-field-meta span:last-child {
+  color: var(--text);
+}
+
+.analytics-field-action {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: transparent;
+  font-family: var(--font-cond);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.solar-hero-card,
+.solar-report-card,
+.solar-input-detail-card,
+.solar-forecast-card,
+.solar-mapping-card {
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 95%, transparent), color-mix(in srgb, var(--bg-3) 90%, transparent));
+}
+
+.solar-score-grid,
+.solar-insights-grid,
+.solar-detail-grid,
+.solar-string-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.solar-score-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.solar-insights-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.solar-detail-grid {
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+}
+
+.solar-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solar-string-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.solar-input-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 156px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-3) 86%, transparent);
+}
+
+.solar-input-card-header,
+.solar-input-card-row,
+.solar-mapping-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.solar-input-card-header span,
+.solar-input-card-row span,
+.solar-forecast-meta span,
+.solar-mapping-row span {
+  color: var(--text-dim);
+}
+
+.solar-input-card-header span,
+.solar-input-card-row span,
+.solar-mapping-row span {
+  font-family: var(--font-cond);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.solar-input-card-header strong,
+.solar-input-card-row strong,
+.solar-forecast-value,
+.solar-mapping-row strong {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+.solar-input-card-header strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.solar-input-card-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.solar-input-card-foot {
+  margin-top: auto;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.solar-input-shared-note {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.solar-forecast-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.solar-forecast-value {
+  font-size: clamp(34px, 4vw, 46px);
+  line-height: 0.95;
+  color: var(--cat-battery);
+}
+
+.solar-forecast-meta,
+.solar-mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.solar-forecast-meta span,
+.solar-mapping-row strong {
+  font-size: 13px;
+}
+
+.solar-mapping-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.solar-mapping-row {
+  min-width: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.solar-mapping-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.solar-mapping-row strong {
+  max-width: 52%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.solar-mapping-row strong[data-kind="field"] {
+  color: var(--amber);
+}
+
 .data-table-shell {
   padding: 0;
   overflow: hidden;
@@ -1707,7 +2235,13 @@ input:focus-visible,
   }
 
   .route-hero,
-  .control-grid {
+  .control-grid,
+  .analytics-score-grid,
+  .analytics-insights-grid,
+  .analytics-detail-grid,
+  .solar-score-grid,
+  .solar-insights-grid,
+  .solar-detail-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1764,8 +2298,19 @@ input:focus-visible,
   }
 
   .hero-grid,
-  .power-flow-panel {
+  .power-flow-panel,
+  .analytics-side-stats {
     grid-template-columns: 1fr !important;
+  }
+
+  .solar-string-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .analytics-toolbar,
+  .analytics-segmented,
+  .analytics-report-meta {
+    width: 100%;
   }
 
   .info-row {
@@ -1853,7 +2398,14 @@ input:focus-visible,
   .summary-grid,
   .category-grid,
   .detail-grid,
-  .switchboard-grid {
+  .switchboard-grid,
+  .analytics-score-grid,
+  .analytics-insights-grid,
+  .analytics-detail-grid,
+  .solar-score-grid,
+  .solar-insights-grid,
+  .solar-detail-grid,
+  .solar-string-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1888,5 +2440,96 @@ input:focus-visible,
 
   .mode-chip {
     width: 100%;
+  }
+
+  .analytics-report-title,
+  .analytics-hero-title {
+    font-size: 18px;
+  }
+
+  .analytics-field-meta,
+  .analytics-field-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .analytics-field-action {
+    width: 100%;
+  }
+
+  .solar-input-card-header,
+  .solar-input-card-row,
+  .solar-mapping-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .solar-mapping-row strong {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .power-flow-panel {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  .power-flow-arrow {
+    display: none;
+  }
+
+  .power-node {
+    text-align: left;
+  }
+
+  .power-node-total {
+    font-size: clamp(20px, 5vw, 28px);
+  }
+
+  .hero-battery-bar {
+    height: 16px;
+  }
+
+  .battery-estimates {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .sidebar-nav-link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .data-table-scroll {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .sidebar-overlay {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .top-bar-metric {
+    min-height: 44px;
+  }
+
+  .analytics-segmented {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .analytics-segment-button {
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .chart-card-title {
+    font-size: 16px;
+  }
+
+  .workspace-search {
+    min-height: 48px;
   }
 }
