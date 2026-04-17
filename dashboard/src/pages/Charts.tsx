@@ -50,19 +50,14 @@ import {
 } from '../lib/chartAnalytics';
 import { categoryColors, formatValue, getFieldMeta } from '../lib/fields';
 import { formatTime } from '../lib/time';
-import { Card, Spinner } from '../components/ui';
+import { Card, Spinner, SectionPanel, MetricTile, StatusChip, PageHeader, EmptyState } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
+import { RANGE_PRESETS, useDeviceSelector } from '../lib/shared-controls';
 
 const CHART_COLORS = ['#38bdf8', '#f59e0b', '#34d399', '#f472b6', '#a78bfa', '#f87171'];
-const RANGE_PRESETS = [
-  { id: '1h', label: '1H', minutes: 60, limit: 720, bucketMs: 60_000 },
-  { id: '6h', label: '6H', minutes: 360, limit: 2_400, bucketMs: 5 * 60_000 },
-  { id: '24h', label: '24H', minutes: 1_440, limit: 5_000, bucketMs: 15 * 60_000 },
-  { id: '72h', label: '3D', minutes: 4_320, limit: 5_000, bucketMs: 60 * 60_000 },
-] as const;
 const FOCUS_OPTIONS = [
   { id: 'balance', label: 'Power balance', icon: Gauge },
   { id: 'sources', label: 'Input sources', icon: Sun },
@@ -93,7 +88,7 @@ export default function Charts() {
   // Telemetry state for loading/offline/stale detection
   const { isLoading, isOffline, isStale, staleSeverity, reconnect } = useTelemetryState();
 
-  const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
+  const { selectedDevice, setSelectedDevice } = useDeviceSelector(liveDevices);
   const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
   const [focus, setFocus] = useState<FocusId>('balance');
   const [customFields, setCustomFields] = useState<string[]>([]);
@@ -104,16 +99,6 @@ export default function Charts() {
   useEffect(() => {
     setIsActive(location.pathname === '/charts');
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (liveDevices.length === 0) {
-      setSelectedDevice('');
-      return;
-    }
-    if (!selectedDevice || !liveDevices.includes(selectedDevice)) {
-      setSelectedDevice(liveDevices[0]);
-    }
-  }, [liveDevices, selectedDevice]);
 
   const range = RANGE_PRESETS.find((preset) => preset.id === rangeId) ?? RANGE_PRESETS[2];
   const sinceIso = new Date(Date.now() - range.minutes * 60_000).toISOString();
@@ -214,12 +199,10 @@ export default function Charts() {
   if (liveDevices.length === 0) {
     return (
       <div className="page-stack animate-fade-in">
-        <div className="empty-state-card">
-          <div className="empty-state-title">Waiting for chart data</div>
-          <div className="empty-state-copy">
-            As soon as the live stream comes online, this page will turn into an analysis workspace for power balance, battery behavior, and hardware health.
-          </div>
-        </div>
+        <EmptyState
+          title="Waiting for chart data"
+          description="As soon as the live stream comes online, this page will turn into an analysis workspace for power balance, battery behavior, and hardware health."
+        />
       </div>
     );
   }
@@ -286,24 +269,20 @@ export default function Charts() {
         </div>
       )}
 
-      <Card className="analytics-hero-card">
-        <div className="analytics-hero-top">
-          <div className="analytics-hero-copy">
-            <div className="workspace-panel-kicker">Telemetry analytics</div>
-            <div className="analytics-hero-title">
-              <Activity size={18} />
-              <span>Charts that explain what the AC500 has been doing</span>
+      <Card className="analytics-hero-card surface-card">
+        <PageHeader
+          kicker="Telemetry analytics"
+          title="Charts that explain what the AC500 has been doing"
+          icon={Activity}
+          description="This workspace turns the field history you are already collecting into report-style views for power balance, charging posture, battery movement, and thermal behavior."
+          meta={
+            <div className="workspace-panel-meta">
+              <StatusChip label={analytics?.bucketLabel ?? buildCoverageLabel(range.bucketMs)} variant="info" />
+              <StatusChip label={`${timeline.length} plotted buckets`} variant="default" />
+              <StatusChip label={`${numericFields.length} numeric fields available`} variant="default" />
             </div>
-            <p className="workspace-panel-summary">
-              This workspace turns the field history you are already collecting into report-style views for power balance, charging posture, battery movement, and thermal behavior.
-            </p>
-          </div>
-          <div className="workspace-panel-meta">
-            <span>{analytics?.bucketLabel ?? buildCoverageLabel(range.bucketMs)}</span>
-            <span>{timeline.length} plotted buckets</span>
-            <span>{numericFields.length} numeric fields available</span>
-          </div>
-        </div>
+          }
+        />
         <div className="analytics-toolbar">
           <select value={selectedDevice} onChange={(event) => setSelectedDevice(event.target.value)} className="ui-select workspace-select" style={selectStyle}>
             {liveDevices.map((device) => (
@@ -327,9 +306,9 @@ export default function Charts() {
                 </button>
               );
             })}
-          </div>
-        </div>
-      </Card>
+              </div>
+            </div>
+          </SectionPanel>
 
       {analyticsQuery.isLoading || isLoadingFields ? (
         <Card className="chart-card-surface"><div className="chart-loading-shell"><Spinner /></div></Card>
@@ -346,31 +325,32 @@ export default function Charts() {
 
       {timeline.length > 0 ? (
         <>
-          <div className="analytics-score-grid">
-            <AnalyticsScoreCard label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} trend={formatDelta(batterySummary?.change, '%', 1)} detail={`Window ${formatMetricValue(batterySummary?.min, '%', 1)} to ${formatMetricValue(batterySummary?.max, '%', 1)}`} accent="var(--cat-battery)" />
-            <AnalyticsScoreCard label="Average input cover" value={coverageRatio === null ? '--' : `${coverageRatio}%`} trend={solarShare === null ? 'Solar share --' : `Solar ${solarShare}%`} detail={`Input ${formatMetricValue(inputSummary?.avg, 'W')} / load ${formatMetricValue(outputSummary?.avg, 'W')}`} accent="var(--cat-input)" />
-            <AnalyticsScoreCard label="Load intensity" value={formatMetricValue(outputSummary?.max, 'W')} trend={`Avg ${formatMetricValue(outputSummary?.avg, 'W')}`} detail={peakLoadPoint ? `Peak at ${formatTime(peakLoadPoint.ts)}` : 'Peak load unavailable'} accent="var(--cat-output)" />
-            <AnalyticsScoreCard label="Charge posture" value={formatSignedMetric(netSummary?.avg, 'W')} trend={chargeShare === null ? 'Charging buckets --' : `${chargeShare}% charging buckets`} detail={gridSummary?.avg && gridSummary.avg > 0 ? `Grid assist ${formatMetricValue(gridSummary.avg, 'W')}` : 'Mostly DC-driven window'} accent="var(--blue)" />
+          <div className="tile-grid tile-grid--cols-4">
+            <MetricTile label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={`Window ${formatMetricValue(batterySummary?.min, '%', 1)} to ${formatMetricValue(batterySummary?.max, '%', 1)}`} accent="var(--cat-battery)" />
+            <MetricTile label="Average input cover" value={coverageRatio === null ? '--' : `${coverageRatio}%`} detail={`Input ${formatMetricValue(inputSummary?.avg, 'W')} / load ${formatMetricValue(outputSummary?.avg, 'W')}`} accent="var(--cat-input)" />
+            <MetricTile label="Load intensity" value={formatMetricValue(outputSummary?.max, 'W')} detail={peakLoadPoint ? `Peak at ${formatTime(peakLoadPoint.ts)}` : 'Peak load unavailable'} accent="var(--cat-output)" />
+            <MetricTile label="Charge posture" value={formatSignedMetric(netSummary?.avg, 'W')} detail={gridSummary?.avg && gridSummary.avg > 0 ? `Grid assist ${formatMetricValue(gridSummary.avg, 'W')}` : 'Mostly DC-driven window'} accent="var(--blue)" />
           </div>
 
-          <div className="analytics-insights-grid">
-            <InsightCard label="Best solar moment" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? `Captured at ${formatTime(peakSolarPoint.ts)}` : 'No solar history in this window'} icon={Sun} />
-            <InsightCard label="Heaviest load" value={peakLoadPoint ? formatMetricValue(peakLoadPoint.totalOutput, 'W') : '--'} detail={peakLoadPoint ? `Demand peaked at ${formatTime(peakLoadPoint.ts)}` : 'No output history in this window'} icon={Zap} />
-            <InsightCard label="Thermal ceiling" value={peakTempPoint ? formatMetricValue(peakTempPoint.internalTemp, 'C', 1) : '--'} detail={peakTempPoint ? `Fan ${formatMetricValue(peakTempPoint.fanSpeed, 'RPM')} at ${formatTime(peakTempPoint.ts)}` : 'No temperature history in this window'} icon={Fan} />
+          <div className="tile-grid tile-grid--cols-3">
+            <MetricTile label="Best solar moment" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? `Captured at ${formatTime(peakSolarPoint.ts)}` : 'No solar history in this window'} icon={Sun} />
+            <MetricTile label="Heaviest load" value={peakLoadPoint ? formatMetricValue(peakLoadPoint.totalOutput, 'W') : '--'} detail={peakLoadPoint ? `Demand peaked at ${formatTime(peakLoadPoint.ts)}` : 'No output history in this window'} icon={Zap} />
+            <MetricTile label="Thermal ceiling" value={peakTempPoint ? formatMetricValue(peakTempPoint.internalTemp, 'C', 1) : '--'} detail={peakTempPoint ? `Fan ${formatMetricValue(peakTempPoint.fanSpeed, 'RPM')} at ${formatTime(peakTempPoint.ts)}` : 'No temperature history in this window'} icon={Fan} />
           </div>
 
-          <Card className="analytics-report-card">
-            <div className="analytics-report-head">
-              <div>
-                <div className="workspace-panel-kicker">Focus report</div>
-                <div className="analytics-report-title">{getReportTitle(focus)}</div>
-                <p className="analytics-report-copy">{getReportSubtitle(focus, analytics?.resolvedFields ?? resolvedCoreFields)}</p>
-              </div>
+          <SectionPanel
+            title={getReportTitle(focus)}
+            kicker="Focus report"
+            icon={Activity}
+            className="analytics-report-card"
+            meta={
               <div className="analytics-report-meta">
-                <span>{formatTime(analytics?.sinceIso ?? sinceIso)} start</span>
-                <span>{timeline.length} buckets</span>
+                <StatusChip label={`${formatTime(analytics?.sinceIso ?? sinceIso)} start`} variant="default" />
+                <StatusChip label={`${timeline.length} buckets`} variant="default" />
               </div>
-            </div>
+            }
+          >
+            <p className="analytics-report-copy">{getReportSubtitle(focus, analytics?.resolvedFields ?? resolvedCoreFields)}</p>
             <div className="analytics-report-body">
               <div className="analytics-chart-shell">
                 <ResponsiveContainer width="100%" height={320}>
@@ -549,14 +529,6 @@ export default function Charts() {
       ) : null}
     </div>
   );
-}
-
-function AnalyticsScoreCard({ label, value, trend, detail, accent }: { label: string; value: string; trend: string; detail: string; accent: string }) {
-  return <Card className="analytics-score-card"><div className="analytics-score-label">{label}</div><div className="analytics-score-value" style={{ color: accent }}>{value}</div><div className="analytics-score-trend">{trend}</div><div className="analytics-score-detail">{detail}</div></Card>;
-}
-
-function InsightCard({ label, value, detail, icon: Icon }: { label: string; value: string; detail: string; icon: ComponentType<{ size?: number }> }) {
-  return <Card className="analytics-insight-card"><div className="analytics-insight-label"><Icon size={15} /><span>{label}</span></div><div className="analytics-insight-value">{value}</div><div className="analytics-insight-detail">{detail}</div></Card>;
 }
 
 function SideStat({ label, value, detail }: { label: string; value: string; detail: string }) {
