@@ -17,18 +17,12 @@ import { Battery, Gauge, LineChart as LineChartIcon, RefreshCw, Sun, Wifi, Zap }
 import { fetchFields, fetchHistory, type DeviceState, type HistoryPoint } from '../lib/api';
 import { buildCoverageLabel } from '../lib/chartAnalytics';
 import { formatTime } from '../lib/time';
-import { Card, Spinner } from '../components/ui';
+import { Card, Spinner, SectionPanel, MetricTile, InfoRow, StatusChip, PageHeader, EmptyState } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
-
-const RANGE_PRESETS = [
-  { id: '1h', label: '1H', minutes: 60, limit: 720, bucketMs: 60_000 },
-  { id: '6h', label: '6H', minutes: 360, limit: 2_400, bucketMs: 5 * 60_000 },
-  { id: '24h', label: '24H', minutes: 1_440, limit: 5_000, bucketMs: 15 * 60_000 },
-  { id: '72h', label: '3D', minutes: 4_320, limit: 5_000, bucketMs: 60 * 60_000 },
-] as const;
+import { RANGE_PRESETS, useDeviceSelector, type RangePreset } from '../lib/shared-controls';
 
 const FOCUS_OPTIONS = [
   { id: 'generation', label: 'Generation', icon: Sun },
@@ -54,7 +48,6 @@ const SOLAR_FIELD_ALIASES = {
   chargeCeiling: ['battery_range_end'],
 } as const;
 
-type RangePreset = typeof RANGE_PRESETS[number];
 type FocusId = typeof FOCUS_OPTIONS[number]['id'];
 type SolarFieldKey = keyof typeof SOLAR_FIELD_ALIASES;
 type ResolvedSolarFields = Record<SolarFieldKey, string | null>;
@@ -108,7 +101,7 @@ export default function Solar() {
   // Telemetry state for loading/offline/stale detection
   const { isLoading, isOffline, isStale, staleSeverity, reconnect } = useTelemetryState();
 
-  const [selectedDevice, setSelectedDevice] = useState(liveDevices[0] ?? '');
+  const { selectedDevice, setSelectedDevice } = useDeviceSelector(liveDevices);
   const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
   const [focus, setFocus] = useState<FocusId>('generation');
   const [isActive, setIsActive] = useState(false);
@@ -116,17 +109,6 @@ export default function Solar() {
   useEffect(() => {
     setIsActive(location.pathname === '/solar');
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (liveDevices.length === 0) {
-      setSelectedDevice('');
-      return;
-    }
-
-    if (!selectedDevice || !liveDevices.includes(selectedDevice)) {
-      setSelectedDevice(liveDevices[0]);
-    }
-  }, [liveDevices, selectedDevice]);
 
   const range = RANGE_PRESETS.find((preset) => preset.id === rangeId) ?? RANGE_PRESETS[2];
   const sinceIso = new Date(Date.now() - range.minutes * 60_000).toISOString();
@@ -170,12 +152,10 @@ export default function Solar() {
   if (liveDevices.length === 0) {
     return (
       <div className="page-stack animate-fade-in">
-        <div className="empty-state-card">
-          <div className="empty-state-title">Waiting for solar telemetry</div>
-          <div className="empty-state-copy">
-            Once the AC500 starts publishing live input fields, this page will turn into a dedicated solar workspace for both PV inputs, charge tracking, and harvest history.
-          </div>
-        </div>
+        <EmptyState
+          title="Waiting for solar telemetry"
+          description="Once the AC500 starts publishing live input fields, this page will turn into a dedicated solar workspace for both PV inputs, charge tracking, and harvest history."
+        />
       </div>
     );
   }
@@ -249,24 +229,20 @@ export default function Solar() {
         </div>
       )}
 
-      <Card className="analytics-hero-card solar-hero-card">
-        <div className="analytics-hero-top">
-          <div className="analytics-hero-copy">
-            <div className="workspace-panel-kicker">Solar workspace</div>
-            <div className="analytics-hero-title">
-              <Sun size={18} />
-              <span>One place to track both solar inputs and charging progress</span>
+      <Card className="analytics-hero-card solar-hero-card surface-card">
+        <PageHeader
+          kicker="Solar workspace"
+          title="One place to track both solar inputs and charging progress"
+          icon={Sun}
+          description="This page is centered on the AC500's solar-side telemetry: total harvest, per-input string behavior, output coverage, and a battery full-charge estimate tied back to the fields your stack actually receives."
+          meta={
+            <div className="workspace-panel-meta">
+              <StatusChip label={solarQuery.data?.bucketLabel ?? buildCoverageLabel(range.bucketMs)} variant="info" />
+              <StatusChip label={`${timeline.length} plotted buckets`} variant="default" />
+              <StatusChip label={`${countResolvedFields(resolved)} mapped solar fields`} variant="default" />
             </div>
-            <p className="workspace-panel-summary">
-              This page is centered on the AC500&apos;s solar-side telemetry: total harvest, per-input string behavior, output coverage, and a battery full-charge estimate tied back to the fields your stack actually receives.
-            </p>
-          </div>
-          <div className="workspace-panel-meta">
-            <span>{solarQuery.data?.bucketLabel ?? buildCoverageLabel(range.bucketMs)}</span>
-            <span>{timeline.length} plotted buckets</span>
-            <span>{countResolvedFields(resolved)} mapped solar fields</span>
-          </div>
-        </div>
+          }
+        />
 
         <div className="analytics-toolbar">
           <select
@@ -327,74 +303,34 @@ export default function Solar() {
         </Card>
       ) : null}
 
-      <div className="solar-score-grid">
-        <SolarScoreCard
-          label="Solar right now"
-          value={formatMetricValue(liveSnapshot.totalSolar, 'W')}
-          trend={solarShare === null ? 'Solar share --' : `Window solar share ${solarShare}%`}
-          detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'}
-          accent="var(--cat-input)"
-        />
-        <SolarScoreCard
-          label="PV1 input"
-          value={formatMetricValue(liveSnapshot.pv1Power, 'W')}
-          trend={pv1Peak ? `Peak ${formatMetricValue(pv1Peak.pv1Power, 'W')} at ${formatTime(pv1Peak.ts)}` : 'No PV1 peak yet'}
-          detail={describeElectricalLive(liveSnapshot.pv1Voltage, liveSnapshot.pv1Current)}
-          accent="#f472b6"
-        />
-        <SolarScoreCard
-          label="PV2 input"
-          value={formatMetricValue(liveSnapshot.pv2Power, 'W')}
-          trend={pv2Peak ? `Peak ${formatMetricValue(pv2Peak.pv2Power, 'W')} at ${formatTime(pv2Peak.ts)}` : 'No PV2 peak yet'}
-          detail={describeElectricalLive(liveSnapshot.pv2Voltage, liveSnapshot.pv2Current)}
-          accent="#38bdf8"
-        />
-        <SolarScoreCard
-          label="Battery to full"
-          value={formatDuration(chargeEstimate.minutes)}
-          trend={chargeEstimate.targetPercent === null ? chargeEstimate.sourceLabel : `Target ${chargeEstimate.targetPercent}%`}
-          detail={chargeEstimate.detail}
-          accent="var(--cat-battery)"
-        />
+      <div className="tile-grid tile-grid--cols-4">
+        <MetricTile label="Solar right now" value={formatMetricValue(liveSnapshot.totalSolar, 'W')} detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'} accent="var(--cat-input)" />
+        <MetricTile label="PV1 input" value={formatMetricValue(liveSnapshot.pv1Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv1Voltage, liveSnapshot.pv1Current)} accent="#f472b6" />
+        <MetricTile label="PV2 input" value={formatMetricValue(liveSnapshot.pv2Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv2Voltage, liveSnapshot.pv2Current)} accent="#38bdf8" />
+        <MetricTile label="Battery to full" value={formatDuration(chargeEstimate.minutes)} detail={chargeEstimate.detail} accent="var(--cat-battery)" />
       </div>
 
-      <div className="solar-insights-grid">
-        <InsightCard
-          label="Solar coverage now"
-          value={solarCoverage === null ? '--' : `${solarCoverage}%`}
-          detail={liveSnapshot.totalOutput > 0
-            ? `Solar ${formatMetricValue(liveSnapshot.totalSolar, 'W')} vs output ${formatMetricValue(liveSnapshot.totalOutput, 'W')}`
-            : 'No live output load reported right now'}
-          icon={Gauge}
-        />
-        <InsightCard
-          label="Best harvest bucket"
-          value={solarPeak ? formatMetricValue(solarPeak.totalSolar, 'W') : '--'}
-          detail={solarPeak ? `Captured at ${formatTime(solarPeak.ts)}` : 'No solar bucket in this window'}
-          icon={Sun}
-        />
-        <InsightCard
-          label="Battery climb"
-          value={formatSignedMetric(batterySummary?.change, '%', 1)}
-          detail={batterySummary ? `Window ${formatMetricValue(batterySummary.min, '%', 1)} to ${formatMetricValue(batterySummary.max, '%', 1)}` : 'No battery trend in this window'}
-          icon={Battery}
-        />
+      <div className="tile-grid tile-grid--cols-3">
+        <MetricTile label="Solar coverage now" value={solarCoverage === null ? '--' : `${solarCoverage}%`} detail={liveSnapshot.totalOutput > 0 ? `Solar ${formatMetricValue(liveSnapshot.totalSolar, 'W')} vs output ${formatMetricValue(liveSnapshot.totalOutput, 'W')}` : 'No live output load reported right now'} icon={Gauge} />
+        <MetricTile label="Best harvest bucket" value={solarPeak ? formatMetricValue(solarPeak.totalSolar, 'W') : '--'} detail={solarPeak ? `Captured at ${formatTime(solarPeak.ts)}` : 'No solar bucket in this window'} icon={Sun} />
+        <MetricTile label="Battery climb" value={formatSignedMetric(batterySummary?.change, '%', 1)} detail={batterySummary ? `Window ${formatMetricValue(batterySummary.min, '%', 1)} to ${formatMetricValue(batterySummary.max, '%', 1)}` : 'No battery trend in this window'} icon={Battery} />
       </div>
 
       {timeline.length > 0 ? (
         <>
-          <Card className="analytics-report-card solar-report-card">
-            <div className="analytics-report-head">
-              <div>
-                <div className="workspace-panel-kicker">Focus report</div>
-                <div className="analytics-report-title">{getFocusTitle(focus)}</div>
-                <p className="analytics-report-copy">{getFocusSubtitle(focus, resolved, chargeEstimate)}</p>
-              </div>
+          <SectionPanel
+            title={getFocusTitle(focus)}
+            kicker="Focus report"
+            icon={Sun}
+            className="analytics-report-card solar-report-card"
+            meta={
               <div className="analytics-report-meta">
-                <span>{formatTime(solarQuery.data?.sinceIso ?? sinceIso)} start</span>
-                <span>{timeline.length} buckets</span>
+                <StatusChip label={`${formatTime(solarQuery.data?.sinceIso ?? sinceIso)} start`} variant="default" />
+                <StatusChip label={`${timeline.length} buckets`} variant="default" />
               </div>
-            </div>
+            }
+          >
+            <p className="analytics-report-copy">{getFocusSubtitle(focus, resolved, chargeEstimate)}</p>
 
             <div className="analytics-report-body">
               <div className="analytics-chart-shell">
@@ -488,23 +424,24 @@ export default function Solar() {
                 ) : null}
               </div>
             </div>
-          </Card>
+          </SectionPanel>
 
           <div className="solar-detail-grid">
-            <Card className="solar-input-detail-card">
-              <div className="analytics-report-head">
-                <div>
-                  <div className="workspace-panel-kicker">Input detail</div>
-                  <div className="analytics-report-title">Live string health and electrical detail</div>
-                  <p className="analytics-report-copy">
-                    The two solar inputs are broken out here so you can spot mismatched generation, low-voltage behavior, or one string underperforming the other without leaving the page.
-                  </p>
-                </div>
+            <SectionPanel
+              title="Live string health and electrical detail"
+              kicker="Input detail"
+              icon={Gauge}
+              className="solar-input-detail-card"
+              meta={
                 <div className="analytics-report-meta">
-                  <span>{formatMetricValue(liveSnapshot.totalSolar, 'W')} total</span>
-                  <span>{describeInputDetailMode(showSplitCards, hasSplitElectrical, hasSharedElectrical)}</span>
+                  <StatusChip label={`${formatMetricValue(liveSnapshot.totalSolar, 'W')} total`} variant="default" />
+                  <StatusChip label={describeInputDetailMode(showSplitCards, hasSplitElectrical, hasSharedElectrical)} variant="info" />
                 </div>
-              </div>
+              }
+            >
+              <p className="analytics-report-copy">
+                The two solar inputs are broken out here so you can spot mismatched generation, low-voltage behavior, or one string underperforming the other without leaving the page.
+              </p>
 
               <div className="solar-string-grid">
                 {showSplitCards ? (
@@ -604,104 +541,63 @@ export default function Solar() {
                   </div>
                 </div>
               )}
-            </Card>
+            </SectionPanel>
 
             <div className="solar-side-column">
-              <Card className="solar-forecast-card">
-                <div className="workspace-panel-kicker">Charge estimate</div>
-                <div className="analytics-report-title">How long until the battery is full</div>
+              <SectionPanel
+                title="How long until the battery is full"
+                kicker="Charge estimate"
+                icon={Battery}
+                className="solar-forecast-card"
+              >
                 <p className="analytics-report-copy">
                   {chargeEstimate.sourceLabel}. When the AC500 reports a direct time-to-full value, that wins. Otherwise this page derives the estimate from the recent battery-percent climb and the configured charge ceiling.
                 </p>
                 <div className="solar-forecast-value">{formatDuration(chargeEstimate.minutes)}</div>
                 <div className="solar-forecast-meta">
-                  <span>{chargeEstimate.detail}</span>
-                  <span>{chargeEstimate.percentPerHour === null ? 'Charge trend unavailable' : `${chargeEstimate.percentPerHour.toFixed(2)}% per hour`}</span>
-                  <span>{batterySummary ? `Battery now ${formatMetricValue(batterySummary.current, '%', 1)}` : 'Battery reserve unavailable'}</span>
+                  <InfoRow label="Charge detail" value={chargeEstimate.detail} />
+                  <InfoRow label="Charge trend" value={chargeEstimate.percentPerHour === null ? 'Charge trend unavailable' : `${chargeEstimate.percentPerHour.toFixed(2)}% per hour`} />
+                  <InfoRow label="Battery now" value={batterySummary ? formatMetricValue(batterySummary.current, '%', 1) : 'Battery reserve unavailable'} />
                 </div>
-              </Card>
+              </SectionPanel>
 
-              <Card className="solar-mapping-card">
-                <div className="workspace-panel-kicker">Telemetry map</div>
-                <div className="analytics-report-title">Fields driving this solar page</div>
-                <div className="solar-mapping-list">
-                  <MappingRow label="Total solar" field={resolved.totalSolar} />
-                  <MappingRow label="PV1 power" field={resolved.pv1Power} />
-                  <MappingRow label="PV2 power" field={resolved.pv2Power} />
-                  <MappingRow label="PV1 voltage" field={resolved.pv1Voltage} />
-                  <MappingRow label="PV2 voltage" field={resolved.pv2Voltage} />
-                  <MappingRow label="PV1 current" field={resolved.pv1Current} />
-                  <MappingRow label="PV2 current" field={resolved.pv2Current} />
-                  <MappingRow label="Solar bus voltage" field={resolved.solarVoltage} />
-                  <MappingRow label="Solar bus current" field={resolved.solarCurrent} />
-                  <MappingRow label="Battery reserve" field={resolved.batteryPercent} />
-                  <MappingRow label="Battery full time" field={resolved.batteryToFull} />
-                  <MappingRow label="Charge ceiling" field={resolved.chargeCeiling} />
-                </div>
-              </Card>
+              <SectionPanel
+                title="Fields driving this solar page"
+                kicker="Telemetry map"
+                icon={Gauge}
+                className="solar-mapping-card"
+              >
+                <InfoRow label="Total solar" value={resolved.totalSolar ?? 'Unavailable'} />
+                <InfoRow label="PV1 power" value={resolved.pv1Power ?? 'Unavailable'} />
+                <InfoRow label="PV2 power" value={resolved.pv2Power ?? 'Unavailable'} />
+                <InfoRow label="PV1 voltage" value={resolved.pv1Voltage ?? 'Unavailable'} />
+                <InfoRow label="PV2 voltage" value={resolved.pv2Voltage ?? 'Unavailable'} />
+                <InfoRow label="PV1 current" value={resolved.pv1Current ?? 'Unavailable'} />
+                <InfoRow label="PV2 current" value={resolved.pv2Current ?? 'Unavailable'} />
+                <InfoRow label="Solar bus voltage" value={resolved.solarVoltage ?? 'Unavailable'} />
+                <InfoRow label="Solar bus current" value={resolved.solarCurrent ?? 'Unavailable'} />
+                <InfoRow label="Battery reserve" value={resolved.batteryPercent ?? 'Unavailable'} />
+                <InfoRow label="Battery full time" value={resolved.batteryToFull ?? 'Unavailable'} />
+                <InfoRow label="Charge ceiling" value={resolved.chargeCeiling ?? 'Unavailable'} />
+              </SectionPanel>
 
-              <Card className="solar-mapping-card">
-                <div className="workspace-panel-kicker">Solar posture</div>
-                <div className="analytics-report-title">What the window says</div>
-                <div className="solar-mapping-list">
-                  <MappingRow label="Average solar" field={formatMetricValue(totalSolarSummary?.avg, 'W')} numeric />
-                  <MappingRow label="Average grid assist" field={formatMetricValue(gridSummary?.avg, 'W')} numeric />
-                  <MappingRow label="Average load" field={formatMetricValue(outputSummary?.avg, 'W')} numeric />
-                  <MappingRow label="Solar minus load" field={formatSignedMetric(solarNetSummary?.avg, 'W')} numeric />
-                  <MappingRow label="Battery change" field={formatSignedMetric(batterySummary?.change, '%', 1)} numeric />
-                </div>
-              </Card>
+              <SectionPanel
+                title="What the window says"
+                kicker="Solar posture"
+                icon={Gauge}
+                className="solar-mapping-card"
+              >
+                <InfoRow label="Average solar" value={formatMetricValue(totalSolarSummary?.avg, 'W')} />
+                <InfoRow label="Average grid assist" value={formatMetricValue(gridSummary?.avg, 'W')} />
+                <InfoRow label="Average load" value={formatMetricValue(outputSummary?.avg, 'W')} />
+                <InfoRow label="Solar minus load" value={formatSignedMetric(solarNetSummary?.avg, 'W')} />
+                <InfoRow label="Battery change" value={formatSignedMetric(batterySummary?.change, '%', 1)} />
+              </SectionPanel>
             </div>
           </div>
         </>
       ) : null}
     </div>
-  );
-}
-
-function SolarScoreCard({
-  label,
-  value,
-  trend,
-  detail,
-  accent,
-}: {
-  label: string;
-  value: string;
-  trend: string;
-  detail: string;
-  accent: string;
-}) {
-  return (
-    <Card className="analytics-score-card">
-      <div className="analytics-score-label">{label}</div>
-      <div className="analytics-score-value" style={{ color: accent }}>{value}</div>
-      <div className="analytics-score-trend">{trend}</div>
-      <div className="analytics-score-detail">{detail}</div>
-    </Card>
-  );
-}
-
-function InsightCard({
-  label,
-  value,
-  detail,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: ComponentType<{ size?: number }>;
-}) {
-  return (
-    <Card className="analytics-insight-card">
-      <div className="analytics-insight-label">
-        <Icon size={15} />
-        <span>{label}</span>
-      </div>
-      <div className="analytics-insight-value">{value}</div>
-      <div className="analytics-insight-detail">{detail}</div>
-    </Card>
   );
 }
 
@@ -745,23 +641,6 @@ function SolarInputCard({
         <strong>{formatMetricValue(current, 'A', 1)}</strong>
       </div>
       <div className="solar-input-card-foot">{peak}</div>
-    </div>
-  );
-}
-
-function MappingRow({
-  label,
-  field,
-  numeric = false,
-}: {
-  label: string;
-  field: string | null;
-  numeric?: boolean;
-}) {
-  return (
-    <div className="solar-mapping-row">
-      <span>{label}</span>
-      <strong data-kind={numeric ? 'value' : 'field'}>{field ?? 'Unavailable'}</strong>
     </div>
   );
 }
