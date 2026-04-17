@@ -15,7 +15,7 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
       border: '1px solid var(--border)',
       borderRadius: 8,
       padding: '16px 20px',
-    }} className={`card card-surface ${className}`}>
+    }} className={`card surface-card ${className}`}>
       {children}
     </div>
   );
