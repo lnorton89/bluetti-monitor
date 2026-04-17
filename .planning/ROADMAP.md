@@ -40,7 +40,7 @@ Success criteria:
 
 Plans:
 - [x] 08-01-PLAN.md — Extract shared CSS tokens and surface components
-- [ ] 08-02-PLAN.md — Refactor Overview and RawData to use shared components
+- [x] 08-02-PLAN.md — Refactor Overview and RawData to use shared components
 - [ ] 08-03-PLAN.md — Refactor Charts and Solar to use shared components and controls
 
 #### Phase 9: Finish Responsive Reliability Pass
