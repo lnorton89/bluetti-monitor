@@ -3,7 +3,7 @@ import { Search, Server, Clock, Tag, Code, Hash, Gauge, RefreshCw, Wifi } from '
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 import { getFieldMeta, formatObjectValue, categoryColors, categoryIcons } from '../lib/fields';
-import { Card } from '../components/ui';
+import { Card, PageHeader, StatusChip, EmptyState } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatTime } from '../lib/time';
@@ -78,12 +78,10 @@ export default function RawData() {
   if (devices.length === 0) {
     return (
       <div className="page-stack animate-fade-in">
-        <div className="empty-state-card">
-          <div className="empty-state-title">Waiting for raw fields</div>
-          <div className="empty-state-copy">
-            When the live telemetry stream appears, this explorer will show the exact field keys, labels, categories, values, and update times coming through the stack.
-          </div>
-        </div>
+        <EmptyState
+          title="Waiting for raw fields"
+          description="When the live telemetry stream appears, this explorer will show the exact field keys, labels, categories, values, and update times coming through the stack."
+        />
       </div>
     );
   }
@@ -112,23 +110,19 @@ export default function RawData() {
         </div>
       )}
 
-      <Card className="workspace-panel">
-        <div className="workspace-panel-header">
-          <div className="workspace-panel-copy">
-            <div className="workspace-panel-kicker">Field inventory</div>
-            <div className="workspace-panel-title">
-              <Code size={16} />
-              <span>Inspect the live payload shape</span>
+      <Card className="workspace-panel surface-card">
+        <PageHeader
+          kicker="Field inventory"
+          title="Inspect the live payload shape"
+          icon={Code}
+          description="Search by raw key or display label, switch devices when more than one source is online, and use the table to validate exactly what the monitor is receiving."
+          meta={
+            <div className="workspace-panel-meta">
+              <StatusChip label={`${devices.length} device${devices.length === 1 ? '' : 's'}`} variant="info" />
+              <StatusChip label={`${filtered.length} visible field${filtered.length === 1 ? '' : 's'}`} variant="default" />
             </div>
-            <p className="workspace-panel-summary">
-              Search by raw key or display label, switch devices when more than one source is online, and use the table to validate exactly what the monitor is receiving.
-            </p>
-          </div>
-          <div className="workspace-panel-meta">
-            <span>{devices.length} device{devices.length === 1 ? '' : 's'}</span>
-            <span>{filtered.length} visible field{filtered.length === 1 ? '' : 's'}</span>
-          </div>
-        </div>
+          }
+        />
 
         <div className="control-grid">
           {devices.length > 1 ? (
@@ -138,7 +132,7 @@ export default function RawData() {
                   key={entry}
                   type="button"
                   onClick={() => setSelectedDevice(entry)}
-                  className={`ui-pill-button workspace-pill${device === entry ? ' active' : ''}`}
+                  className={`ui-pill-button${device === entry ? ' chip--active' : ''}`}
                 >
                   <Server size={14} />
                   {entry}
@@ -146,10 +140,7 @@ export default function RawData() {
               ))}
             </div>
           ) : (
-            <div className="workspace-single-device">
-              <Server size={14} />
-              <span>{device}</span>
-            </div>
+            <StatusChip label={device} icon={Server} variant="default" />
           )}
 
           <label className="search-shell workspace-search">

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useWsStore } from '../store/ws';
 import { useShellStore } from '../store/shell';
-import { BoolBadge, Card } from '../components/ui';
+import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, StatusChip, EmptyState } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
@@ -128,61 +128,6 @@ function deviceSerial(state: DeviceState, deviceId: string) {
   return getText(state, 'serial_number') ?? deviceId.replace(/^AC500-/, '');
 }
 
-function SummaryCard({
-  label,
-  value,
-  detail,
-  accent = 'var(--text)',
-}: {
-  label: string;
-  value: string;
-  detail?: string | null;
-  accent?: string;
-}) {
-  return (
-    <Card className="summary-card">
-      <div className="summary-card-label">
-        <span>{label}</span>
-      </div>
-      <div className="summary-card-value" style={{ color: accent }}>
-        {value}
-      </div>
-      {detail ? <div className="summary-card-detail">{detail}</div> : null}
-    </Card>
-  );
-}
-
-function InfoTable({
-  title,
-  icon: Icon,
-  rows,
-}: {
-  title: string;
-  icon: React.ElementType;
-  rows: Array<{ label: string; value: string }>;
-}) {
-  if (rows.length === 0) return null;
-
-  return (
-    <Card className="info-panel">
-      <div className="info-panel-header">
-        <div className="info-panel-title">
-          <Icon size={16} />
-          <span>{title}</span>
-        </div>
-      </div>
-        <div className="info-table">
-          {rows.map((row) => (
-            <div key={row.label} className="info-row">
-              <span className="info-row-label">{row.label}</span>
-              <strong className="info-row-value">{row.value}</strong>
-            </div>
-          ))}
-        </div>
-    </Card>
-  );
-}
-
 function StatPanel({
   title,
   icon: Icon,
@@ -209,22 +154,38 @@ function StatPanel({
   if (resolved.length === 0) return null;
 
   return (
-    <Card className="info-panel">
-      <div className="info-panel-header">
-        <div className="info-panel-title">
-          <Icon size={16} />
-          <span>{title}</span>
-        </div>
-      </div>
-      <div className="stat-grid">
+    <SectionPanel title={title} icon={Icon}>
+      <div className="tile-grid tile-grid--cols-2">
         {resolved.map((item) => (
-          <div key={item.field} className="stat-tile">
-            <span className="stat-tile-label">{item.label}</span>
-            <strong className="stat-tile-value" style={{ color: item.accent ?? 'var(--text)' }}>{item.value}</strong>
-          </div>
+          <MetricTile
+            key={item.field}
+            label={item.label}
+            value={item.value}
+            accent={item.accent}
+          />
         ))}
       </div>
-    </Card>
+    </SectionPanel>
+  );
+}
+
+function InfoTable({
+  title,
+  icon: Icon,
+  rows,
+}: {
+  title: string;
+  icon: React.ElementType;
+  rows: Array<{ label: string; value: string }>;
+}) {
+  if (rows.length === 0) return null;
+
+  return (
+    <SectionPanel title={title} icon={Icon}>
+      {rows.map((row) => (
+        <InfoRow key={row.label} label={row.label} value={row.value} />
+      ))}
+    </SectionPanel>
   );
 }
 
@@ -485,23 +446,23 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
         </div>
 
         <div className="device-status-strip">
-          <div className="device-status-pill" data-online={connected ? 'true' : 'false'}>
-            <span className="device-status-dot" />
-            <span>{connected ? 'Live telemetry stream' : 'Stream offline'}</span>
-          </div>
+          <StatusChip
+            label={connected ? 'Live telemetry stream' : 'Stream offline'}
+            variant={connected ? 'active' : 'error'}
+          />
           {latest ? <div className="device-status-time">Updated {formatRelativeTime(latest)}</div> : null}
         </div>
       </div>
 
       <Hero state={state} />
 
-      <div className="summary-grid">
+      <div className="tile-grid tile-grid--fit">
         {topCards.map((card) => (
-          <SummaryCard
+          <MetricTile
             key={card.label}
             label={card.label}
             value={card.value}
-            detail={card.detail}
+            detail={card.detail ?? undefined}
             accent={card.accent}
           />
         ))}
@@ -554,13 +515,7 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
       </div>
 
       {statusFlags.length > 0 ? (
-        <Card className="status-board-card">
-          <div className="info-panel-header">
-            <div className="info-panel-title">
-              <Bluetooth size={16} />
-              <span>Switchboard</span>
-            </div>
-          </div>
+        <SectionPanel title="Switchboard" icon={Bluetooth}>
           <div className="switchboard-grid">
             {statusFlags.map((flag) => (
               <div key={flag.label} className="switchboard-item">
@@ -569,20 +524,16 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
               </div>
             ))}
           </div>
-        </Card>
+        </SectionPanel>
       ) : null}
 
       {(hasField(state, '_raw') || hasField(state, 'split_phase_machine_mode')) ? (
-        <Card className="ac500-note-card">
-          <div className="ac500-note-header">
-            <Split size={16} />
-            <span>Why This Layout Changed</span>
-          </div>
-          <p>
-            This overview is now based on the AC500’s real telemetry footprint in your stack. It focuses on the fields the device actually publishes here:
+        <SectionPanel title="Why This Layout Changed" icon={Split} className="surface-card--accent-ink">
+          <p style={{ color: 'var(--text-dim)', maxWidth: '72ch', overflowWrap: 'anywhere' }}>
+            This overview is now based on the AC500's real telemetry footprint in your stack. It focuses on the fields the device actually publishes here:
             power flow, internal electrical channels, operating modes, charge window, firmware, and connection state.
           </p>
-        </Card>
+        </SectionPanel>
       ) : null}
     </section>
   );
@@ -647,12 +598,10 @@ export default function Overview() {
       )}
 
       {devices.length === 0 ? (
-        <div className="empty-state-card">
-          <div className="empty-state-title">Waiting for live data</div>
-          <div className="empty-state-copy">
-            Start `bluetti-mqtt`, confirm the broker connection, and this dashboard will begin filling in automatically.
-          </div>
-        </div>
+        <EmptyState
+          title="Waiting for live data"
+          description="Start `bluetti-mqtt`, confirm the broker connection, and this dashboard will begin filling in automatically."
+        />
       ) : (
         devices.map((deviceId) => (
           <Ac500Overview
