@@ -1,5 +1,11 @@
 import React from 'react';
 export { SkeletonCard } from './SkeletonCard';
+export { SectionPanel } from './SectionPanel';
+export { MetricTile } from './MetricTile';
+export { InfoRow } from './InfoRow';
+export { StatusChip } from './StatusChip';
+export { PageHeader } from './PageHeader';
+export { EmptyState } from './EmptyState';
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
