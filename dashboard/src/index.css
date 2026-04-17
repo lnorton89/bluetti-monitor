@@ -479,6 +479,191 @@ input:focus-visible,
   height: 44px;
 }
 
+/* ── Shared surface tokens ──────────────────────────────────────────────────── */
+
+/* Surface card — unified card surface */
+.surface-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 94%, transparent), color-mix(in srgb, var(--bg-3) 86%, transparent));
+}
+
+.surface-card--accent-warm {
+  background:
+    radial-gradient(circle at top left, rgba(244, 114, 182, 0.16), transparent 28%),
+    radial-gradient(circle at top right, rgba(52, 211, 153, 0.12), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 94%, transparent), var(--bg-2));
+}
+
+.surface-card--accent-ink {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 94%, transparent), var(--bg-2));
+}
+
+.surface-card--accent-solar {
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 95%, transparent), color-mix(in srgb, var(--bg-3) 90%, transparent));
+}
+
+/* Section header tokens */
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-kicker {
+  color: var(--text-muted);
+  font-family: var(--font-cond);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-family: var(--font-cond);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* Metric tile tokens */
+.metric-tile {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-3) 86%, transparent);
+  min-width: 0;
+}
+
+.metric-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.metric-value {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 400;
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.metric-detail {
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+/* Chip tokens */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-2) 88%, transparent);
+  color: var(--text-dim);
+  font-family: var(--font-cond);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.chip--active {
+  background: var(--amber-glow);
+  border-color: var(--amber-dim);
+  color: var(--amber);
+}
+
+.chip--error {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 45%, var(--border));
+}
+
+.chip--warning {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 40%, var(--border));
+  background: color-mix(in srgb, var(--amber-glow) 50%, transparent);
+}
+
+.chip--info {
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 40%, var(--border));
+}
+
+.chip--inactive {
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--bg-3) 84%, transparent);
+}
+
+/* Tile grid tokens */
+.tile-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.tile-grid--fit {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.tile-grid--cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tile-grid--cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tile-grid--cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tile-grid--detail {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Info row tokens (formalized from existing .info-row) */
+.info-row-label {
+  min-width: 0;
+  flex: 1 1 120px;
+}
+
+.info-row-value {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  text-align: right;
+  min-width: 0;
+  flex: 1 1 160px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .card {
   position: relative;
   overflow: hidden;
