@@ -1,9 +1,9 @@
 ---
 phase: 09
 slug: finish-responsive-reliability-pass
-status: draft
+status: verified
 nyquist_compliant: true
-wave_0_complete: false
+wave_0_complete: true
 created: 2026-04-19
 ---
 
@@ -39,14 +39,14 @@ created: 2026-04-19
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 09-01-01 | 01 | 1 | UI-10, UI-12 | - | Shell title, route signal, gutters, cards, and chip wrapping stay usable at phone widths without reintroducing a heavy mobile header | build | `npm --prefix dashboard run build` | Yes | pending |
-| 09-01-02 | 01 | 1 | UI-10, UI-11 | - | Shared responsive token updates keep top-bar, tile-grid, and control wrappers stable on narrow screens | build | `npm --prefix dashboard run build` | Yes | pending |
-| 09-02-01 | 02 | 2 | UI-10, UI-11 | - | Overview preserves readable hero, summary, and detail hierarchy on phones while keeping trust-state surfaces | build | `npm --prefix dashboard run build` | Yes | pending |
-| 09-02-02 | 02 | 2 | UI-10, UI-11 | - | Raw Data keeps device switching, search, and field browsing usable on phones without losing the live field contract | build | `npm --prefix dashboard run build` | Yes | pending |
-| 09-03-01 | 03 | 3 | UI-10, UI-11 | - | Charts controls, scorecards, and report surfaces keep readable mobile sequencing | build | `npm --prefix dashboard run build` | Yes | pending |
-| 09-03-02 | 03 | 3 | UI-10, UI-11, UI-12 | - | Solar controls, scorecards, and mapping/detail surfaces keep readable mobile sequencing and shared-product feel | build | `npm --prefix dashboard run build` | Yes | pending |
-| 09-04-01 | 04 | 4 | UI-10, UI-11 | - | New responsive Playwright coverage proves phone-sized navigation and route-level responsive behavior across all main routes | e2e | `npm --prefix dashboard run test:e2e -- tests/phase9-responsive.spec.ts` | No - Wave 4 | pending |
-| 09-04-02 | 04 | 4 | UI-12 | - | Existing smoke and shared-surface suites stay green after responsive changes | e2e | `npm --prefix dashboard run test:e2e` | Yes | pending |
+| 09-01-01 | 01 | 1 | UI-10, UI-12 | - | Shell title, route signal, gutters, cards, and chip wrapping stay usable at phone widths without reintroducing a heavy mobile header | build | `npm --prefix dashboard run build` | Yes | green |
+| 09-01-02 | 01 | 1 | UI-10, UI-11 | - | Shared responsive token updates keep top-bar, tile-grid, and control wrappers stable on narrow screens | build | `npm --prefix dashboard run build` | Yes | green |
+| 09-02-01 | 02 | 2 | UI-10, UI-11 | - | Overview preserves readable hero, summary, and detail hierarchy on phones while keeping trust-state surfaces | build | `npm --prefix dashboard run build` | Yes | green |
+| 09-02-02 | 02 | 2 | UI-10, UI-11 | - | Raw Data keeps device switching, search, and field browsing usable on phones without losing the live field contract | build | `npm --prefix dashboard run build` | Yes | green |
+| 09-03-01 | 03 | 3 | UI-10, UI-11 | - | Charts controls, scorecards, and report surfaces keep readable mobile sequencing | build | `npm --prefix dashboard run build` | Yes | green |
+| 09-03-02 | 03 | 3 | UI-10, UI-11, UI-12 | - | Solar controls, scorecards, and mapping/detail surfaces keep readable mobile sequencing and shared-product feel | build | `npm --prefix dashboard run build` | Yes | green |
+| 09-04-01 | 04 | 4 | UI-10, UI-11 | - | New responsive Playwright coverage proves phone-sized navigation and route-level responsive behavior across all main routes | e2e | `npm --prefix dashboard run test:e2e -- tests/phase9-responsive.spec.ts` | Yes | green |
+| 09-04-02 | 04 | 4 | UI-12 | - | Existing smoke and shared-surface suites stay green after responsive changes | e2e | `npm --prefix dashboard run test:e2e` | Yes | green |
 
 *Status: pending / green / red / flaky*
 
@@ -54,9 +54,9 @@ created: 2026-04-19
 
 ## Wave 0 Requirements
 
-- [ ] `dashboard/tests/phase9-responsive.spec.ts` - add a dedicated responsive regression spec for phone-sized layouts
-- [ ] Add any missing selectors only where existing `data-testid`, labels, or stable route content are insufficient for mobile assertions
-- [ ] Confirm `dashboard/playwright.config.ts` still serves mock mode consistently for the new responsive test flow
+- [x] `dashboard/tests/phase9-responsive.spec.ts` - added a dedicated responsive regression spec for phone-sized layouts
+- [x] Added only selector refinements needed to disambiguate Raw Data assertions after the mobile explorer view was introduced
+- [x] Existing `dashboard/playwright.config.ts` mock-mode flow remained sufficient for the new responsive test run
 
 ---
 
@@ -77,4 +77,4 @@ created: 2026-04-19
 - [x] Feedback latency < 45s
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-04-19

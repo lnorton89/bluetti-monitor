@@ -2,27 +2,28 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** — Core Bluetti monitoring with mobile PWA (shipped 2026-04-16)
-- 🚧 **v1.1 UI Cleanup And Reliability** — In planning
+- [x] **v1.0 MVP** - Core Bluetti monitoring with mobile PWA (shipped 2026-04-16)
+- [ ] **v1.1 UI Cleanup And Reliability** - execution complete, ready for milestone audit
 
 ## Phase Details
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-5) — SHIPPED 2026-04-16</summary>
+<summary>[x] v1.0 MVP (Phases 1-5) - SHIPPED 2026-04-16</summary>
 
-- [x] Phase 1: Complete Bridge Migration (3/3) — completed 2026-04-03
-- [x] Phase 2: Harden Integration Boundaries (3/3) — completed 2026-04-03
-- [x] Phase 3: Add Battery Estimates (3/3) — completed 2026-04-16
-- [x] Phase 4: Ship Mobile LAN Dashboard (2/2) — completed 2026-04-16
-- [x] Phase 5: Installable PWA Polish (2/2) — completed 2026-04-16
+- [x] Phase 1: Complete Bridge Migration (3/3) - completed 2026-04-03
+- [x] Phase 2: Harden Integration Boundaries (3/3) - completed 2026-04-03
+- [x] Phase 3: Add Battery Estimates (3/3) - completed 2026-04-16
+- [x] Phase 4: Ship Mobile LAN Dashboard (2/2) - completed 2026-04-16
+- [x] Phase 5: Installable PWA Polish (2/2) - completed 2026-04-16
 
 </details>
 
-### v1.1 UI Cleanup And Reliability [Planned]
+### v1.1 UI Cleanup And Reliability [Executed]
 
-- [x] Phase 6: Unify Shell And Navigation (0/0) — completed
-- [ ] Phase 7: Fix Telemetry Trust States (2/2) — planned
-- [ ] Phase 8: Consolidate Shared UI Surfaces (3 plans) — planned
+- [x] Phase 6: Unify Shell And Navigation (0/0) - completed 2026-04-16
+- [x] Phase 7: Fix Telemetry Trust States (2/2) - completed 2026-04-17
+- [x] Phase 8: Consolidate Shared UI Surfaces (3/3) - completed 2026-04-16
+- [x] Phase 9: Finish Responsive Reliability Pass (4/4) - completed 2026-04-19
 
 #### Phase 8: Consolidate Shared UI Surfaces
 
@@ -39,9 +40,9 @@ Success criteria:
 3. Spacing, typography, and density feel intentional instead of stitched together.
 
 Plans:
-- [x] 08-01-PLAN.md — Extract shared CSS tokens and surface components
-- [x] 08-02-PLAN.md — Refactor Overview and RawData to use shared components
-- [x] 08-03-PLAN.md — Refactor Charts and Solar to use shared components and controls
+- [x] 08-01-PLAN.md - Extract shared CSS tokens and surface components
+- [x] 08-02-PLAN.md - Refactor Overview and RawData to use shared components
+- [x] 08-03-PLAN.md - Refactor Charts and Solar to use shared components and controls
 
 #### Phase 9: Finish Responsive Reliability Pass
 
@@ -57,6 +58,12 @@ Success criteria:
 2. Tables, segmented controls, and scorecards collapse intentionally instead of breaking.
 3. Mobile feels like a coherent extension of the same dashboard experience.
 
+Plans:
+- [x] 09-01-PLAN.md - Stabilize the shared responsive shell and narrow-screen layout contract
+- [x] 09-02-PLAN.md - Make Overview and Raw Data intentionally usable on phones
+- [x] 09-03-PLAN.md - Make Charts and Solar controls and report surfaces reliable on phones
+- [x] 09-04-PLAN.md - Add responsive regression coverage for the phone-sized dashboard contract
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -67,9 +74,9 @@ Success criteria:
 | 4. Ship Mobile LAN Dashboard | 2/2 | Complete | 2026-04-16 |
 | 5. Installable PWA Polish | 2/2 | Complete | 2026-04-16 |
 | 6. Unify Shell And Navigation | 0/0 | Complete | 2026-04-16 |
-| 7. Fix Telemetry Trust States | 2/2 | Planned | — |
-| 8. Consolidate Shared UI Surfaces | 3 | Planned | — |
-| 9. Finish Responsive Reliability Pass | 0/0 | Planned | — |
+| 7. Fix Telemetry Trust States | 2/2 | Complete | 2026-04-17 |
+| 8. Consolidate Shared UI Surfaces | 3/3 | Complete | 2026-04-16 |
+| 9. Finish Responsive Reliability Pass | 4/4 | Complete | 2026-04-19 |
 
 ---
 

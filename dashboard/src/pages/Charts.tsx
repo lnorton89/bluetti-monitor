@@ -3,7 +3,6 @@ import {
   useDeferredValue,
   useEffect,
   useState,
-  type ComponentType,
   type CSSProperties,
   type Dispatch,
   type SetStateAction,
@@ -308,7 +307,7 @@ export default function Charts() {
             })}
               </div>
             </div>
-          </SectionPanel>
+        </Card>
 
       {analyticsQuery.isLoading || isLoadingFields ? (
         <Card className="chart-card-surface"><div className="chart-loading-shell"><Spinner /></div></Card>
@@ -325,14 +324,14 @@ export default function Charts() {
 
       {timeline.length > 0 ? (
         <>
-          <div className="tile-grid tile-grid--cols-4">
+          <div className="tile-grid tile-grid--cols-4 analytics-score-grid">
             <MetricTile label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={`Window ${formatMetricValue(batterySummary?.min, '%', 1)} to ${formatMetricValue(batterySummary?.max, '%', 1)}`} accent="var(--cat-battery)" />
             <MetricTile label="Average input cover" value={coverageRatio === null ? '--' : `${coverageRatio}%`} detail={`Input ${formatMetricValue(inputSummary?.avg, 'W')} / load ${formatMetricValue(outputSummary?.avg, 'W')}`} accent="var(--cat-input)" />
             <MetricTile label="Load intensity" value={formatMetricValue(outputSummary?.max, 'W')} detail={peakLoadPoint ? `Peak at ${formatTime(peakLoadPoint.ts)}` : 'Peak load unavailable'} accent="var(--cat-output)" />
             <MetricTile label="Charge posture" value={formatSignedMetric(netSummary?.avg, 'W')} detail={gridSummary?.avg && gridSummary.avg > 0 ? `Grid assist ${formatMetricValue(gridSummary.avg, 'W')}` : 'Mostly DC-driven window'} accent="var(--blue)" />
           </div>
 
-          <div className="tile-grid tile-grid--cols-3">
+          <div className="tile-grid tile-grid--cols-3 analytics-insights-grid">
             <MetricTile label="Best solar moment" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? `Captured at ${formatTime(peakSolarPoint.ts)}` : 'No solar history in this window'} icon={Sun} />
             <MetricTile label="Heaviest load" value={peakLoadPoint ? formatMetricValue(peakLoadPoint.totalOutput, 'W') : '--'} detail={peakLoadPoint ? `Demand peaked at ${formatTime(peakLoadPoint.ts)}` : 'No output history in this window'} icon={Zap} />
             <MetricTile label="Thermal ceiling" value={peakTempPoint ? formatMetricValue(peakTempPoint.internalTemp, 'C', 1) : '--'} detail={peakTempPoint ? `Fan ${formatMetricValue(peakTempPoint.fanSpeed, 'RPM')} at ${formatTime(peakTempPoint.ts)}` : 'No temperature history in this window'} icon={Fan} />
@@ -426,7 +425,7 @@ export default function Charts() {
                 ) : null}
               </div>
             </div>
-          </Card>
+          </SectionPanel>
 
           <div className="analytics-detail-grid">
             <Card className="analytics-custom-card">

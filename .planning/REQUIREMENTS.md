@@ -51,9 +51,9 @@
 
 ### Responsive Reliability
 
-- [ ] **UI-10**: User can use the main dashboard views on a phone-sized screen without broken controls, collapsed hierarchy, or awkward overflow
-- [ ] **UI-11**: User can read tables, segmented controls, and scorecards on smaller screens through layouts that simplify intentionally instead of merely stacking
-- [ ] **UI-12**: User gets a responsive experience that feels like the same product on desktop and mobile, not separate quality levels
+- [x] **UI-10**: User can use the main dashboard views on a phone-sized screen without broken controls, collapsed hierarchy, or awkward overflow
+- [x] **UI-11**: User can read tables, segmented controls, and scorecards on smaller screens through layouts that simplify intentionally instead of merely stacking
+- [x] **UI-12**: User gets a responsive experience that feels like the same product on desktop and mobile, not separate quality levels
 
 ## Future Requirements
 
@@ -106,9 +106,9 @@
 | UI-07 | Phase 8 | Planned |
 | UI-08 | Phase 8 | Planned |
 | UI-09 | Phase 8 | Planned |
-| UI-10 | Phase 9 | Planned |
-| UI-11 | Phase 9 | Planned |
-| UI-12 | Phase 9 | Planned |
+| UI-10 | Phase 9 | Complete |
+| UI-11 | Phase 9 | Complete |
+| UI-12 | Phase 9 | Complete |
 
 **Coverage:**
 - shipped requirements: 12 total

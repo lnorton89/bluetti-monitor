@@ -57,6 +57,30 @@ export default function RawData() {
     });
   }, [deferredSearch, fields]);
 
+  const fieldRows = useMemo(() => (
+    filtered.map(([field, fieldValue], index) => {
+      const meta = getFieldMeta(field);
+      const isBool = fieldValue.value === 'True'
+        || fieldValue.value === 'False'
+        || fieldValue.value === 'true'
+        || fieldValue.value === 'false';
+      const isOn = fieldValue.value === 'True' || fieldValue.value === 'true';
+      const formattedValue = formatObjectValue(fieldValue.value);
+      const Icon = categoryIcons[meta.category] ?? Gauge;
+
+      return {
+        field,
+        meta,
+        isBool,
+        isOn,
+        formattedValue,
+        icon: Icon,
+        timestamp: formatTime(fieldValue.ts),
+        rowClassName: `data-row${index % 2 === 1 ? ' alt' : ''}`,
+      };
+    })
+  ), [filtered]);
+
   useEffect(() => {
     setRouteSignal('raw', `${filtered.length} visible`);
 
@@ -140,7 +164,7 @@ export default function RawData() {
               ))}
             </div>
           ) : (
-            <StatusChip label={device} icon={Server} variant="default" />
+            <StatusChip label={device} variant="default" />
           )}
 
           <label className="search-shell workspace-search">
@@ -192,50 +216,84 @@ export default function RawData() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(([field, fieldValue], index) => {
-                  const meta = getFieldMeta(field);
-                  const isBool = fieldValue.value === 'True'
-                    || fieldValue.value === 'False'
-                    || fieldValue.value === 'true'
-                    || fieldValue.value === 'false';
-                  const isOn = fieldValue.value === 'True' || fieldValue.value === 'true';
-                  const formattedValue = formatObjectValue(fieldValue.value);
-                  const Icon = categoryIcons[meta.category] ?? Gauge;
-
+                {fieldRows.map((row) => {
+                  const Icon = row.icon;
                   return (
-                    <tr key={field} className={`data-row${index % 2 === 1 ? ' alt' : ''}`}>
-                      <td className="field-key-cell">{field}</td>
-                      <td className="field-label-cell">{meta.label}</td>
+                    <tr key={row.field} className={row.rowClassName}>
+                      <td className="field-key-cell">{row.field}</td>
+                      <td className="field-label-cell">{row.meta.label}</td>
                       <td>
                         <span
                           className="data-chip"
                           style={{
-                            color: categoryColors[meta.category] || 'var(--text-muted)',
-                            borderColor: categoryColors[meta.category] || 'var(--border)',
+                            color: categoryColors[row.meta.category] || 'var(--text-muted)',
+                            borderColor: categoryColors[row.meta.category] || 'var(--border)',
                           }}
                         >
                           <Icon size={12} />
-                          {meta.category}
+                          {row.meta.category}
                         </span>
                       </td>
                       <td>
-                        {isBool ? (
-                          <span className={`bool-text${isOn ? ' on' : ''}`}>
-                            {isOn ? 'ON' : 'OFF'}
+                        {row.isBool ? (
+                          <span className={`bool-text${row.isOn ? ' on' : ''}`}>
+                            {row.isOn ? 'ON' : 'OFF'}
                           </span>
                         ) : (
                           <span className="value-text">
-                            {formattedValue}
-                            {meta.unit ? ` ${meta.unit}` : ''}
+                            {row.formattedValue}
+                            {row.meta.unit ? ` ${row.meta.unit}` : ''}
                           </span>
                         )}
                       </td>
-                      <td className="timestamp-cell">{formatTime(fieldValue.ts)}</td>
+                      <td className="timestamp-cell">{row.timestamp}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="raw-field-list">
+            {fieldRows.map((row) => {
+              const Icon = row.icon;
+              return (
+                <div key={`${row.field}-mobile`} className="raw-field-card">
+                  <div className="raw-field-card-top">
+                    <div className="raw-field-card-copy">
+                      <strong>{row.meta.label}</strong>
+                      <span>{row.field}</span>
+                    </div>
+                    <span
+                      className="data-chip"
+                      style={{
+                        color: categoryColors[row.meta.category] || 'var(--text-muted)',
+                        borderColor: categoryColors[row.meta.category] || 'var(--border)',
+                      }}
+                    >
+                      <Icon size={12} />
+                      {row.meta.category}
+                    </span>
+                  </div>
+                  <div className="raw-field-card-detail">
+                    <span>Value</span>
+                    {row.isBool ? (
+                      <strong className={`bool-text${row.isOn ? ' on' : ''}`}>
+                        {row.isOn ? 'ON' : 'OFF'}
+                      </strong>
+                    ) : (
+                      <strong className="value-text">
+                        {row.formattedValue}
+                        {row.meta.unit ? ` ${row.meta.unit}` : ''}
+                      </strong>
+                    )}
+                  </div>
+                  <div className="raw-field-card-detail">
+                    <span>Updated</span>
+                    <strong className="timestamp-cell">{row.timestamp}</strong>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}

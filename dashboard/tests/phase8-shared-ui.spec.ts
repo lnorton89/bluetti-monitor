@@ -14,7 +14,7 @@ test('phase 08 shared surfaces stay consistent across overview and raw data', as
   await expect(page.locator('.surface-card').first()).toBeVisible();
   await expect(page.locator('.chip').filter({ hasText: /device|visible field/i }).first()).toBeVisible();
   await page.getByPlaceholder('Search fields...').fill('battery');
-  await expect(page.getByText('total_battery_percent')).toBeVisible();
+  await expect(page.locator('.field-key-cell').filter({ hasText: 'total_battery_percent' }).first()).toBeVisible();
 });
 
 test('phase 08 shared controls still drive charts and solar workspaces', async ({ page }) => {

@@ -43,7 +43,7 @@ test('supports charts and raw data navigation with responsive menu', async ({ pa
   await expect(page.getByTestId('shell-route-signal')).toContainText(/\d+ visible/);
   await expect(page.getByPlaceholder('Search fields...')).toBeVisible();
   await page.getByPlaceholder('Search fields...').fill('battery');
-  await expect(page.getByText('total_battery_percent')).toBeVisible();
+  await expect(page.locator('.raw-field-card').filter({ hasText: 'total_battery_percent' }).first()).toBeVisible();
   await expect(page.getByTestId('shell-route-signal')).toContainText(/visible/);
   await page.getByLabel('Open Navigation').click();
   await expect(page.getByTestId('sidebar-route-raw')).toHaveClass(/active/);

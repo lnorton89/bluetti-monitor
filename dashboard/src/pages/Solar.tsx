@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState, type ComponentType, type CSSProperties } from 'react';
+import { startTransition, useEffect, useState, type CSSProperties } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Area,
@@ -303,14 +303,14 @@ export default function Solar() {
         </Card>
       ) : null}
 
-      <div className="tile-grid tile-grid--cols-4">
+      <div className="tile-grid tile-grid--cols-4 solar-score-grid">
         <MetricTile label="Solar right now" value={formatMetricValue(liveSnapshot.totalSolar, 'W')} detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'} accent="var(--cat-input)" />
         <MetricTile label="PV1 input" value={formatMetricValue(liveSnapshot.pv1Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv1Voltage, liveSnapshot.pv1Current)} accent="#f472b6" />
         <MetricTile label="PV2 input" value={formatMetricValue(liveSnapshot.pv2Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv2Voltage, liveSnapshot.pv2Current)} accent="#38bdf8" />
         <MetricTile label="Battery to full" value={formatDuration(chargeEstimate.minutes)} detail={chargeEstimate.detail} accent="var(--cat-battery)" />
       </div>
 
-      <div className="tile-grid tile-grid--cols-3">
+      <div className="tile-grid tile-grid--cols-3 solar-insights-grid">
         <MetricTile label="Solar coverage now" value={solarCoverage === null ? '--' : `${solarCoverage}%`} detail={liveSnapshot.totalOutput > 0 ? `Solar ${formatMetricValue(liveSnapshot.totalSolar, 'W')} vs output ${formatMetricValue(liveSnapshot.totalOutput, 'W')}` : 'No live output load reported right now'} icon={Gauge} />
         <MetricTile label="Best harvest bucket" value={solarPeak ? formatMetricValue(solarPeak.totalSolar, 'W') : '--'} detail={solarPeak ? `Captured at ${formatTime(solarPeak.ts)}` : 'No solar bucket in this window'} icon={Sun} />
         <MetricTile label="Battery climb" value={formatSignedMetric(batterySummary?.change, '%', 1)} detail={batterySummary ? `Window ${formatMetricValue(batterySummary.min, '%', 1)} to ${formatMetricValue(batterySummary.max, '%', 1)}` : 'No battery trend in this window'} icon={Battery} />

@@ -93,8 +93,8 @@ function Layout() {
             <span className="top-bar-title" data-testid="shell-title">{routeMeta.shellTitle}</span>
           </div>
           <div className="top-bar-metric muted top-bar-signal" data-testid="shell-route-signal">
-            <span>{routeMeta.mobileSignalLabel}</span>
-            <strong>{routeSignalValue}</strong>
+            <span className="top-bar-signal-label">{routeMeta.mobileSignalLabel}</span>
+            <strong className="top-bar-signal-value">{routeSignalValue}</strong>
           </div>
           <div className="top-bar-metrics">
             <div className="top-bar-metric" data-testid="shell-status-connection">
