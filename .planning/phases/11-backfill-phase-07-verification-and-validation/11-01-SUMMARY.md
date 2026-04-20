@@ -46,8 +46,8 @@ completed: 2026-04-20
 
 ## Task Commits
 
-1. **Task 1: Create the Phase 07 verification report from existing trust-state evidence** - pending commit
-2. **Task 2: Normalize Phase 07 summary metadata so the audit sees completed requirement evidence** - pending commit
+1. **Task 1: Create the Phase 07 verification report from existing trust-state evidence** - `7172c0d`
+2. **Task 2: Normalize Phase 07 summary metadata so the audit sees completed requirement evidence** - `7172c0d`
 
 ## Files Created/Modified
 
