@@ -20,7 +20,7 @@ I can reliably see the current state of my Bluetti system in one place without f
 - ✓ No legacy Python poller code remains; bridge startup and runtime verified; architecture boundaries documented with Component Ownership table — validated in Phase 2
 - ✓ Battery estimates now show runtime remaining on current charge and time to full charge while charging, with color coding by battery level — validated in Phase 3
 - ✓ Mobile PWA: dashboard works on phone browsers, sidebar drawer, responsive layout, installable as PWA — validated in Phases 4-5 (v1.0)
-- ✓ Shell unified: thin top bar, centralized route registry, mobile route signals, Playwright coverage green — validated in Phase 6
+- ✓ Shell unified: thin top bar, centralized route registry, mobile route signals, Playwright coverage green — validated in Phase 6, with formal verification backfilled in Phase 10
 
 ### Active
 
@@ -94,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-16 after Phase 6*
+*Last updated: 2026-04-20 after Phase 10 verification backfill*

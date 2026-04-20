@@ -33,9 +33,9 @@
 
 ### Shell And Navigation
 
-- [ ] **UI-01**: User can move between overview, charts, solar, and raw-data views through a shell that has consistent hierarchy and does not feel visually jumbled
-- [ ] **UI-02**: User can tell what page they are on and what the most important live status is without duplicated or competing header signals
-- [ ] **UI-03**: User can use sidebar and top-bar navigation reliably on desktop and mobile layouts
+- [x] **UI-01**: User can move between overview, charts, solar, and raw-data views through a shell that has consistent hierarchy and does not feel visually jumbled
+- [x] **UI-02**: User can tell what page they are on and what the most important live status is without duplicated or competing header signals
+- [x] **UI-03**: User can use sidebar and top-bar navigation reliably on desktop and mobile layouts
 
 ### Telemetry Trust And State Handling
 
@@ -97,9 +97,9 @@
 | PWA-01 | Phase 4 | Complete |
 | PWA-03 | Phase 4 | Complete |
 | PWA-02 | Phase 5 | Complete |
-| UI-01 | Phase 10 | Pending |
-| UI-02 | Phase 10 | Pending |
-| UI-03 | Phase 10 | Pending |
+| UI-01 | Phase 10 | Complete (2026-04-20) |
+| UI-02 | Phase 10 | Complete (2026-04-20) |
+| UI-03 | Phase 10 | Complete (2026-04-20) |
 | UI-04 | Phase 11 | Pending |
 | UI-05 | Phase 11 | Pending |
 | UI-06 | Phase 11 | Pending |
@@ -118,4 +118,4 @@
 
 ---
 *Requirements defined: 2026-04-16*
-*Last updated: 2026-04-19 for milestone v1.1 gap closure planning*
+*Last updated: 2026-04-20 after Phase 10 execution*

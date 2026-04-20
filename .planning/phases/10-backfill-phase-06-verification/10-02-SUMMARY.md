@@ -47,7 +47,7 @@ completed: 2026-04-19
 
 ## Task Commits
 
-1. **Task 1: Replace draft frontmatter and pending task states with completed validation evidence** - pending commit
+1. **Task 1: Replace draft frontmatter and pending task states with completed validation evidence** - `2a829a2`
 
 ## Files Created/Modified
 
