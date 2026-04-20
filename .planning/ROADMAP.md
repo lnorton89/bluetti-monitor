@@ -18,7 +18,7 @@
 
 </details>
 
-### v1.1 UI Cleanup And Reliability [Gap Closure Planned]
+### v1.1 UI Cleanup And Reliability [Ready For Re-Audit]
 
 - [x] Phase 6: Unify Shell And Navigation (0/0) - completed 2026-04-16
 - [x] Phase 7: Fix Telemetry Trust States (2/2) - completed 2026-04-17
@@ -26,7 +26,7 @@
 - [x] Phase 9: Finish Responsive Reliability Pass (4/4) - completed 2026-04-19
 - [x] Phase 10: Backfill Phase 06 Verification (0/0) - planned (completed 2026-04-20)
 - [x] Phase 11: Backfill Phase 07 Verification And Validation (0/0) - planned (completed 2026-04-20)
-- [ ] Phase 12: Backfill Phase 08 Verification And Milestone Metadata Sync (0/0) - planned
+- [x] Phase 12: Backfill Phase 08 Verification And Milestone Metadata Sync (2/2) - completed 2026-04-20
 
 #### Phase 8: Consolidate Shared UI Surfaces
 
@@ -136,7 +136,7 @@ Success criteria:
 | 9. Finish Responsive Reliability Pass | 4/4 | Complete | 2026-04-19 |
 | 10. Backfill Phase 06 Verification | 2/2 | Complete    | 2026-04-20 |
 | 11. Backfill Phase 07 Verification And Validation | 2/2 | Complete    | 2026-04-20 |
-| 12. Backfill Phase 08 Verification And Milestone Metadata Sync | 0/0 | Planned | - |
+| 12. Backfill Phase 08 Verification And Milestone Metadata Sync | 2/2 | Complete | 2026-04-20 |
 
 ---
 

@@ -45,9 +45,9 @@
 
 ### Shared UI System
 
-- [ ] **UI-07**: User experiences consistent cards, controls, chips, scoreboards, and table/list surfaces across dashboard pages
-- [ ] **UI-08**: User sees cleaner spacing, typography, and information density that make the app feel finished rather than stitched together
-- [ ] **UI-09**: User benefits from reused UI patterns instead of route-specific one-off components that drift visually or behaviorally
+- [x] **UI-07**: User experiences consistent cards, controls, chips, scoreboards, and table/list surfaces across dashboard pages
+- [x] **UI-08**: User sees cleaner spacing, typography, and information density that make the app feel finished rather than stitched together
+- [x] **UI-09**: User benefits from reused UI patterns instead of route-specific one-off components that drift visually or behaviorally
 
 ### Responsive Reliability
 
@@ -103,9 +103,9 @@
 | UI-04 | Phase 11 | Complete (2026-04-20) |
 | UI-05 | Phase 11 | Complete (2026-04-20) |
 | UI-06 | Phase 11 | Complete (2026-04-20) |
-| UI-07 | Phase 12 | Pending |
-| UI-08 | Phase 12 | Pending |
-| UI-09 | Phase 12 | Pending |
+| UI-07 | Phase 12 | Complete (2026-04-20) |
+| UI-08 | Phase 12 | Complete (2026-04-20) |
+| UI-09 | Phase 12 | Complete (2026-04-20) |
 | UI-10 | Phase 9 | Complete |
 | UI-11 | Phase 9 | Complete |
 | UI-12 | Phase 9 | Complete |
@@ -118,4 +118,4 @@
 
 ---
 *Requirements defined: 2026-04-16*
-*Last updated: 2026-04-20 after Phase 11 execution*
+*Last updated: 2026-04-20 after Phase 12 execution*

@@ -23,9 +23,11 @@ I can reliably see the current state of my Bluetti system in one place without f
 - ✓ Shell unified: thin top bar, centralized route registry, mobile route signals, Playwright coverage green — validated in Phase 6, with formal verification backfilled in Phase 10
 - ✓ Telemetry trust states now consistently cover loading, offline, stale, and estimate-confidence behavior across the dashboard — validated in Phase 7, with formal verification and validation backfilled in Phase 11
 
+- âœ“ Shared UI surfaces now provide consistent cards, controls, chips, spacing, and information hierarchy across the dashboard â€” validated in Phase 8, with formal verification backfilled in Phase 12
+
 ### Active
 
-- v1.1 gap closure remaining: Phase 12 still needs formal verification and milestone metadata sync for the shared UI system work (UI-07, UI-08, UI-09)
+- None. v1.1 requirements are formally satisfied and the milestone is ready for re-audit.
 
 ### Out of Scope
 
@@ -43,6 +45,7 @@ I can reliably see the current state of my Bluetti system in one place without f
 - `bluetti-mqtt-node` is now tracked as a git submodule so it can remain its own repo while still being pinned by this app.
 - Future value is not just “telemetry exists,” but “telemetry is easy to trust and useful on the devices I actually reach for,” especially my phone on the LAN.
 - v1.0 proved the stack can cover the major monitoring surfaces, but the dashboard now needs a coherence pass so those surfaces feel dependable instead of partially stitched together.
+- The Phase 10-12 gap-closure work is now complete, so v1.1 has formal verification coverage across shell/navigation, telemetry trust states, shared UI surfaces, and responsive reliability.
 
 ## Constraints
 
@@ -94,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after Phase 11 verification and validation backfill*
+*Last updated: 2026-04-20 after Phase 12 Phase 08 verification backfill and metadata sync*
