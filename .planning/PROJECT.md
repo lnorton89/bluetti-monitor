@@ -21,11 +21,11 @@ I can reliably see the current state of my Bluetti system in one place without f
 - ✓ Battery estimates now show runtime remaining on current charge and time to full charge while charging, with color coding by battery level — validated in Phase 3
 - ✓ Mobile PWA: dashboard works on phone browsers, sidebar drawer, responsive layout, installable as PWA — validated in Phases 4-5 (v1.0)
 - ✓ Shell unified: thin top bar, centralized route registry, mobile route signals, Playwright coverage green — validated in Phase 6, with formal verification backfilled in Phase 10
+- ✓ Telemetry trust states now consistently cover loading, offline, stale, and estimate-confidence behavior across the dashboard — validated in Phase 7, with formal verification and validation backfilled in Phase 11
 
 ### Active
 
-- UI-01, UI-02, UI-03 completed in Phase 6 — shell coherent, navigation works
-- Phase 7: Fix Telemetry Trust States (UI-04, UI-05, UI-06) — loading, offline, stale state handling
+- v1.1 gap closure remaining: Phase 12 still needs formal verification and milestone metadata sync for the shared UI system work (UI-07, UI-08, UI-09)
 
 ### Out of Scope
 
@@ -94,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after Phase 10 verification backfill*
+*Last updated: 2026-04-20 after Phase 11 verification and validation backfill*

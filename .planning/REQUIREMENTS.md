@@ -39,9 +39,9 @@
 
 ### Telemetry Trust And State Handling
 
-- [ ] **UI-04**: User can distinguish loading, empty, offline, stale, and partially available telemetry states across the dashboard
-- [ ] **UI-05**: User sees live telemetry summaries that behave correctly when values are missing, delayed, or derived from fallback logic
-- [ ] **UI-06**: User can trust that the overview, charts, solar, and raw-data pages present state in a consistent and understandable way
+- [x] **UI-04**: User can distinguish loading, empty, offline, stale, and partially available telemetry states across the dashboard
+- [x] **UI-05**: User sees live telemetry summaries that behave correctly when values are missing, delayed, or derived from fallback logic
+- [x] **UI-06**: User can trust that the overview, charts, solar, and raw-data pages present state in a consistent and understandable way
 
 ### Shared UI System
 
@@ -100,9 +100,9 @@
 | UI-01 | Phase 10 | Complete (2026-04-20) |
 | UI-02 | Phase 10 | Complete (2026-04-20) |
 | UI-03 | Phase 10 | Complete (2026-04-20) |
-| UI-04 | Phase 11 | Pending |
-| UI-05 | Phase 11 | Pending |
-| UI-06 | Phase 11 | Pending |
+| UI-04 | Phase 11 | Complete (2026-04-20) |
+| UI-05 | Phase 11 | Complete (2026-04-20) |
+| UI-06 | Phase 11 | Complete (2026-04-20) |
 | UI-07 | Phase 12 | Pending |
 | UI-08 | Phase 12 | Pending |
 | UI-09 | Phase 12 | Pending |
@@ -118,4 +118,4 @@
 
 ---
 *Requirements defined: 2026-04-16*
-*Last updated: 2026-04-20 after Phase 10 execution*
+*Last updated: 2026-04-20 after Phase 11 execution*
