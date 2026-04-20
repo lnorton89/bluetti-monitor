@@ -51,7 +51,7 @@ completed: 2026-04-20
 
 ## Task Commits
 
-1. **Task 1: Align project, roadmap, requirements, and state metadata with the completed Phase 08 backfill** - pending commit
+1. **Task 1: Align project, roadmap, requirements, and state metadata with the completed Phase 08 backfill** - `b8b8ea2`
 
 ## Files Created/Modified
 
