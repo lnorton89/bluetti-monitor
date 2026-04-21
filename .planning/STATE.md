@@ -1,82 +1,50 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: UI Cleanup And Reliability [Ready For Re-Audit]
-status: ready_for_milestone_audit
-stopped_at: Phase 12 complete
-last_updated: "2026-04-20T23:35:00.000Z"
-last_activity: 2026-04-20
+milestone: null
+milestone_name: null
+status: milestone_completed
+stopped_at: v1.1 archived
+last_updated: "2026-04-21T02:05:00.000Z"
+last_activity: 2026-04-21
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-20)
+See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Re-run the v1.1 milestone audit
+**Current focus:** Define the next milestone
 
 ## Current Position
 
-Phase: 12 complete
-Plan: Complete
-Status: All active milestone and gap-closure phases are complete; ready for `$gsd-audit-milestone`
-Last activity: 2026-04-20
-
-Progress: [##########] 100% (all active milestone phases executed)
-
-## Performance Metrics
-
-Previous milestone metrics are preserved in the archived v1.0 roadmap and milestone notes.
+Milestone: v1.1 complete
+Status: Milestone archived and ready for next-milestone planning
+Last activity: 2026-04-21
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Initialization]: `bluetti-mqtt-node` stays independent and is consumed here as a git submodule
-- [Initialization]: Mobile access is LAN-first through a PWA, not a native app
-- [Initialization]: Notifications are deferred until after migration and PWA stabilization
-- [Phase 1]: The supported daily-use path is browser-first through `npm run monitor:start`
-- [Phase 1]: Migration verification is captured in `npm run monitor:verify`
-- [Milestone v1.1]: UI stabilization takes priority over adding more dashboard surface area
-- [Phase 6]: The shell is thin, sidebar-primary, and mobile shows page identity plus one route-relevant signal
-- [Phase 6]: Centralized route registry, page-owned signal publishing with explicit unmount reset
-- [Phase 9]: Phone layouts keep the same telemetry contract while using route-specific simplification instead of generic one-column fallbacks
-- [Phase 10]: Formal verification and finalized validation for the original Phase 06 shell/navigation work now exist for milestone audit consumption
-- [Phase 11]: Formal verification and finalized validation for the original Phase 07 trust-state work now exist for milestone audit consumption
-- [Phase 12]: Formal verification for the original Phase 08 shared UI system work now exists and project metadata is aligned for milestone re-audit
+Decisions are logged in PROJECT.md.
 
 ### Pending Todos
 
-- Audit milestone v1.1 completion before archiving
+- Start the next milestone with `$gsd-new-milestone`
 
 ### Blockers/Concerns
 
-- None - Phase 11 is complete and the next step is Phase 12 gap closure work
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260407-hqx | Improve the dashboard UI polish and hierarchy for the Bluetti monitor overview and shell | 2026-04-07 | c6188b4 | [260407-hqx-improve-the-dashboard-ui-polish-and-hier](./quick/260407-hqx-improve-the-dashboard-ui-polish-and-hier/) |
-| 260407-tfy | Completely refactor the charts page to feel like a telemetry analytics workspace with GA-style summaries, grouped insights, and comparisons built from the actual Bluetti data model | 2026-04-08 | uncommitted | [260407-tfy-completely-refactor-the-charts-page-to-f](./quick/260407-tfy-completely-refactor-the-charts-page-to-f/) |
-| 260409-gpo | Build a dedicated solar dashboard page with live stats, charts, both solar inputs, and battery full-charge estimates using existing telemetry while matching the home and charts design language | 2026-04-09 | uncommitted | [260409-gpo-build-a-dedicated-solar-dashboard-page-w](./quick/260409-gpo-build-a-dedicated-solar-dashboard-page-w/) |
-| 260413-ply | implement browser and windows notifcations when battery reaches full state of charge | 2026-04-14 | uncommitted | [260413-ply-implement-browser-and-windows-notifcatio](./260413-ply-implement-browser-and-windows-notifcatio/) |
-| 260413-pug | make the titlebar of the electrobun app display current mode and battery soc | 2026-04-13 | uncommitted | [260413-pug-make-the-titlebar-of-the-electrobun-app-](./260413-pug-make-the-titlebar-of-the-electrobun-app-/) |
-| Phase 08 P03 | 15 | 3 tasks | 3 files |
+- None
 
 ## Session Continuity
 
-Last session: 2026-04-20T23:35:00.000Z
-Stopped at: Phase 12 complete
-Resume file: .planning/phases/12-backfill-phase-08-verification-and-milestone-metadata-sync/12-02-SUMMARY.md
+Last session: 2026-04-21T02:05:00.000Z
+Stopped at: v1.1 milestone completion
+Resume file: .planning/PROJECT.md

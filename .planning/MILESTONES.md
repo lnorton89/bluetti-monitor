@@ -1,21 +1,28 @@
 # Milestones
 
-## v1.0 MVP (Shipped: 2026-04-16)
+## v1.1 UI Cleanup And Reliability (Shipped: 2026-04-21)
 
-**Phases completed:** 5 phases, 13 plans, 7 tasks
+**Scope:** 7 phases, 13 plans
 
 **Key accomplishments:**
 
-- Root `monitor:start` orchestration using Docker-backed services and the linked `bluetti-mqtt-node` CLI
-- README and desktop bootstrap now agree on `monitor:start` as the supported path and `8540` as the packaged dashboard URL
-- Scripted `monitor:verify` now proves the browser-first path with a real one-shot bridge publish into the API
-- Phase:
-- Phase:
-- Phase:
-- Phase:
-- Phase:
-- Phase:
-- 04-01: Adapt layout, navigation, and information density for phone-sized screens
-- 04-02: Verify LAN phone-browser usability across the core monitoring views
+- Unified the dashboard shell so route identity, top-level status, and navigation feel coherent across desktop and mobile.
+- Standardized loading, offline, stale, and estimate-confidence handling across Overview, Charts, Solar, and Raw Data.
+- Introduced a shared UI surface system with reusable cards, chips, tiles, info rows, page headers, and shared controls.
+- Added dedicated phone-sized responsive behavior and regression coverage so the dashboard works like one product across screen sizes.
+- Backfilled the missing verification and validation artifacts so the full milestone now passes formal audit with 12/12 requirements satisfied.
+
+---
+
+## v1.0 MVP (Shipped: 2026-04-16)
+
+**Scope:** 5 phases, 13 plans
+
+**Key accomplishments:**
+
+- Established `monitor:start` and `monitor:verify` as the browser-first local monitoring path.
+- Removed the old bridge ambiguity and pinned `bluetti-mqtt-node` as the runtime bridge of record.
+- Added live battery runtime and charge-to-full estimates.
+- Delivered LAN phone-browser usability and installable PWA support.
 
 ---
