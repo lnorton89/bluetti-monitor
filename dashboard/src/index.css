@@ -481,7 +481,7 @@ input:focus-visible,
 }
 
 .hamburger-btn,
-.sidebar-close {
+.sidebar-close.ui-icon-button {
   display: none;
   background: var(--bg-3);
   border: 1px solid var(--border);
@@ -566,7 +566,9 @@ input:focus-visible,
 }
 
 .metric-label {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text-muted);
   font-size: 12px;
   margin-bottom: 8px;
@@ -588,6 +590,94 @@ input:focus-visible,
   color: var(--text-muted);
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+
+.stat-help-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.stat-help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid color-mix(in srgb, var(--border-hi) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  color: var(--text-dim);
+  cursor: help;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.stat-help-button:hover,
+.stat-help-button:focus-visible,
+.stat-help-button.is-open {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--border-hi));
+  background: color-mix(in srgb, var(--amber-glow) 60%, var(--bg-2));
+  outline: none;
+}
+
+.stat-help-popover {
+  position: fixed;
+  z-index: 120;
+  width: min(320px, calc(100vw - 2rem));
+  display: none;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--border-hi) 85%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 98%, transparent), color-mix(in srgb, var(--bg-3) 94%, transparent));
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  color: var(--text);
+}
+
+.stat-help-popover.is-open {
+  display: grid;
+  gap: 8px;
+}
+
+.stat-help-title,
+.stat-help-section-label {
+  font-family: var(--font-cond);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stat-help-title {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.stat-help-summary,
+.stat-help-list-item,
+.stat-help-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.stat-help-section-label {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--amber);
+}
+
+.stat-help-list {
+  display: grid;
+  gap: 6px;
+}
+
+.stat-help-list-item {
+  display: block;
+}
+
+.stat-help-note {
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
 }
 
 /* Chip tokens */
@@ -1006,6 +1096,12 @@ input:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.estimate-label-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .estimate-item.charging .estimate-icon {
@@ -1974,6 +2070,12 @@ input:focus-visible,
   background: color-mix(in srgb, var(--bg-3) 84%, transparent);
 }
 
+.analytics-side-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .analytics-side-stat strong {
   font-size: 22px;
   line-height: 1.1;
@@ -2507,7 +2609,7 @@ input:focus-visible,
     transform: translateX(0) !important;
   }
 
-  .sidebar-close {
+  .sidebar.open .sidebar-close {
     display: flex !important;
     position: absolute;
     top: 12px;
@@ -2893,6 +2995,10 @@ input:focus-visible,
   .battery-estimates {
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  .stat-help-popover {
+    width: min(300px, calc(100vw - 2.5rem));
   }
 
   .sidebar-nav-link {

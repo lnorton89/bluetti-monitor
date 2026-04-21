@@ -17,7 +17,7 @@ import { Battery, Gauge, LineChart as LineChartIcon, RefreshCw, Sun, Wifi, Zap }
 import { fetchFields, fetchHistory, type DeviceState, type HistoryPoint } from '../lib/api';
 import { buildCoverageLabel } from '../lib/chartAnalytics';
 import { formatTime } from '../lib/time';
-import { Card, Spinner, SectionPanel, MetricTile, InfoRow, StatusChip, PageHeader, EmptyState } from '../components/ui';
+import { Card, Spinner, SectionPanel, MetricTile, InfoRow, StatusChip, PageHeader, EmptyState, StatHelpTooltip, type StatHelpContent } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
@@ -304,16 +304,92 @@ export default function Solar() {
       ) : null}
 
       <div className="tile-grid tile-grid--cols-4 solar-score-grid">
-        <MetricTile label="Solar right now" value={formatMetricValue(liveSnapshot.totalSolar, 'W')} detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'} accent="var(--cat-input)" />
-        <MetricTile label="PV1 input" value={formatMetricValue(liveSnapshot.pv1Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv1Voltage, liveSnapshot.pv1Current)} accent="#f472b6" />
-        <MetricTile label="PV2 input" value={formatMetricValue(liveSnapshot.pv2Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv2Voltage, liveSnapshot.pv2Current)} accent="#38bdf8" />
-        <MetricTile label="Battery to full" value={formatDuration(chargeEstimate.minutes)} detail={chargeEstimate.detail} accent="var(--cat-battery)" />
+        <MetricTile label="Solar right now" value={formatMetricValue(liveSnapshot.totalSolar, 'W')} detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'} accent="var(--cat-input)" tooltip={{
+          summary: 'Solar right now is the live total solar input reaching the AC500.',
+          dataPoints: [
+            resolvedFieldLine('Direct total field', resolved.totalSolar, liveSnapshot.totalSolar, 'W'),
+            resolvedFieldLine('PV1 field', resolved.pv1Power, liveSnapshot.pv1Power, 'W'),
+            resolvedFieldLine('PV2 field', resolved.pv2Power, liveSnapshot.pv2Power, 'W'),
+          ],
+          calculation: [
+            'If PV1 or PV2 power is available, add those live readings together.',
+            'Otherwise fall back to the resolved total solar field.',
+          ],
+        }} />
+        <MetricTile label="PV1 input" value={formatMetricValue(liveSnapshot.pv1Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv1Voltage, liveSnapshot.pv1Current)} accent="#f472b6" tooltip={{
+          summary: 'PV1 input is the live reading for the first solar string.',
+          dataPoints: [
+            resolvedFieldLine('PV1 power', resolved.pv1Power, liveSnapshot.pv1Power, 'W'),
+            resolvedFieldLine('PV1 voltage', resolved.pv1Voltage, liveSnapshot.pv1Voltage, 'V', 1),
+            resolvedFieldLine('PV1 current', resolved.pv1Current, liveSnapshot.pv1Current, 'A', 1),
+          ],
+          calculation: [
+            'Read the currently mapped PV1 power field.',
+            'Show voltage and current as supporting electrical context when those fields exist.',
+          ],
+        }} />
+        <MetricTile label="PV2 input" value={formatMetricValue(liveSnapshot.pv2Power, 'W')} detail={describeElectricalLive(liveSnapshot.pv2Voltage, liveSnapshot.pv2Current)} accent="#38bdf8" tooltip={{
+          summary: 'PV2 input is the live reading for the second solar string.',
+          dataPoints: [
+            resolvedFieldLine('PV2 power', resolved.pv2Power, liveSnapshot.pv2Power, 'W'),
+            resolvedFieldLine('PV2 voltage', resolved.pv2Voltage, liveSnapshot.pv2Voltage, 'V', 1),
+            resolvedFieldLine('PV2 current', resolved.pv2Current, liveSnapshot.pv2Current, 'A', 1),
+          ],
+          calculation: [
+            'Read the currently mapped PV2 power field.',
+            'Show voltage and current as supporting electrical context when those fields exist.',
+          ],
+        }} />
+        <MetricTile label="Battery to full" value={formatDuration(chargeEstimate.minutes)} detail={chargeEstimate.detail} accent="var(--cat-battery)" tooltip={{
+          summary: 'Battery to full prefers the device-reported time-to-full and otherwise falls back to the recent charge trend.',
+          dataPoints: [
+            resolvedFieldLine('battery_range_to_full', resolved.batteryToFull, getLiveNumber(liveState, resolved.batteryToFull), 'min'),
+            resolvedFieldLine('Battery reserve', resolved.batteryPercent, getLiveNumber(liveState, resolved.batteryPercent), '%', 1),
+            resolvedFieldLine('Charge ceiling', resolved.chargeCeiling, getLiveNumber(liveState, resolved.chargeCeiling), '%', 1),
+          ],
+          calculation: [
+            'Use battery_range_to_full directly when the device publishes it.',
+            `Otherwise estimate from the battery-percent climb across the selected ${range.label} window until the configured ceiling.`,
+          ],
+          note: chargeEstimate.detail,
+        }} />
       </div>
 
       <div className="tile-grid tile-grid--cols-3 solar-insights-grid">
-        <MetricTile label="Solar coverage now" value={solarCoverage === null ? '--' : `${solarCoverage}%`} detail={liveSnapshot.totalOutput > 0 ? `Solar ${formatMetricValue(liveSnapshot.totalSolar, 'W')} vs output ${formatMetricValue(liveSnapshot.totalOutput, 'W')}` : 'No live output load reported right now'} icon={Gauge} />
-        <MetricTile label="Best harvest bucket" value={solarPeak ? formatMetricValue(solarPeak.totalSolar, 'W') : '--'} detail={solarPeak ? `Captured at ${formatTime(solarPeak.ts)}` : 'No solar bucket in this window'} icon={Sun} />
-        <MetricTile label="Battery climb" value={formatSignedMetric(batterySummary?.change, '%', 1)} detail={batterySummary ? `Window ${formatMetricValue(batterySummary.min, '%', 1)} to ${formatMetricValue(batterySummary.max, '%', 1)}` : 'No battery trend in this window'} icon={Battery} />
+        <MetricTile label="Solar coverage now" value={solarCoverage === null ? '--' : `${solarCoverage}%`} detail={liveSnapshot.totalOutput > 0 ? `Solar ${formatMetricValue(liveSnapshot.totalSolar, 'W')} vs output ${formatMetricValue(liveSnapshot.totalOutput, 'W')}` : 'No live output load reported right now'} icon={Gauge} tooltip={{
+          summary: 'Solar coverage now compares live solar harvest against the live load.',
+          dataPoints: [
+            `Live total solar: ${formatMetricValue(liveSnapshot.totalSolar, 'W')}`,
+            `Live total output: ${formatMetricValue(liveSnapshot.totalOutput, 'W')}`,
+          ],
+          calculation: [
+            'coverage = totalSolar / totalOutput * 100',
+            'Clamp the displayed percentage to the dashboard percent range and hide it when output is zero.',
+          ],
+        }} />
+        <MetricTile label="Best harvest bucket" value={solarPeak ? formatMetricValue(solarPeak.totalSolar, 'W') : '--'} detail={solarPeak ? `Captured at ${formatTime(solarPeak.ts)}` : 'No solar bucket in this window'} icon={Sun} tooltip={{
+          summary: 'Best harvest bucket is the strongest averaged solar bucket inside the selected window.',
+          dataPoints: [
+            `Bucket size: ${solarQuery.data?.bucketLabel ?? buildCoverageLabel(range.bucketMs)}`,
+            `Peak totalSolar bucket: ${solarPeak ? `${formatMetricValue(solarPeak.totalSolar, 'W')} at ${formatTime(solarPeak.ts)}` : 'unavailable'}`,
+          ],
+          calculation: [
+            'Average all samples into time buckets for the selected range.',
+            'Scan the bucketed totalSolar series and keep the highest bucket value.',
+          ],
+        }} />
+        <MetricTile label="Battery climb" value={formatSignedMetric(batterySummary?.change, '%', 1)} detail={batterySummary ? `Window ${formatMetricValue(batterySummary.min, '%', 1)} to ${formatMetricValue(batterySummary.max, '%', 1)}` : 'No battery trend in this window'} icon={Battery} tooltip={{
+          summary: 'Battery climb shows how much reserve changed over the selected window.',
+          dataPoints: [
+            resolvedFieldLine('Battery reserve series', resolved.batteryPercent, batterySummary?.current ?? null, '%', 1),
+            `Window start: ${formatMetricValue(batterySummary?.start, '%', 1)}`,
+            `Window end: ${formatMetricValue(batterySummary?.current, '%', 1)}`,
+          ],
+          calculation: [
+            'Bucket the battery reserve series across the selected window.',
+            'Window climb = last bucket value - first bucket value.',
+          ],
+        }} />
       </div>
 
       {timeline.length > 0 ? (
@@ -400,26 +476,49 @@ export default function Solar() {
               <div className="analytics-side-stats">
                 {focus === 'generation' ? (
                   <>
-                    <SideStat label="Average solar" value={formatMetricValue(totalSolarSummary?.avg, 'W')} detail="Window mean harvest" />
-                    <SideStat label="Average input" value={formatMetricValue(inputSummary?.avg, 'W')} detail="Solar plus any AC assist" />
-                    <SideStat label="Average output" value={formatMetricValue(outputSummary?.avg, 'W')} detail="AC plus DC loads" />
-                    <SideStat label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail="Current reserve level" />
+                    <SideStat label="Average solar" value={formatMetricValue(totalSolarSummary?.avg, 'W')} detail="Window mean harvest" tooltip={bucketAverageTooltip('Average solar', totalSolarSummary?.avg, 'W', [`Resolved solar field: ${resolved.totalSolar ?? 'split PV fallback'}`], 'Bucket and average the totalSolar series across the selected window.')} />
+                    <SideStat label="Average input" value={formatMetricValue(inputSummary?.avg, 'W')} detail="Solar plus any AC assist" tooltip={bucketAverageTooltip('Average input', inputSummary?.avg, 'W', [`Average solar contribution: ${formatMetricValue(totalSolarSummary?.avg, 'W')}`, `Average grid contribution: ${formatMetricValue(gridSummary?.avg, 'W')}`], 'For each bucket, totalInput = totalSolar + gridInput, then average the bucket values.')} />
+                    <SideStat label="Average output" value={formatMetricValue(outputSummary?.avg, 'W')} detail="AC plus DC loads" tooltip={bucketAverageTooltip('Average output', outputSummary?.avg, 'W', [`Average AC load: ${formatMetricValue(summarizeSeries(timeline, 'totalOutput')?.avg, 'W')}`], 'For each bucket, totalOutput = acLoad + dcLoad, then average the bucket values.')} />
+                    <SideStat label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail="Current reserve level" tooltip={{
+                      summary: 'Battery reserve is the latest bucketed battery-percent value in the current window.',
+                      dataPoints: [resolvedFieldLine('Battery reserve field', resolved.batteryPercent, batterySummary?.current ?? null, '%', 1)],
+                      calculation: ['Bucket the resolved battery reserve series.', 'Display the most recent bucket value as the current reserve.'],
+                    }} />
                   </>
                 ) : null}
                 {focus === 'inputs' ? (
                   <>
-                    <SideStat label="PV1 average" value={formatMetricValue(pv1Summary?.avg, 'W')} detail={resolved.pv1Power ?? 'PV1 field unavailable'} />
-                    <SideStat label="PV2 average" value={formatMetricValue(pv2Summary?.avg, 'W')} detail={resolved.pv2Power ?? 'PV2 field unavailable'} />
-                    <SideStat label="Grid assist" value={formatMetricValue(gridSummary?.avg, 'W')} detail={resolved.gridInput ?? 'No AC assist field mapped'} />
-                    <SideStat label="Window share" value={solarShare === null ? '--' : `${solarShare}%`} detail="Solar portion of all input" />
+                    <SideStat label="PV1 average" value={formatMetricValue(pv1Summary?.avg, 'W')} detail={resolved.pv1Power ?? 'PV1 field unavailable'} tooltip={bucketAverageTooltip('PV1 average', pv1Summary?.avg, 'W', [resolvedFieldLine('PV1 field', resolved.pv1Power, pv1Summary?.current ?? null, 'W')], 'Average the bucketed PV1 power series over the selected window.')} />
+                    <SideStat label="PV2 average" value={formatMetricValue(pv2Summary?.avg, 'W')} detail={resolved.pv2Power ?? 'PV2 field unavailable'} tooltip={bucketAverageTooltip('PV2 average', pv2Summary?.avg, 'W', [resolvedFieldLine('PV2 field', resolved.pv2Power, pv2Summary?.current ?? null, 'W')], 'Average the bucketed PV2 power series over the selected window.')} />
+                    <SideStat label="Grid assist" value={formatMetricValue(gridSummary?.avg, 'W')} detail={resolved.gridInput ?? 'No AC assist field mapped'} tooltip={bucketAverageTooltip('Grid assist', gridSummary?.avg, 'W', [resolvedFieldLine('Grid input field', resolved.gridInput, gridSummary?.current ?? null, 'W')], 'Average the resolved gridInput series across all plotted buckets.')} />
+                    <SideStat label="Window share" value={solarShare === null ? '--' : `${solarShare}%`} detail="Solar portion of all input" tooltip={{
+                      summary: 'Window share shows how much of all bucketed input came from solar on average.',
+                      dataPoints: [
+                        `Average solar: ${formatMetricValue(totalSolarSummary?.avg, 'W')}`,
+                        `Average total input: ${formatMetricValue(inputSummary?.avg, 'W')}`,
+                      ],
+                      calculation: ['window share = average solar / average total input * 100', 'Hide the percentage when average input is zero.'],
+                    }} />
                   </>
                 ) : null}
                 {focus === 'charge' ? (
                   <>
-                    <SideStat label="Current reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={resolved.batteryPercent ?? 'Battery field unavailable'} />
-                    <SideStat label="Window climb" value={formatSignedMetric(batterySummary?.change, '%', 1)} detail="End minus start reserve" />
-                    <SideStat label="Solar net avg" value={formatSignedMetric(solarNetSummary?.avg, 'W')} detail="Solar minus current load" />
-                    <SideStat label="Reported full time" value={formatMetricValue(batteryToFullSummary?.current, 'min')} detail={resolved.batteryToFull ?? 'Derived estimate in hero'} />
+                    <SideStat label="Current reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={resolved.batteryPercent ?? 'Battery field unavailable'} tooltip={{
+                      summary: 'Current reserve is the most recent bucketed battery-percent reading.',
+                      dataPoints: [resolvedFieldLine('Battery reserve field', resolved.batteryPercent, batterySummary?.current ?? null, '%', 1)],
+                      calculation: ['Bucket the resolved battery percent series.', 'Use the latest bucket value.'],
+                    }} />
+                    <SideStat label="Window climb" value={formatSignedMetric(batterySummary?.change, '%', 1)} detail="End minus start reserve" tooltip={{
+                      summary: 'Window climb compares the first and last bucketed reserve values.',
+                      dataPoints: [`Start reserve: ${formatMetricValue(batterySummary?.start, '%', 1)}`, `End reserve: ${formatMetricValue(batterySummary?.current, '%', 1)}`],
+                      calculation: ['window climb = latest reserve bucket - earliest reserve bucket'],
+                    }} />
+                    <SideStat label="Solar net avg" value={formatSignedMetric(solarNetSummary?.avg, 'W')} detail="Solar minus current load" tooltip={bucketAverageTooltip('Solar net avg', solarNetSummary?.avg, 'W', [`Average solar: ${formatMetricValue(totalSolarSummary?.avg, 'W')}`, `Average load: ${formatMetricValue(outputSummary?.avg, 'W')}`], 'For each bucket, solarNet = totalSolar - totalOutput, then average the bucket values.')} />
+                    <SideStat label="Reported full time" value={formatMetricValue(batteryToFullSummary?.current, 'min')} detail={resolved.batteryToFull ?? 'Derived estimate in hero'} tooltip={{
+                      summary: 'Reported full time is the latest bucketed device time-to-full reading when that field exists.',
+                      dataPoints: [resolvedFieldLine('battery_range_to_full', resolved.batteryToFull, batteryToFullSummary?.current ?? null, 'min')],
+                      calculation: ['Bucket the device time-to-full series and use the latest bucket value.', 'If the field is missing, the main Battery to full card falls back to the derived estimate.'],
+                    }} />
                   </>
                 ) : null}
               </div>
@@ -601,14 +700,42 @@ export default function Solar() {
   );
 }
 
-function SideStat({ label, value, detail }: { label: string; value: string; detail: string }) {
+function SideStat({ label, value, detail, tooltip }: { label: string; value: string; detail: string; tooltip?: StatHelpContent }) {
   return (
     <div className="analytics-side-stat">
-      <span>{label}</span>
+      <span className="analytics-side-stat-label">
+        <span>{label}</span>
+        {tooltip ? <StatHelpTooltip label={label} content={tooltip} /> : null}
+      </span>
       <strong>{value}</strong>
       <small>{detail}</small>
     </div>
   );
+}
+
+function resolvedFieldLine(label: string, field: string | null, value: number | null, unit: string, digits = 0) {
+  const suffix = unit ? ` ${unit}` : '';
+  const rendered = value === null || !Number.isFinite(value)
+    ? 'unavailable'
+    : value.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return `${label}: ${field ?? 'unmapped'}${field ? ` = ${rendered}${suffix}` : ''}`;
+}
+
+function bucketAverageTooltip(
+  label: string,
+  value: number | null | undefined,
+  unit: string,
+  extraDataPoints: string[],
+  calculation: string,
+): StatHelpContent {
+  return {
+    summary: `${label} is a windowed statistic built from bucketed history rather than a single live sample.`,
+    dataPoints: [`Displayed average: ${formatMetricValue(value, unit)}`, ...extraDataPoints],
+    calculation: [
+      'Group raw history points into time buckets for the selected range.',
+      calculation,
+    ],
+  };
 }
 
 function SolarInputCard({

@@ -11,14 +11,13 @@ import {
   Plug,
   RefreshCw,
   ShieldCheck,
-  Split,
   Sun,
   Wifi,
   Zap,
 } from 'lucide-react';
 import { useWsStore } from '../store/ws';
 import { useShellStore } from '../store/shell';
-import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, StatusChip, EmptyState } from '../components/ui';
+import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, StatusChip, EmptyState, StatHelpTooltip, type StatHelpContent } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
@@ -32,6 +31,14 @@ type StatItem = {
   field: string;
   unit?: string;
   accent?: string;
+};
+
+type MetricDefinition = {
+  label: string;
+  value: string | null;
+  detail?: string | null;
+  accent?: string;
+  tooltip: StatHelpContent;
 };
 
 function getNumber(state: DeviceState, field: string) {
@@ -65,6 +72,39 @@ function formatNumber(value: number, digits = 0) {
 function formatMetric(value: number | null, unit = '', digits = 0) {
   if (value === null) return null;
   return `${formatNumber(value, digits)}${unit}`;
+}
+
+function formatNumericFieldDetail(state: DeviceState, field: string, unit = '', digits = 0) {
+  const value = getNumber(state, field);
+  if (value === null) {
+    return `${field}: unavailable`;
+  }
+
+  return `${field}: ${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}`;
+}
+
+function formatTextFieldDetail(state: DeviceState, field: string) {
+  const value = getText(state, field);
+  return `${field}: ${value ?? 'unavailable'}`;
+}
+
+function rawNumericTooltip(
+  label: string,
+  state: DeviceState,
+  field: string,
+  unit = '',
+  digits = 0,
+  note?: string,
+): StatHelpContent {
+  return {
+    summary: `${label} is a direct reading from the live AC500 telemetry.`,
+    dataPoints: [formatNumericFieldDetail(state, field, unit, digits)],
+    calculation: [
+      'Read the current field value from the selected device state.',
+      `Parse it as a number and format it with${unit ? ` ${unit}` : ''} display rounding only.`,
+    ],
+    note,
+  };
 }
 
 function latestTimestamp(state: DeviceState) {
@@ -147,9 +187,10 @@ function StatPanel({
       return {
         ...item,
         value: `${formatNumber(value, digits)}${item.unit ? ` ${item.unit}` : ''}`,
+        tooltip: rawNumericTooltip(item.label, state, item.field, item.unit ?? '', digits),
       };
     })
-    .filter((item): item is StatItem & { value: string } => item !== null);
+    .filter((item): item is StatItem & { value: string; tooltip: StatHelpContent } => item !== null);
 
   if (resolved.length === 0) return null;
 
@@ -162,6 +203,7 @@ function StatPanel({
             label={item.label}
             value={item.value}
             accent={item.accent}
+            tooltip={item.tooltip}
           />
         ))}
       </div>
@@ -201,6 +243,8 @@ function Hero({ state }: { state: DeviceState }) {
   const net = totalIn - totalOut;
   const mode = describeActivity(totalIn, totalOut, acInput, dcInput);
   const ModeIcon = mode.icon;
+  const batteryDigits = 0;
+  const powerDigits = 0;
 
   const statusChips = [
     { label: 'AC Output', value: getBool(state, 'ac_output_on') },
@@ -227,6 +271,20 @@ function Hero({ state }: { state: DeviceState }) {
               <div className="hero-battery-label">
                 <Battery size={18} />
                 <span>Battery Reserve</span>
+                <StatHelpTooltip
+                  label="Battery Reserve"
+                  content={{
+                    summary: 'This is the current battery state of charge shown in the hero card.',
+                    dataPoints: [
+                      formatNumericFieldDetail(state, 'total_battery_percent', '%', batteryDigits),
+                    ],
+                    calculation: [
+                      'Read total_battery_percent from the live device state.',
+                      'Display the current percentage and use the same value to size the battery bar.',
+                    ],
+                    note: 'If the field is missing, the hero falls back to an empty display.',
+                  }}
+                />
               </div>
               <div className="hero-battery-value" style={{ color: batteryTone(battery) }}>
                 {battery === null ? '--' : `${formatNumber(battery)}%`}
@@ -243,6 +301,24 @@ function Hero({ state }: { state: DeviceState }) {
             </div>
             <div className="hero-battery-foot">
               <span>Net balance</span>
+              <StatHelpTooltip
+                label="Net Balance"
+                content={{
+                  summary: 'Net balance compares live input power against live output power.',
+                  dataPoints: [
+                    formatNumericFieldDetail(state, 'dc_input_power', 'W', powerDigits),
+                    formatNumericFieldDetail(state, 'ac_input_power', 'W', powerDigits),
+                    formatNumericFieldDetail(state, 'ac_output_power', 'W', powerDigits),
+                    formatNumericFieldDetail(state, 'dc_output_power', 'W', powerDigits),
+                  ],
+                  calculation: [
+                    'totalIn = dc_input_power + ac_input_power',
+                    'totalOut = ac_output_power + dc_output_power',
+                    'net balance = totalIn - totalOut',
+                  ],
+                  note: 'Positive means charging headroom. Negative means the battery is supporting load.',
+                }}
+              />
               <strong style={{ color: net >= 0 ? 'var(--green)' : 'var(--amber)' }}>
                 {net >= 0 ? '+' : ''}
                 {formatNumber(net)} W
@@ -273,6 +349,20 @@ function Hero({ state }: { state: DeviceState }) {
             <div className="power-node-label">
               <Sun size={16} />
               Input
+              <StatHelpTooltip
+                label="Input"
+                content={{
+                  summary: 'Input is the live power entering the AC500 from DC and AC sources.',
+                  dataPoints: [
+                    formatNumericFieldDetail(state, 'dc_input_power', 'W'),
+                    formatNumericFieldDetail(state, 'ac_input_power', 'W'),
+                  ],
+                  calculation: [
+                    'total input = dc_input_power + ac_input_power',
+                    'The split rows beneath the total show those same two contributors.',
+                  ],
+                }}
+              />
             </div>
             <div className="power-node-total">{formatNumber(totalIn)} W</div>
             <div className="power-node-split">
@@ -299,6 +389,20 @@ function Hero({ state }: { state: DeviceState }) {
             <div className="power-node-label">
               <Battery size={16} />
               Reserve
+              <StatHelpTooltip
+                label="Reserve"
+                content={{
+                  summary: 'Reserve combines the battery percent with the live power-direction check.',
+                  dataPoints: [
+                    formatNumericFieldDetail(state, 'total_battery_percent', '%'),
+                    `Computed net balance: ${formatNumber(net)} W`,
+                  ],
+                  calculation: [
+                    'Show total_battery_percent as the reserve value.',
+                    "If net balance is >= 0 label the battery path as Charging, otherwise label it Discharging.",
+                  ],
+                }}
+              />
             </div>
             <div className="power-node-total">
               {battery === null ? '--' : `${formatNumber(battery)}%`}
@@ -321,6 +425,20 @@ function Hero({ state }: { state: DeviceState }) {
             <div className="power-node-label">
               <Plug size={16} />
               Output
+              <StatHelpTooltip
+                label="Output"
+                content={{
+                  summary: 'Output is the live load the AC500 is serving right now.',
+                  dataPoints: [
+                    formatNumericFieldDetail(state, 'ac_output_power', 'W'),
+                    formatNumericFieldDetail(state, 'dc_output_power', 'W'),
+                  ],
+                  calculation: [
+                    'total output = ac_output_power + dc_output_power',
+                    'The split rows beneath the total show the AC and DC load components.',
+                  ],
+                }}
+              />
             </div>
             <div className="power-node-total">{formatNumber(totalOut)} W</div>
             <div className="power-node-split">
@@ -358,32 +476,74 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
       value: formatMetric(getNumber(state, 'total_battery_voltage'), ' V', 1),
       detail: 'Main DC bus',
       accent: 'var(--cat-battery)',
+      tooltip: rawNumericTooltip('Battery Voltage', state, 'total_battery_voltage', 'V', 1, 'This is the live total battery bus voltage, not an averaged historical value.'),
     },
     {
       label: 'Generated Energy',
       value: formatMetric(getNumber(state, 'power_generation'), ' kWh', 1),
       detail: 'Cumulative solar generation',
       accent: 'var(--cat-input)',
+      tooltip: rawNumericTooltip('Generated Energy', state, 'power_generation', 'kWh', 1, 'The device reports this as a cumulative energy counter.'),
     },
     {
       label: 'AC Output Mode',
       value: outputMode,
       detail: upsMode ? `UPS ${upsMode}` : null,
       accent: 'var(--cat-output)',
+      tooltip: {
+        summary: 'AC Output Mode shows the inverter mode text currently reported by the AC500.',
+        dataPoints: [
+          formatTextFieldDetail(state, 'ac_output_mode'),
+          ...(upsMode ? [formatTextFieldDetail(state, 'ups_mode')] : []),
+        ],
+        calculation: [
+          'Read ac_output_mode from the live state and display it as the card value.',
+          'If ups_mode is present, show it as supporting detail beneath the mode.',
+        ],
+      },
     },
     {
       label: 'Battery Window',
       value: batteryRangeStart !== null && batteryRangeEnd !== null ? `${batteryRangeStart}% - ${batteryRangeEnd}%` : null,
       detail: 'Configured charge band',
       accent: 'var(--cat-battery)',
+      tooltip: {
+        summary: 'Battery Window reflects the configured lower and upper charge-band limits.',
+        dataPoints: [
+          formatNumericFieldDetail(state, 'battery_range_start', '%'),
+          formatNumericFieldDetail(state, 'battery_range_end', '%'),
+        ],
+        calculation: [
+          'Read battery_range_start and battery_range_end from live settings telemetry.',
+          'Display them together as a percentage range from start to end.',
+        ],
+      },
     },
     {
       label: 'Selected Pack',
       value: selectedPack !== null ? `Pack ${selectedPack}` : null,
       detail: packCount !== null ? `${packCount} pack slots reported` : null,
       accent: 'var(--cat-system)',
+      tooltip: {
+        summary: 'Selected Pack shows the currently addressed battery pack slot plus the reported slot count.',
+        dataPoints: [
+          formatNumericFieldDetail(state, 'pack_num'),
+          formatNumericFieldDetail(state, 'pack_num_max'),
+        ],
+        calculation: [
+          'Read pack_num as the active pack identifier.',
+          'Read pack_num_max and show it as detail when the device reports available slots.',
+        ],
+      },
     },
-  ].filter((item): item is { label: string; value: string; detail: string | null; accent: string } => Boolean(item.value));
+  ].reduce<Array<MetricDefinition & { value: string }>>((cards, item) => {
+    if (!item.value) {
+      return cards;
+    }
+
+    cards.push({ ...item, value: item.value });
+    return cards;
+  }, []);
 
   const modeRows = [
     outputMode ? { label: 'AC Output Mode', value: outputMode } : null,
@@ -464,6 +624,7 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
             value={card.value}
             detail={card.detail ?? undefined}
             accent={card.accent}
+            tooltip={card.tooltip}
           />
         ))}
       </div>
@@ -524,15 +685,6 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
               </div>
             ))}
           </div>
-        </SectionPanel>
-      ) : null}
-
-      {(hasField(state, '_raw') || hasField(state, 'split_phase_machine_mode')) ? (
-        <SectionPanel title="Why This Layout Changed" icon={Split} className="surface-card--accent-ink">
-          <p style={{ color: 'var(--text-dim)', maxWidth: '72ch', overflowWrap: 'anywhere' }}>
-            This overview is now based on the AC500's real telemetry footprint in your stack. It focuses on the fields the device actually publishes here:
-            power flow, internal electrical channels, operating modes, charge window, firmware, and connection state.
-          </p>
         </SectionPanel>
       ) : null}
     </section>

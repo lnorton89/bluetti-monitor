@@ -49,7 +49,7 @@ import {
 } from '../lib/chartAnalytics';
 import { categoryColors, formatValue, getFieldMeta } from '../lib/fields';
 import { formatTime } from '../lib/time';
-import { Card, Spinner, SectionPanel, MetricTile, StatusChip, PageHeader, EmptyState } from '../components/ui';
+import { Card, Spinner, SectionPanel, MetricTile, StatusChip, PageHeader, EmptyState, StatHelpTooltip, type StatHelpContent } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
@@ -325,16 +325,65 @@ export default function Charts() {
       {timeline.length > 0 ? (
         <>
           <div className="tile-grid tile-grid--cols-4 analytics-score-grid">
-            <MetricTile label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={`Window ${formatMetricValue(batterySummary?.min, '%', 1)} to ${formatMetricValue(batterySummary?.max, '%', 1)}`} accent="var(--cat-battery)" />
-            <MetricTile label="Average input cover" value={coverageRatio === null ? '--' : `${coverageRatio}%`} detail={`Input ${formatMetricValue(inputSummary?.avg, 'W')} / load ${formatMetricValue(outputSummary?.avg, 'W')}`} accent="var(--cat-input)" />
-            <MetricTile label="Load intensity" value={formatMetricValue(outputSummary?.max, 'W')} detail={peakLoadPoint ? `Peak at ${formatTime(peakLoadPoint.ts)}` : 'Peak load unavailable'} accent="var(--cat-output)" />
-            <MetricTile label="Charge posture" value={formatSignedMetric(netSummary?.avg, 'W')} detail={gridSummary?.avg && gridSummary.avg > 0 ? `Grid assist ${formatMetricValue(gridSummary.avg, 'W')}` : 'Mostly DC-driven window'} accent="var(--blue)" />
+            <MetricTile label="Battery reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={`Window ${formatMetricValue(batterySummary?.min, '%', 1)} to ${formatMetricValue(batterySummary?.max, '%', 1)}`} accent="var(--cat-battery)" tooltip={{
+              summary: 'Battery reserve is the latest bucketed battery-percent value in the analytics window.',
+              dataPoints: [
+                resolvedMetricLine('Battery reserve field', analytics?.resolvedFields.batteryPercent ?? resolvedCoreFields.batteryPercent, batterySummary?.current, '%', 1),
+                `Window low: ${formatMetricValue(batterySummary?.min, '%', 1)}`,
+                `Window high: ${formatMetricValue(batterySummary?.max, '%', 1)}`,
+              ],
+              calculation: ['Bucket the battery-percent history for the selected window.', 'Use the most recent bucket as the card value.'],
+            }} />
+            <MetricTile label="Average input cover" value={coverageRatio === null ? '--' : `${coverageRatio}%`} detail={`Input ${formatMetricValue(inputSummary?.avg, 'W')} / load ${formatMetricValue(outputSummary?.avg, 'W')}`} accent="var(--cat-input)" tooltip={{
+              summary: 'Average input cover compares average incoming power against average load across the whole window.',
+              dataPoints: [
+                `Average total input: ${formatMetricValue(inputSummary?.avg, 'W')}`,
+                `Average total output: ${formatMetricValue(outputSummary?.avg, 'W')}`,
+              ],
+              calculation: ['For each bucket, totalInput = solarInput + gridInput and totalOutput = acLoad + dcLoad.', 'Average input cover = average totalInput / average totalOutput * 100.'],
+            }} />
+            <MetricTile label="Load intensity" value={formatMetricValue(outputSummary?.max, 'W')} detail={peakLoadPoint ? `Peak at ${formatTime(peakLoadPoint.ts)}` : 'Peak load unavailable'} accent="var(--cat-output)" tooltip={{
+              summary: 'Load intensity surfaces the heaviest output bucket in the selected window.',
+              dataPoints: [
+                resolvedMetricLine('AC load field', analytics?.resolvedFields.acLoad ?? resolvedCoreFields.acLoad, null, 'W'),
+                resolvedMetricLine('DC load field', analytics?.resolvedFields.dcLoad ?? resolvedCoreFields.dcLoad, null, 'W'),
+                `Peak output bucket: ${peakLoadPoint ? `${formatMetricValue(peakLoadPoint.totalOutput, 'W')} at ${formatTime(peakLoadPoint.ts)}` : 'unavailable'}`,
+              ],
+              calculation: ['For each bucket, totalOutput = acLoad + dcLoad.', 'Scan the bucketed output series and keep the maximum value.'],
+            }} />
+            <MetricTile label="Charge posture" value={formatSignedMetric(netSummary?.avg, 'W')} detail={gridSummary?.avg && gridSummary.avg > 0 ? `Grid assist ${formatMetricValue(gridSummary.avg, 'W')}` : 'Mostly DC-driven window'} accent="var(--blue)" tooltip={{
+              summary: 'Charge posture is the average net power across the selected analytics window.',
+              dataPoints: [
+                `Average total input: ${formatMetricValue(inputSummary?.avg, 'W')}`,
+                `Average total output: ${formatMetricValue(outputSummary?.avg, 'W')}`,
+                `Average grid assist: ${formatMetricValue(gridSummary?.avg, 'W')}`,
+              ],
+              calculation: ['For each bucket, netPower = solarInput + gridInput - acLoad - dcLoad.', 'Average the bucketed netPower series. Positive means charging; negative means discharge.'],
+            }} />
           </div>
 
           <div className="tile-grid tile-grid--cols-3 analytics-insights-grid">
-            <MetricTile label="Best solar moment" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? `Captured at ${formatTime(peakSolarPoint.ts)}` : 'No solar history in this window'} icon={Sun} />
-            <MetricTile label="Heaviest load" value={peakLoadPoint ? formatMetricValue(peakLoadPoint.totalOutput, 'W') : '--'} detail={peakLoadPoint ? `Demand peaked at ${formatTime(peakLoadPoint.ts)}` : 'No output history in this window'} icon={Zap} />
-            <MetricTile label="Thermal ceiling" value={peakTempPoint ? formatMetricValue(peakTempPoint.internalTemp, 'C', 1) : '--'} detail={peakTempPoint ? `Fan ${formatMetricValue(peakTempPoint.fanSpeed, 'RPM')} at ${formatTime(peakTempPoint.ts)}` : 'No temperature history in this window'} icon={Fan} />
+            <MetricTile label="Best solar moment" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? `Captured at ${formatTime(peakSolarPoint.ts)}` : 'No solar history in this window'} icon={Sun} tooltip={{
+              summary: 'Best solar moment is the strongest bucketed solar input in the selected range.',
+              dataPoints: [
+                resolvedMetricLine('Solar input field', analytics?.resolvedFields.solarInput ?? resolvedCoreFields.solarInput, null, 'W'),
+                `Peak bucket: ${peakSolarPoint ? `${formatMetricValue(peakSolarPoint.solarInput, 'W')} at ${formatTime(peakSolarPoint.ts)}` : 'unavailable'}`,
+              ],
+              calculation: ['Bucket the resolved solarInput history.', 'Scan the series for the maximum bucket value.'],
+            }} />
+            <MetricTile label="Heaviest load" value={peakLoadPoint ? formatMetricValue(peakLoadPoint.totalOutput, 'W') : '--'} detail={peakLoadPoint ? `Demand peaked at ${formatTime(peakLoadPoint.ts)}` : 'No output history in this window'} icon={Zap} tooltip={{
+              summary: 'Heaviest load is the maximum bucketed total output in the window.',
+              dataPoints: [`Peak output bucket: ${peakLoadPoint ? `${formatMetricValue(peakLoadPoint.totalOutput, 'W')} at ${formatTime(peakLoadPoint.ts)}` : 'unavailable'}`],
+              calculation: ['For each bucket, totalOutput = acLoad + dcLoad.', 'Keep the highest totalOutput bucket.'],
+            }} />
+            <MetricTile label="Thermal ceiling" value={peakTempPoint ? formatMetricValue(peakTempPoint.internalTemp, 'C', 1) : '--'} detail={peakTempPoint ? `Fan ${formatMetricValue(peakTempPoint.fanSpeed, 'RPM')} at ${formatTime(peakTempPoint.ts)}` : 'No temperature history in this window'} icon={Fan} tooltip={{
+              summary: 'Thermal ceiling marks the hottest bucketed temperature in the selected window.',
+              dataPoints: [
+                resolvedMetricLine('Temperature field', analytics?.resolvedFields.internalTemp ?? resolvedCoreFields.internalTemp, peakTempPoint?.internalTemp ?? null, 'C', 1),
+                resolvedMetricLine('Fan field', analytics?.resolvedFields.fanSpeed ?? resolvedCoreFields.fanSpeed, peakTempPoint?.fanSpeed ?? null, 'RPM'),
+              ],
+              calculation: ['Bucket the internal temperature history.', 'Keep the highest temperature bucket and show the fan speed from that same bucket as context.'],
+            }} />
           </div>
 
           <SectionPanel
@@ -393,34 +442,70 @@ export default function Charts() {
               <div className="analytics-side-stats">
                 {focus === 'balance' ? (
                   <>
-                    <SideStat label="Average input" value={formatMetricValue(inputSummary?.avg, 'W')} detail="Solar + AC input" />
-                    <SideStat label="Average output" value={formatMetricValue(outputSummary?.avg, 'W')} detail="AC + DC loads" />
-                    <SideStat label="Average net" value={formatSignedMetric(netSummary?.avg, 'W')} detail="Positive means charging" />
-                    <SideStat label="Charge buckets" value={chargeShare === null ? '--' : `${chargeShare}%`} detail="Buckets where input covered output" />
+                    <SideStat label="Average input" value={formatMetricValue(inputSummary?.avg, 'W')} detail="Solar + AC input" tooltip={historyAverageTooltip('Average input', formatMetricValue(inputSummary?.avg, 'W'), ['Solar input buckets', 'Grid input buckets'], 'For each bucket, totalInput = solarInput + gridInput, then average the bucket values.')} />
+                    <SideStat label="Average output" value={formatMetricValue(outputSummary?.avg, 'W')} detail="AC + DC loads" tooltip={historyAverageTooltip('Average output', formatMetricValue(outputSummary?.avg, 'W'), ['AC load buckets', 'DC load buckets'], 'For each bucket, totalOutput = acLoad + dcLoad, then average the bucket values.')} />
+                    <SideStat label="Average net" value={formatSignedMetric(netSummary?.avg, 'W')} detail="Positive means charging" tooltip={historyAverageTooltip('Average net', formatSignedMetric(netSummary?.avg, 'W'), ['Average total input', 'Average total output'], 'For each bucket, netPower = solarInput + gridInput - acLoad - dcLoad, then average the netPower series.')} />
+                    <SideStat label="Charge buckets" value={chargeShare === null ? '--' : `${chargeShare}%`} detail="Buckets where input covered output" tooltip={{
+                      summary: 'Charge buckets shows how often bucketed net power was neutral or positive.',
+                      dataPoints: [`Buckets with netPower >= 0: ${chargeBuckets}`, `Buckets with numeric netPower: ${netBuckets}`],
+                      calculation: ['Count buckets where netPower is zero or positive.', 'Divide by all buckets with numeric net power and convert to a percentage.'],
+                    }} />
                   </>
                 ) : null}
                 {focus === 'sources' ? (
                   <>
-                    <SideStat label="Solar share" value={solarShare === null ? '--' : `${solarShare}%`} detail="Average contribution to input" />
-                    <SideStat label="Average solar" value={formatMetricValue(solarSummary?.avg, 'W')} detail={analytics?.resolvedFields.solarInput ?? 'Unavailable'} />
-                    <SideStat label="Average grid" value={formatMetricValue(gridSummary?.avg, 'W')} detail={analytics?.resolvedFields.gridInput ?? 'Unavailable'} />
-                    <SideStat label="Best solar bucket" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? formatTime(peakSolarPoint.ts) : 'No peak in window'} />
+                    <SideStat label="Solar share" value={solarShare === null ? '--' : `${solarShare}%`} detail="Average contribution to input" tooltip={{
+                      summary: 'Solar share is the average portion of all input supplied by solar.',
+                      dataPoints: [`Average solar: ${formatMetricValue(solarSummary?.avg, 'W')}`, `Average total input: ${formatMetricValue(inputSummary?.avg, 'W')}`],
+                      calculation: ['solar share = average solarInput / average totalInput * 100', 'Hide the percentage when total input is zero.'],
+                    }} />
+                    <SideStat label="Average solar" value={formatMetricValue(solarSummary?.avg, 'W')} detail={analytics?.resolvedFields.solarInput ?? 'Unavailable'} tooltip={historyAverageTooltip('Average solar', formatMetricValue(solarSummary?.avg, 'W'), [resolvedMetricLine('Solar input field', analytics?.resolvedFields.solarInput ?? resolvedCoreFields.solarInput, null, 'W')], 'Average the bucketed solarInput series across the selected window.')} />
+                    <SideStat label="Average grid" value={formatMetricValue(gridSummary?.avg, 'W')} detail={analytics?.resolvedFields.gridInput ?? 'Unavailable'} tooltip={historyAverageTooltip('Average grid', formatMetricValue(gridSummary?.avg, 'W'), [resolvedMetricLine('Grid input field', analytics?.resolvedFields.gridInput ?? resolvedCoreFields.gridInput, null, 'W')], 'Average the bucketed gridInput series across the selected window.')} />
+                    <SideStat label="Best solar bucket" value={peakSolarPoint ? formatMetricValue(peakSolarPoint.solarInput, 'W') : '--'} detail={peakSolarPoint ? formatTime(peakSolarPoint.ts) : 'No peak in window'} tooltip={{
+                      summary: 'Best solar bucket is the highest bucketed solar input reading.',
+                      dataPoints: [`Peak bucket: ${peakSolarPoint ? `${formatMetricValue(peakSolarPoint.solarInput, 'W')} at ${formatTime(peakSolarPoint.ts)}` : 'unavailable'}`],
+                      calculation: ['Bucket the solarInput history.', 'Keep the bucket with the highest solarInput value.'],
+                    }} />
                   </>
                 ) : null}
                 {focus === 'battery' ? (
                   <>
-                    <SideStat label="Current reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={analytics?.resolvedFields.batteryPercent ?? 'Unavailable'} />
-                    <SideStat label="Window change" value={formatDelta(batterySummary?.change, '%', 1)} detail="End minus start" />
-                    <SideStat label="Lowest reserve" value={formatMetricValue(batterySummary?.min, '%', 1)} detail="Battery floor in the window" />
-                    <SideStat label="Voltage average" value={formatMetricValue(voltageSummary?.avg, 'V', 1)} detail={analytics?.resolvedFields.batteryVoltage ?? 'Unavailable'} />
+                    <SideStat label="Current reserve" value={formatMetricValue(batterySummary?.current, '%', 1)} detail={analytics?.resolvedFields.batteryPercent ?? 'Unavailable'} tooltip={{
+                      summary: 'Current reserve is the most recent bucketed battery-percent value.',
+                      dataPoints: [resolvedMetricLine('Battery reserve field', analytics?.resolvedFields.batteryPercent ?? resolvedCoreFields.batteryPercent, batterySummary?.current, '%', 1)],
+                      calculation: ['Bucket the batteryPercent history.', 'Display the latest bucket value.'],
+                    }} />
+                    <SideStat label="Window change" value={formatDelta(batterySummary?.change, '%', 1)} detail="End minus start" tooltip={{
+                      summary: 'Window change compares the last and first reserve buckets.',
+                      dataPoints: [`Start reserve: ${formatMetricValue(batterySummary?.start, '%', 1)}`, `End reserve: ${formatMetricValue(batterySummary?.current, '%', 1)}`],
+                      calculation: ['window change = latest batteryPercent bucket - earliest batteryPercent bucket'],
+                    }} />
+                    <SideStat label="Lowest reserve" value={formatMetricValue(batterySummary?.min, '%', 1)} detail="Battery floor in the window" tooltip={{
+                      summary: 'Lowest reserve is the minimum bucketed battery-percent value in the selected window.',
+                      dataPoints: [`Lowest batteryPercent bucket: ${formatMetricValue(batterySummary?.min, '%', 1)}`],
+                      calculation: ['Bucket the batteryPercent history.', 'Scan the series for the smallest bucket value.'],
+                    }} />
+                    <SideStat label="Voltage average" value={formatMetricValue(voltageSummary?.avg, 'V', 1)} detail={analytics?.resolvedFields.batteryVoltage ?? 'Unavailable'} tooltip={historyAverageTooltip('Voltage average', formatMetricValue(voltageSummary?.avg, 'V', 1), [resolvedMetricLine('Battery voltage field', analytics?.resolvedFields.batteryVoltage ?? resolvedCoreFields.batteryVoltage, null, 'V', 1)], 'Average the bucketed batteryVoltage series across the selected window.')} />
                   </>
                 ) : null}
                 {focus === 'health' ? (
                   <>
-                    <SideStat label="Peak temp" value={formatMetricValue(temperatureSummary?.max, 'C', 1)} detail={analytics?.resolvedFields.internalTemp ?? 'Unavailable'} />
-                    <SideStat label="Average temp" value={formatMetricValue(temperatureSummary?.avg, 'C', 1)} detail="Internal thermal trend" />
-                    <SideStat label="Peak fan" value={formatMetricValue(fanSummary?.max, 'RPM')} detail={analytics?.resolvedFields.fanSpeed ?? 'Unavailable'} />
-                    <SideStat label="Hottest bucket" value={peakTempPoint ? formatTime(peakTempPoint.ts) : '--'} detail="When thermal load peaked" />
+                    <SideStat label="Peak temp" value={formatMetricValue(temperatureSummary?.max, 'C', 1)} detail={analytics?.resolvedFields.internalTemp ?? 'Unavailable'} tooltip={{
+                      summary: 'Peak temp is the hottest bucketed internal temperature in the window.',
+                      dataPoints: [resolvedMetricLine('Temperature field', analytics?.resolvedFields.internalTemp ?? resolvedCoreFields.internalTemp, temperatureSummary?.max, 'C', 1)],
+                      calculation: ['Bucket the internalTemp history.', 'Keep the maximum bucket value.'],
+                    }} />
+                    <SideStat label="Average temp" value={formatMetricValue(temperatureSummary?.avg, 'C', 1)} detail="Internal thermal trend" tooltip={historyAverageTooltip('Average temp', formatMetricValue(temperatureSummary?.avg, 'C', 1), ['Bucketed internalTemp history'], 'Average the bucketed internalTemp series across the selected window.')} />
+                    <SideStat label="Peak fan" value={formatMetricValue(fanSummary?.max, 'RPM')} detail={analytics?.resolvedFields.fanSpeed ?? 'Unavailable'} tooltip={{
+                      summary: 'Peak fan is the highest bucketed fan-speed reading in the selected range.',
+                      dataPoints: [resolvedMetricLine('Fan field', analytics?.resolvedFields.fanSpeed ?? resolvedCoreFields.fanSpeed, fanSummary?.max, 'RPM')],
+                      calculation: ['Bucket the fanSpeed history.', 'Keep the maximum bucket value.'],
+                    }} />
+                    <SideStat label="Hottest bucket" value={peakTempPoint ? formatTime(peakTempPoint.ts) : '--'} detail="When thermal load peaked" tooltip={{
+                      summary: 'Hottest bucket marks the timestamp of the highest bucketed internal temperature.',
+                      dataPoints: [`Hottest timestamp: ${peakTempPoint ? formatTime(peakTempPoint.ts) : '--'}`],
+                      calculation: ['Find the bucket with the maximum internalTemp value.', 'Display that bucket timestamp.'],
+                    }} />
                   </>
                 ) : null}
               </div>
@@ -530,8 +615,33 @@ export default function Charts() {
   );
 }
 
-function SideStat({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return <div className="analytics-side-stat"><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>;
+function SideStat({ label, value, detail, tooltip }: { label: string; value: string; detail: string; tooltip?: StatHelpContent }) {
+  return (
+    <div className="analytics-side-stat">
+      <span className="analytics-side-stat-label">
+        <span>{label}</span>
+        {tooltip ? <StatHelpTooltip label={label} content={tooltip} /> : null}
+      </span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+function resolvedMetricLine(label: string, field: string | null, value: number | null | undefined, unit: string, digits = 0) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return `${label}: ${field ?? 'unmapped'}`;
+  }
+
+  return `${label}: ${field ?? 'unmapped'} = ${value.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${unit}`.trim();
+}
+
+function historyAverageTooltip(label: string, value: string, dataPoints: string[], calculation: string): StatHelpContent {
+  return {
+    summary: `${label} is computed from bucketed history rather than a single live point.`,
+    dataPoints: [`Displayed value: ${value}`, ...dataPoints],
+    calculation: ['Group raw history into time buckets for the selected window.', calculation],
+  };
 }
 
 function getReportTitle(focus: FocusId) {

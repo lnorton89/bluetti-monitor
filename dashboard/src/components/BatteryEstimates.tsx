@@ -1,4 +1,5 @@
 import { Clock, BatteryCharging, Info } from 'lucide-react';
+import { StatHelpTooltip, type StatHelpContent } from './ui';
 import type { DeviceState } from '../lib/battery-estimates';
 import {
   estimateRuntimeMinutes,
@@ -50,6 +51,57 @@ function EstimateConfidence({ estimated }: { estimated: boolean }) {
   );
 }
 
+function buildRuntimeTooltip(state: DeviceState, estimated: boolean): StatHelpContent {
+  return {
+    summary: estimated
+      ? 'Runtime is estimated because the device did not publish a direct battery_range_to_empty value.'
+      : 'Runtime comes from the device-reported battery_range_to_empty field.',
+    dataPoints: [
+      `battery_range_to_empty: ${state['battery_range_to_empty']?.value ?? 'unavailable'}`,
+      `total_battery_percent: ${state['total_battery_percent']?.value ?? state['battery_percent']?.value ?? state['soc']?.value ?? state['charge_level']?.value ?? 'unavailable'}`,
+      `ac_output_power: ${state['ac_output_power']?.value ?? '0'}`,
+      `dc_output_power: ${state['dc_output_power']?.value ?? '0'}`,
+    ],
+    calculation: estimated
+      ? [
+          'Fallback remainingWh = batteryPercent / 100 * 5120 Wh',
+          'Fallback usableWh = max(remainingWh - 100 Wh, 0)',
+          'Fallback runtimeMinutes = usableWh / (ac_output_power + dc_output_power) * 60',
+        ]
+      : [
+          'Read battery_range_to_empty directly from live telemetry.',
+          'Format the reported minutes into h/m display text.',
+        ],
+    note: estimated ? 'This assumes the AC500 5120 Wh base capacity and current load stay roughly steady.' : undefined,
+  };
+}
+
+function buildChargeTooltip(state: DeviceState, estimated: boolean): StatHelpContent {
+  return {
+    summary: estimated
+      ? 'Time to Full is estimated because the device did not publish battery_range_to_full.'
+      : 'Time to Full comes from the device-reported battery_range_to_full field.',
+    dataPoints: [
+      `battery_range_to_full: ${state['battery_range_to_full']?.value ?? 'unavailable'}`,
+      `battery percent: ${state['total_battery_percent']?.value ?? state['battery_percent']?.value ?? state['soc']?.value ?? state['charge_level']?.value ?? 'unavailable'}`,
+      `ac_input_power: ${state['ac_input_power']?.value ?? '0'}`,
+      `pv1_power: ${state['pv1_power']?.value ?? '0'}`,
+      `pv2_power: ${state['pv2_power']?.value ?? '0'}`,
+    ],
+    calculation: estimated
+      ? [
+          'remainingWh = batteryPercent / 100 * 5120 Wh',
+          'deficitWh = 5120 Wh - remainingWh',
+          'chargeMinutes = deficitWh / (ac_input_power + pv1_power + pv2_power) * 60',
+        ]
+      : [
+          'Read battery_range_to_full directly from live telemetry.',
+          'Format the reported minutes into h/m display text.',
+        ],
+    note: estimated ? 'The estimate assumes current AC + solar charge rates stay close to the present readings.' : undefined,
+  };
+}
+
 export function BatteryEstimates({ state }: BatteryEstimatesProps) {
   const charging = isCharging(state);
   const isFull = isBatteryFull(state);
@@ -90,7 +142,10 @@ export function BatteryEstimates({ state }: BatteryEstimatesProps) {
     <div className="battery-estimates">
       <div className="estimate-item">
         <Clock size={14} className="estimate-icon" />
-        <span className="estimate-label">Runtime</span>
+        <span className="estimate-label-group">
+          <span className="estimate-label">Runtime</span>
+          <StatHelpTooltip label="Runtime" content={buildRuntimeTooltip(state, runtimeEstimated)} />
+        </span>
         <span className="estimate-value" style={{ color: getRuntimeTone() }}>
           {runtimeDisplay}
         </span>
@@ -99,7 +154,13 @@ export function BatteryEstimates({ state }: BatteryEstimatesProps) {
       {(charging || isFull) && (
         <div className="estimate-item charging">
           <BatteryCharging size={14} className="estimate-icon" />
-          <span className="estimate-label">{isFull ? 'Status' : 'Time to Full'}</span>
+          <span className="estimate-label-group">
+            <span className="estimate-label">{isFull ? 'Status' : 'Time to Full'}</span>
+            <StatHelpTooltip
+              label={isFull ? 'Status' : 'Time to Full'}
+              content={buildChargeTooltip(state, chargeEstimated)}
+            />
+          </span>
           <span className="estimate-value">{chargeDisplay}</span>
           <EstimateConfidence estimated={chargeEstimated && chargeDisplay !== '—'} />
         </div>

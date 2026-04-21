@@ -6,6 +6,8 @@ export { InfoRow } from './InfoRow';
 export { StatusChip } from './StatusChip';
 export { PageHeader } from './PageHeader';
 export { EmptyState } from './EmptyState';
+export { StatHelpTooltip } from './StatHelpTooltip';
+export type { StatHelpContent } from './StatHelpTooltip';
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -91,8 +93,9 @@ export function BigMetric({ label, value, unit, color = 'var(--amber)', icon: Ic
 }
 
 // ── BoolBadge ─────────────────────────────────────────────────────────────────
-export function BoolBadge({ value }: { value: string }) {
-  const on = value === 'True' || value === 'true' || value === '1';
+export function BoolBadge({ value }: { value: string | boolean }) {
+  const normalized = typeof value === 'boolean' ? (value ? 'true' : 'false') : value.trim().toLowerCase();
+  const on = normalized === 'true' || normalized === '1' || normalized === 'on';
   return (
     <span style={{
       fontFamily: 'var(--font-cond)',

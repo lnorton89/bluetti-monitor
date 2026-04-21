@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 
 Milestone: v1.1 complete
 Status: Milestone archived and ready for next-milestone planning
-Last activity: 2026-04-21
+Last activity: 2026-04-21 - Completed quick task 260421-ket: Remove the Why This Layout Changed section from the overview page and fix the switchboard section so it reflects real on/off telemetry correctly
 
 ## Accumulated Context
 
@@ -42,6 +42,13 @@ Decisions are logged in PROJECT.md.
 ### Blockers/Concerns
 
 - None
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260421-jjb | Add tooltips to every UI stat showing source datapoints and calculation details, using clear accessible popovers and matching existing dashboard design | 2026-04-21 | working tree | [260421-jjb-add-tooltips-to-every-ui-stat-showing-so](./quick/260421-jjb-add-tooltips-to-every-ui-stat-showing-so/) |
+| 260421-ket | Remove the Why This Layout Changed section from the overview page and fix the switchboard section so it reflects real on/off telemetry correctly | 2026-04-21 | working tree | [260421-ket-remove-the-why-this-layout-changed-secti](./quick/260421-ket-remove-the-why-this-layout-changed-secti/) |
 
 ## Session Continuity
 
