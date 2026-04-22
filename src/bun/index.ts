@@ -1,9 +1,9 @@
-import { existsSync, mkdirSync } from "fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { BrowserWindow } from "electrobun/bun";
 import { Utils } from "electrobun/bun";
 import {
-  discoverAC500,
+  discoverBluettiDevice,
   startBluettiMqttService as launchBluettiMqttService,
   type BluettiMqttService,
 } from "./bluetooth";
@@ -22,11 +22,22 @@ const NPM_COMMAND = process.platform === "win32" ? "npm.cmd" : "npm";
 const DASHBOARD_READY_MARKER = '<div id="root"></div>';
 const DESKTOP_NOTIFICATION_SUBTITLE = "Bluetti Monitor";
 const TITLEBAR_RECONNECT_DELAY_MS = 1_500;
+const LOG_DIR_NAME = "logs";
+const DESKTOP_LOG_FILE_NAME = "desktop.log";
+const DESKTOP_SETTINGS_FILE_NAME = "desktop-settings.json";
+const LOG_TRUNCATE_BYTES_OPTIONS = [512 * 1024, 1_024 * 1_024, 5 * 1_024 * 1_024, 10 * 1_024 * 1_024] as const;
+const LOG_RETAIN_BYTES_OPTIONS = [128 * 1_024, 256 * 1_024, 512 * 1_024, 1_024 * 1_024] as const;
+const ANSI_ESCAPE_PATTERN = /\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\u0007]*(?:\u0007|\u001B\\))/g;
+const MAX_LOG_CONTEXT_FIELDS = 14;
+const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 const appRoot = findWorkspaceRoot();
 const apiRoot = resolve(appRoot, "api");
 const dashboardRoot = resolve(appRoot, "dashboard");
 const devDataRoot = resolve(appRoot, ".dev-data");
+const logDir = resolve(devDataRoot, LOG_DIR_NAME);
+const desktopLogPath = resolve(logDir, DESKTOP_LOG_FILE_NAME);
+const desktopSettingsPath = resolve(devDataRoot, DESKTOP_SETTINGS_FILE_NAME);
 const devDatabasePath = resolve(devDataRoot, "bluetti-dev.db");
 const apiRequirementsPath = resolve(apiRoot, "requirements.txt");
 const apiVenvRoot = resolve(apiRoot, ".venv");
@@ -44,6 +55,12 @@ let dashboardProcess: Bun.Subprocess | null = null;
 let titlebarSocket: WebSocket | null = null;
 let titlebarState: AllState = {};
 let isShuttingDown = false;
+const originalConsole = {
+  log: console.log.bind(console),
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+};
 
 type TitlebarSnapshotMessage = {
   type: "snapshot";
@@ -76,6 +93,27 @@ type BatteryFullHostMessage = {
   type?: string;
 };
 
+type DesktopLogSettings = {
+  enabled: boolean;
+  retainBytes: number;
+  truncateAtBytes: number;
+};
+
+type DesktopLogSettingsHostMessage = {
+  enabled?: unknown;
+  retainBytes?: unknown;
+  truncateAtBytes?: unknown;
+  type?: string;
+};
+
+const DEFAULT_DESKTOP_LOG_SETTINGS: DesktopLogSettings = {
+  enabled: true,
+  truncateAtBytes: 1_024 * 1_024,
+  retainBytes: 256 * 1_024,
+};
+
+let desktopLogSettings = loadDesktopLogSettings();
+
 const desktopHostEvents = mainWindow.webview as typeof mainWindow.webview & {
   on: (name: "host-message", handler: (event: { data?: { detail?: unknown } }) => void) => void;
 };
@@ -87,9 +125,14 @@ desktopHostEvents.on("host-message", (event: { data?: { detail?: unknown } }) =>
     return;
   }
 
-  const message = detail as BatteryFullHostMessage;
+  const message = detail as BatteryFullHostMessage | DesktopLogSettingsHostMessage;
 
-  if (message.type !== "battery-full" || typeof message.title !== "string") {
+  if (message.type === "desktop-log-settings") {
+    updateDesktopLogSettings(message);
+    return;
+  }
+
+  if (!isBatteryFullHostMessage(message)) {
     return;
   }
 
@@ -102,6 +145,7 @@ desktopHostEvents.on("host-message", (event: { data?: { detail?: unknown } }) =>
 });
 
 mainWindow.setTitle(buildWindowTitle(titlebarState));
+initializeDesktopLogging();
 
 function nudgeLoadedWebview() {
   mainWindow.webview.executeJavascript(`
@@ -163,6 +207,410 @@ async function streamProcessOutput(stream: ReadableStream<Uint8Array> | null, la
       console.log(`[desktop:${label}] ${text}`);
     }
   }
+}
+
+function initializeDesktopLogging() {
+  if (desktopLogSettings.enabled) {
+    mkdirSync(logDir, { recursive: true });
+    ensureDesktopLogWithinBudget();
+    appendDesktopLogLine(`[desktop] log capture started at ${new Date().toISOString()}`);
+  }
+
+  console.log = (...args: unknown[]) => {
+    writeConsoleLine("INFO", originalConsole.log, args);
+  };
+  console.info = (...args: unknown[]) => {
+    writeConsoleLine("INFO", originalConsole.info, args);
+  };
+  console.warn = (...args: unknown[]) => {
+    writeConsoleLine("WARN", originalConsole.warn, args);
+  };
+  console.error = (...args: unknown[]) => {
+    writeConsoleLine("ERROR", originalConsole.error, args);
+  };
+}
+
+function writeConsoleLine(level: "INFO" | "WARN" | "ERROR", writer: (...args: unknown[]) => void, args: unknown[]) {
+  writer(...args);
+  const lines = formatLogLines(args);
+  for (const line of lines) {
+    appendDesktopLogLine(`[${resolveDesktopLogLevel(level, line)}] ${line}`);
+  }
+}
+
+function formatLogLines(args: unknown[]): string[] {
+  const combined = args
+    .flatMap((arg) => formatLogArg(arg))
+    .flatMap((chunk) => splitLogLines(chunk));
+
+  return combined.length > 0 ? combined : ["(empty log line)"];
+}
+
+function formatLogArg(value: unknown): string[] {
+  if (typeof value === "string") {
+    return [formatLogText(value)];
+  }
+
+  if (value instanceof Error) {
+    return splitLogLines(value.stack ?? `${value.name}: ${value.message}`);
+  }
+
+  if (isStructuredLogPayload(value)) {
+    return [formatStructuredLogPayload(value)];
+  }
+
+  try {
+    return [formatLogText(JSON.stringify(value))];
+  } catch {
+    return [formatLogText(String(value))];
+  }
+}
+
+function splitLogLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => formatLogText(line))
+    .filter((line) => line.length > 0);
+}
+
+function formatLogText(value: string): string {
+  return value.replace(ANSI_ESCAPE_PATTERN, "").replace(/\s+/g, " ").trim();
+}
+
+function isStructuredLogPayload(value: unknown): value is {
+  context?: unknown;
+  level?: unknown;
+  message: string;
+  timestamp?: unknown;
+} {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  return typeof record["message"] === "string";
+}
+
+function formatStructuredLogPayload(payload: {
+  context?: unknown;
+  level?: unknown;
+  message: string;
+  timestamp?: unknown;
+}) {
+  if (isCompactPollingMessage(payload.message)) {
+    const compact = formatCompactPollingCycle(payload.context);
+    if (compact !== null) {
+      return compact;
+    }
+  }
+
+  const context = formatGroupedContext(payload.context);
+
+  return context.length > 0
+    ? `${payload.message} | ${context.join(" | ")}`
+    : payload.message;
+}
+
+function formatGroupedContext(context: unknown): string[] {
+  if (typeof context !== "object" || context === null) {
+    return [];
+  }
+
+  const entries = Object.entries(context as Record<string, unknown>);
+  const fields: string[] = [];
+
+  for (const [key, value] of entries) {
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (isIsoTimestamp(value)) {
+      continue;
+    }
+
+    if (isNonTrivialObject(value)) {
+      const inner = formatGroupedEntries(value as Record<string, unknown>);
+      if (inner.length > 0) {
+        fields.push(`${key}: { ${inner.join(" ")} }`);
+      }
+      continue;
+    }
+
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      fields.push(`${key}=${value}`);
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      const rendered = value.map((entry) => renderLogScalar(entry)).filter((entry) => entry.length > 0);
+      if (rendered.length > 0) {
+        fields.push(`${key}=${rendered.join(",")}`);
+      }
+      continue;
+    }
+
+    fields.push(`${key}=${String(value)}`);
+  }
+
+  if (fields.length <= MAX_LOG_CONTEXT_FIELDS) {
+    return fields;
+  }
+
+  return [
+    ...fields.slice(0, MAX_LOG_CONTEXT_FIELDS),
+    `... +${fields.length - MAX_LOG_CONTEXT_FIELDS} more`,
+  ];
+}
+
+function formatGroupedEntries(record: Record<string, unknown>): string[] {
+  const parts: string[] = [];
+
+  for (const [key, value] of Object.entries(record)) {
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (isIsoTimestamp(value)) {
+      continue;
+    }
+
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      parts.push(`${key}=${value}`);
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      const rendered = value.map((entry) => renderLogScalar(entry)).filter((entry) => entry.length > 0);
+      if (rendered.length > 0) {
+        parts.push(`${key}=${rendered.join(",")}`);
+      }
+      continue;
+    }
+
+    if (typeof value === "object" && value !== null) {
+      const nested = formatGroupedEntries(value as Record<string, unknown>);
+      if (nested.length > 0) {
+        parts.push(`${key}: { ${nested.join(" ")} }`);
+      }
+      continue;
+    }
+
+    parts.push(`${key}=${String(value)}`);
+  }
+
+  return parts;
+}
+
+function isNonTrivialObject(value: unknown): boolean {
+  return (
+    typeof value === "object"
+    && value !== null
+    && !Array.isArray(value)
+    && Object.keys(value as Record<string, unknown>).length >= 3
+  );
+}
+
+function isIsoTimestamp(value: unknown): boolean {
+  return typeof value === "string" && ISO_TIMESTAMP_PATTERN.test(value);
+}
+
+function isCompactPollingMessage(message: string): boolean {
+  return message === "Polling cycle completed";
+}
+
+function formatCompactPollingCycle(context: unknown): string | null {
+  if (typeof context !== "object" || context === null) {
+    return null;
+  }
+
+  const record = context as Record<string, unknown>;
+  const cycleType = record["cycleType"];
+  const result = record["result"];
+  const commandCount = record["commandCount"];
+  const cycleDurationMs = record["cycleDurationMs"];
+  const telemetry = record["telemetry"];
+
+  if (
+    typeof cycleType !== "string"
+    || typeof result !== "string"
+    || typeof commandCount !== "number"
+    || typeof cycleDurationMs !== "number"
+  ) {
+    return null;
+  }
+
+  const cycleSegment = `${cycleType} ${result} ${commandCount}cmds ${cycleDurationMs}ms`;
+
+  if (typeof telemetry !== "object" || telemetry === null) {
+    return null;
+  }
+
+  const tel = telemetry as Record<string, unknown>;
+  const cycleCount = tel["cycleCount"];
+  const successfulCommandCount = tel["successfulCommandCount"];
+  const expectedErrorCount = tel["expectedErrorCount"];
+  const busyErrorCount = tel["busyErrorCount"];
+
+  if (typeof cycleCount !== "number" || typeof successfulCommandCount !== "number") {
+    return null;
+  }
+
+  const telemetryParts = [`#${cycleCount} ${successfulCommandCount}ok`];
+
+  if (typeof expectedErrorCount === "number" && expectedErrorCount > 0) {
+    telemetryParts.push(`${expectedErrorCount}err`);
+  }
+
+  if (typeof busyErrorCount === "number" && busyErrorCount > 0) {
+    telemetryParts.push(`${busyErrorCount}busy`);
+  }
+
+  return `Polling cycle completed | ${cycleSegment} | ${telemetryParts.join(" ")}`;
+}
+
+function renderLogScalar(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return formatLogText(JSON.stringify(value));
+}
+
+function appendDesktopLogLine(line: string) {
+  if (!desktopLogSettings.enabled) {
+    return;
+  }
+
+  try {
+    mkdirSync(logDir, { recursive: true });
+    ensureDesktopLogWithinBudget();
+    appendFileSync(desktopLogPath, `${new Date().toISOString()} ${line}\n`, "utf8");
+  } catch (error) {
+    originalConsole.error("[desktop:log] failed to append desktop log", error);
+  }
+}
+
+function resolveDesktopLogLevel(
+  fallbackLevel: "INFO" | "WARN" | "ERROR",
+  text: string,
+): "DEBUG" | "INFO" | "WARN" | "ERROR" {
+  try {
+    const payload = JSON.parse(text) as { level?: unknown };
+    switch (payload.level) {
+      case "debug":
+        return "DEBUG";
+      case "info":
+        return "INFO";
+      case "warn":
+        return "WARN";
+      case "error":
+        return "ERROR";
+      default:
+        return fallbackLevel;
+    }
+  } catch {
+    return fallbackLevel;
+  }
+}
+
+function ensureDesktopLogWithinBudget() {
+  if (!desktopLogSettings.enabled) {
+    return;
+  }
+
+  if (!existsSync(desktopLogPath)) {
+    return;
+  }
+
+  const { size } = statSync(desktopLogPath);
+  if (size <= desktopLogSettings.truncateAtBytes) {
+    return;
+  }
+
+  const buffer = readFileSync(desktopLogPath);
+  const retained = buffer.subarray(Math.max(0, buffer.length - desktopLogSettings.retainBytes));
+  writeFileSync(desktopLogPath, new Uint8Array(retained));
+  appendFileSync(
+    desktopLogPath,
+    `${new Date().toISOString()} [desktop] log truncated after exceeding ${desktopLogSettings.truncateAtBytes} bytes\n`,
+    "utf8",
+  );
+}
+
+function loadDesktopLogSettings(): DesktopLogSettings {
+  try {
+    if (!existsSync(desktopSettingsPath)) {
+      return DEFAULT_DESKTOP_LOG_SETTINGS;
+    }
+
+    const raw = readFileSync(desktopSettingsPath, "utf8");
+    return sanitizeDesktopLogSettings(JSON.parse(raw));
+  } catch {
+    return DEFAULT_DESKTOP_LOG_SETTINGS;
+  }
+}
+
+function sanitizeDesktopLogSettings(candidate: unknown): DesktopLogSettings {
+  if (typeof candidate !== "object" || candidate === null) {
+    return DEFAULT_DESKTOP_LOG_SETTINGS;
+  }
+
+  const record = candidate as Record<string, unknown>;
+  const truncateAtBytes = sanitizeAllowedNumber(
+    record["truncateAtBytes"],
+    LOG_TRUNCATE_BYTES_OPTIONS,
+    DEFAULT_DESKTOP_LOG_SETTINGS.truncateAtBytes,
+  );
+  const retainBytes = Math.min(
+    sanitizeAllowedNumber(
+      record["retainBytes"],
+      LOG_RETAIN_BYTES_OPTIONS,
+      DEFAULT_DESKTOP_LOG_SETTINGS.retainBytes,
+    ),
+    truncateAtBytes,
+  );
+
+  return {
+    enabled: typeof record["enabled"] === "boolean" ? record["enabled"] : DEFAULT_DESKTOP_LOG_SETTINGS.enabled,
+    truncateAtBytes,
+    retainBytes,
+  };
+}
+
+function sanitizeAllowedNumber<T extends readonly number[]>(value: unknown, allowed: T, fallback: T[number]) {
+  return typeof value === "number" && allowed.includes(value) ? value : fallback;
+}
+
+function saveDesktopLogSettings(settings: DesktopLogSettings) {
+  try {
+    mkdirSync(devDataRoot, { recursive: true });
+    writeFileSync(desktopSettingsPath, JSON.stringify(settings, null, 2), "utf8");
+  } catch (error) {
+    originalConsole.error("[desktop:log] failed to save desktop log settings", error);
+  }
+}
+
+function updateDesktopLogSettings(message: DesktopLogSettingsHostMessage) {
+  const nextSettings = sanitizeDesktopLogSettings(message);
+  const wasEnabled = desktopLogSettings.enabled;
+  desktopLogSettings = nextSettings;
+  saveDesktopLogSettings(nextSettings);
+
+  if (nextSettings.enabled && !wasEnabled) {
+    appendDesktopLogLine("[desktop] log capture enabled from dashboard settings");
+  } else if (nextSettings.enabled) {
+    appendDesktopLogLine("[desktop] log settings updated from dashboard");
+  }
+}
+
+function isBatteryFullHostMessage(
+  message: BatteryFullHostMessage | DesktopLogSettingsHostMessage,
+): message is BatteryFullHostMessage & { title: string; type: "battery-full" } {
+  return message.type === "battery-full" && "title" in message && typeof message.title === "string";
 }
 
 async function runCommand(command: string[], cwd: string, label: string, extraEnv?: Record<string, string>) {
@@ -331,7 +779,7 @@ async function ensureDevStack() {
 }
 
 async function ensureBluettiMqttService() {
-  const device = await discoverAC500();
+  const device = await discoverBluettiDevice();
   console.log(`[bluetooth] Starting bluetti-mqtt-node for ${device.mac}...`);
   bluettiMqttService = await launchBluettiMqttService(device, "localhost");
   console.log("[bluetooth] bluetti-mqtt-node started successfully");
