@@ -29,6 +29,8 @@ function Layout() {
   const lastUpdate = useWsStore((s) => s.lastUpdate);
   const shellRouteId = useShellStore((s) => s.routeId);
   const shellSignalValue = useShellStore((s) => s.value);
+  const browserBatteryFullEnabled = useAppSettingsStore((s) => s.alerts.batteryFullBrowser);
+  const desktopBatteryFullEnabled = useAppSettingsStore((s) => s.alerts.batteryFullDesktop);
   const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -50,11 +52,19 @@ function Layout() {
       ? BellOff
       : Bell;
   const showBrowserNotificationControl = browserNotificationPermission !== 'unsupported';
-  const browserNotificationLabel = browserNotificationPermission === 'granted'
-    ? 'Browser alerts armed'
-    : browserNotificationPermission === 'denied'
-      ? 'Browser alerts blocked'
-      : 'Enable browser alerts';
+  const browserNotificationLabel = !browserBatteryFullEnabled
+    ? 'Browser alerts off'
+    : browserNotificationPermission === 'granted'
+      ? 'Browser alerts armed'
+      : browserNotificationPermission === 'denied'
+        ? 'Browser alerts blocked'
+        : 'Enable browser alerts';
+  const showBrowserNotificationButton =
+    browserBatteryFullEnabled && browserNotificationPermission === 'default';
+  const DesktopNotificationIcon = desktopBatteryFullEnabled ? BellRing : BellOff;
+  const desktopNotificationLabel = desktopBatteryFullEnabled
+    ? 'Desktop alerts armed'
+    : 'Desktop alerts off';
 
   const routeMeta = getRouteMeta(location.pathname);
   const routeSignalValue = shellRouteId === routeMeta.id && shellSignalValue
@@ -110,12 +120,12 @@ function Layout() {
             </div>
             {desktopNotificationsAvailable ? (
               <div className="top-bar-metric" data-testid="shell-status-notifications">
-                <BellRing size={14} />
-                <span>Desktop alerts armed</span>
+                <DesktopNotificationIcon size={14} />
+                <span>{desktopNotificationLabel}</span>
               </div>
             ) : null}
             {showBrowserNotificationControl ? (
-              browserNotificationPermission === 'default' ? (
+              showBrowserNotificationButton ? (
                 <button
                   type="button"
                   onClick={() => {
