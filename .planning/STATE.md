@@ -51,6 +51,7 @@ Decisions are logged in PROJECT.md.
 | 260421-ket | Remove the Why This Layout Changed section from the overview page and fix the switchboard section so it reflects real on/off telemetry correctly | 2026-04-21 | working tree | [260421-ket-remove-the-why-this-layout-changed-secti](./quick/260421-ket-remove-the-why-this-layout-changed-secti/) |
 | 260421-lqq | Improve the input, reserve, and output sections in the overview hero so they read more clearly and feel more intentional on desktop and mobile | 2026-04-21 | working tree | [260421-lqq-improve-the-input-reserve-and-output-sec](./quick/260421-lqq-improve-the-input-reserve-and-output-sec/) |
 | 260421-lt8 | Normalize the three overview hero boxes so they render the same size and reduce visual clutter while keeping the important signal | 2026-04-21 | working tree | [260421-lt8-normalize-the-three-overview-hero-boxes-](./quick/260421-lt8-normalize-the-three-overview-hero-boxes-/) |
+| 260422-fast | Remove deprecated `baseUrl` from root `tsconfig.json` while keeping the workspace path alias working | 2026-04-22 | working tree | root |
 
 ## Session Continuity
 
