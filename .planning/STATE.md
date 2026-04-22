@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 
 Milestone: None active
 Status: v1.2 archived and closed out
-Last activity: 2026-04-22 - Archived the v1.2 settings milestone and prepared the project for the next milestone
+Last activity: 2026-04-22 - Completed quick task 260422-jma: Improve the bluetooth polling entry format in log files
 
 ## Accumulated Context
 
@@ -52,6 +52,8 @@ Decisions are logged in PROJECT.md.
 | 260421-lqq | Improve the input, reserve, and output sections in the overview hero so they read more clearly and feel more intentional on desktop and mobile | 2026-04-21 | working tree | [260421-lqq-improve-the-input-reserve-and-output-sec](./quick/260421-lqq-improve-the-input-reserve-and-output-sec/) |
 | 260421-lt8 | Normalize the three overview hero boxes so they render the same size and reduce visual clutter while keeping the important signal | 2026-04-21 | working tree | [260421-lt8-normalize-the-three-overview-hero-boxes-](./quick/260421-lt8-normalize-the-three-overview-hero-boxes-/) |
 | 260422-fast | Remove deprecated `baseUrl` from root `tsconfig.json` while keeping the workspace path alias working | 2026-04-22 | working tree | root |
+| 260422-z8q | Improve the Settings route UI and add persisted desktop log controls for enable/disable and truncation policy | 2026-04-22 | working tree | root |
+| 260422-jma | Improve the bluetooth polling entry format in log files | 2026-04-22 | 3362046 | [260422-jma-improve-the-bluetooth-polling-entry-form](./quick/260422-jma-improve-the-bluetooth-polling-entry-form/) |
 
 ## Session Continuity
 
