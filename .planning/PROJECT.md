@@ -13,7 +13,7 @@ I can reliably see the current state of my Bluetti system in one place without f
 - `v1.1 UI Cleanup And Reliability` shipped on 2026-04-21.
 - The dashboard now has a coherent shell, consistent telemetry trust states, shared UI surfaces, and reliable phone-sized layouts.
 - Formal milestone verification is complete across the v1.1 chain, including backfilled evidence for the original Phase 06, 07, and 08 work.
-- `v1.2 Settings And Preferences` is now implemented locally and focused on verification/closeout of the new centralized settings surface.
+- `v1.2 Settings And Preferences` shipped on 2026-04-22 with a centralized settings surface and persisted app-owned preferences.
 - The current runtime shape remains Bun/Electrobun desktop shell + FastAPI API + React dashboard + `bluetti-mqtt-node` bridge.
 
 ## Requirements
@@ -29,13 +29,13 @@ I can reliably see the current state of my Bluetti system in one place without f
 - Battery runtime and charge-to-full estimates are live, visible, and explain when estimates are unavailable.
 - The dashboard works as a LAN-first mobile PWA.
 - Shell/navigation, telemetry trust states, shared UI surfaces, and responsive behavior were all validated through v1.1.
+- The app now has a dedicated settings page for app-owned preferences instead of scattered one-off controls.
+- Settings persist safely across reloads and fall back cleanly when stored data is missing or invalid.
+- Theme, battery-full alerts, analytics default window, and freshness cues are now wired through the settings page as real persisted preferences.
 
 ### Active
 
-- User can open a dedicated settings page from the shell and understand what app preferences are configurable.
-- Supported app preferences persist safely across reloads and degrade to sane defaults when stored data is missing or invalid.
-- Settings clearly distinguish app-owned behavior from live device telemetry or unsupported AC500 control.
-- Theme, battery-full alerts, analytics default window, and freshness cues are now all wired through the settings page as real persisted preferences.
+- The next milestone should define the next highest-value monitoring improvement rather than extending settings for its own sake.
 
 ### Out Of Scope
 
@@ -43,22 +43,11 @@ I can reliably see the current state of my Bluetti system in one place without f
 - Cloud sync, accounts, or hosted remote relay.
 - Public npm release of `bluetti-mqtt-node` until the package surface settles.
 
-## Current Milestone: v1.2 Settings And Preferences
-
-**Goal:** Add a dedicated settings page for real app preferences, persisted behavior, and clearer configuration ownership.
-
-**Target features:**
-- A discoverable Settings page in the dashboard shell
-- Typed persisted app preferences with safe fallback behavior
-- Clear grouping of appearance, alerts, and dashboard-behavior settings
-- Explicit separation between app preferences and live device state
-- Real live wiring for theme, alert delivery, analytics defaults, and freshness presentation
-
 ## Next Milestone Goals
 
-- Centralize the app’s existing scattered preferences into one understandable settings surface.
-- Keep the settings page grounded in real configurable app behavior rather than speculative device control.
-- Preserve the current shell/trust-state/shared-surface patterns rather than reopening UI drift.
+- Choose the next milestone based on the highest-value monitoring gap rather than UI housekeeping alone.
+- Preserve the new settings ownership model instead of re-scattering app preferences through the shell.
+- Keep future work grounded in real telemetry, reliability, and daily-use monitoring value.
 
 ## Context
 
@@ -98,4 +87,4 @@ I can reliably see the current state of my Bluetti system in one place without f
 </details>
 
 ---
-*Last updated: 2026-04-22 for milestone v1.2 Settings And Preferences*
+*Last updated: 2026-04-22 after v1.2 Settings And Preferences shipped*

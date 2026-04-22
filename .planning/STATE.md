@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Settings And Preferences
-status: phase_14_implemented
-stopped_at: phase 14 implementation complete pending verification
+milestone: none
+milestone_name: none
+status: milestone_complete
+stopped_at: v1.2 archived and ready for next milestone
 last_updated: "2026-04-22T00:00:00.000Z"
 last_activity: 2026-04-22
 progress:
@@ -18,16 +18,16 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-21)
+See: .planning/PROJECT.md (updated 2026-04-22)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Plan and build the settings page milestone
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Milestone: v1.2 Settings And Preferences
-Status: Phase 14 implemented and verified locally
-Last activity: 2026-04-22 - Wired persisted dashboard preferences into Charts, Solar, Raw Data, and the settings experience
+Milestone: None active
+Status: v1.2 archived and closed out
+Last activity: 2026-04-22 - Archived the v1.2 settings milestone and prepared the project for the next milestone
 
 ## Accumulated Context
 
@@ -37,7 +37,7 @@ Decisions are logged in PROJECT.md.
 
 ### Pending Todos
 
-- Verify milestone behavior through UAT and decide whether to archive v1.2 or add follow-up settings work
+- Start the next milestone with `$gsd-new-milestone`
 
 ### Blockers/Concerns
 
@@ -55,5 +55,5 @@ Decisions are logged in PROJECT.md.
 ## Session Continuity
 
 Last session: 2026-04-22T00:00:00.000Z
-Stopped at: Phase 14 implementation completed after local build verification
-Resume file: .planning/phases/14-ship-settings-page-ux-and-live-wiring/14-01-PLAN.md
+Stopped at: v1.2 closeout completed
+Resume file: .planning/PROJECT.md
