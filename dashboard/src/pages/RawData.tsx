@@ -7,11 +7,13 @@ import { Card, PageHeader, StatusChip, EmptyState } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatTime } from '../lib/time';
+import { useAppSettingsStore } from '../store/settings';
 
 export default function RawData() {
   const wsState = useWsStore((s) => s.state);
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
+  const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
 
   // Telemetry state for loading/offline/stale detection
   const { isLoading, isOffline, isStale, staleSeverity, reconnect, devices } = useTelemetryState();
@@ -127,7 +129,7 @@ export default function RawData() {
       )}
 
       {/* Stale data indicator */}
-      {isStale && staleSeverity && (
+      {showFreshness && isStale && staleSeverity && (
         <div className="stale-indicator" data-severity={staleSeverity}>
           <RefreshCw size={12} />
           <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>

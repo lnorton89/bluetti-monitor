@@ -21,6 +21,7 @@ import { Card, Spinner, SectionPanel, MetricTile, InfoRow, StatusChip, PageHeade
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { useShellStore } from '../store/shell';
+import { useAppSettingsStore } from '../store/settings';
 import { useWsStore } from '../store/ws';
 import { RANGE_PRESETS, useDeviceSelector, type RangePreset } from '../lib/shared-controls';
 
@@ -96,19 +97,25 @@ export default function Solar() {
   const wsState = useWsStore((state) => state.state);
   const setRouteSignal = useShellStore((state) => state.setRouteSignal);
   const resetRouteSignal = useShellStore((state) => state.resetRouteSignal);
+  const defaultAnalyticsWindow = useAppSettingsStore((state) => state.dashboard.defaultAnalyticsWindow);
+  const showFreshness = useAppSettingsStore((state) => state.dashboard.showFreshness);
   const liveDevices = Object.keys(wsState);
 
   // Telemetry state for loading/offline/stale detection
   const { isLoading, isOffline, isStale, staleSeverity, reconnect } = useTelemetryState();
 
   const { selectedDevice, setSelectedDevice } = useDeviceSelector(liveDevices);
-  const [rangeId, setRangeId] = useState<RangePreset['id']>('24h');
+  const [rangeId, setRangeId] = useState<RangePreset['id']>(defaultAnalyticsWindow);
   const [focus, setFocus] = useState<FocusId>('generation');
   const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     setIsActive(location.pathname === '/solar');
   }, [location.pathname]);
+
+  useEffect(() => {
+    setRangeId(defaultAnalyticsWindow);
+  }, [defaultAnalyticsWindow]);
 
   const range = RANGE_PRESETS.find((preset) => preset.id === rangeId) ?? RANGE_PRESETS[2];
   const sinceIso = new Date(Date.now() - range.minutes * 60_000).toISOString();
@@ -222,7 +229,7 @@ export default function Solar() {
       )}
 
       {/* Stale data indicator */}
-      {isStale && staleSeverity && (
+      {showFreshness && isStale && staleSeverity && (
         <div className="stale-indicator" data-severity={staleSeverity}>
           <RefreshCw size={12} />
           <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>

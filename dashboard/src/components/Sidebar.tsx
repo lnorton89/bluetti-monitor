@@ -1,10 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { Moon, Sun, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { APP_ROUTES } from '../lib/routes';
 import { useWsStore } from '../store/ws';
 import { StatusDot } from './ui';
 import { formatTime } from '../lib/time';
-import { useThemeStore } from '../store/theme';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,8 +13,6 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const connected = useWsStore((s) => s.connected);
   const lastUpdate = useWsStore((s) => s.lastUpdate);
-  const theme = useThemeStore((s) => s.theme);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
 
   return (
     <>
@@ -68,13 +65,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </NavLink>
           ))}
         </nav>
-
-        <div className="sidebar-section">
-          <button onClick={toggleTheme} className="ui-control-button sidebar-control-button">
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            {theme === 'dark' ? 'LIGHT' : 'DARK'} MODE
-          </button>
-        </div>
 
         <div className="sidebar-section sidebar-status">
           <div className="sidebar-status-row">

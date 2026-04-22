@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AllState, DeviceState } from './api';
+import { useAppSettingsStore } from '../store/settings';
 
 export type BrowserNotificationPermissionState =
   | NotificationPermission
@@ -125,6 +126,8 @@ export function useBatteryFullNotifications(allState: AllState) {
   const [browserNotificationPermission, setBrowserNotificationPermission] =
     useState<BrowserNotificationPermissionState>(getBrowserNotificationPermission);
   const deviceSnapshotsRef = useRef<Record<string, BatterySnapshot>>({});
+  const browserBatteryFullEnabled = useAppSettingsStore((s) => s.alerts.batteryFullBrowser);
+  const desktopBatteryFullEnabled = useAppSettingsStore((s) => s.alerts.batteryFullDesktop);
   const desktopNotificationsAvailable =
     typeof window !== 'undefined'
     && typeof (window as Window & { __electrobunSendToHost?: unknown }).__electrobunSendToHost === 'function';
@@ -148,15 +151,19 @@ export function useBatteryFullNotifications(allState: AllState) {
 
       if (shouldNotifyBatteryFull(previous?.percent ?? null, percent, ceiling)) {
         const payload = buildBatteryFullNotification(deviceId, percent, ceiling);
-        showBrowserNotification(payload);
-        sendDesktopNotification(payload);
+        if (browserBatteryFullEnabled) {
+          showBrowserNotification(payload);
+        }
+        if (desktopBatteryFullEnabled) {
+          sendDesktopNotification(payload);
+        }
       }
 
       nextSnapshots[deviceId] = { ceiling, percent };
     }
 
     deviceSnapshotsRef.current = nextSnapshots;
-  }, [allState]);
+  }, [allState, browserBatteryFullEnabled, desktopBatteryFullEnabled]);
 
   async function requestBrowserNotifications() {
     if (typeof window === 'undefined' || typeof window.Notification === 'undefined') {

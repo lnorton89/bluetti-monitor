@@ -1,11 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
-import { Activity, LayoutDashboard, Table2, Zap } from 'lucide-react';
+import { Activity, LayoutDashboard, Settings2, Table2, Zap } from 'lucide-react';
 
-export type AppRouteId = 'overview' | 'charts' | 'solar' | 'raw';
+export type AppRouteId = 'overview' | 'charts' | 'solar' | 'raw' | 'settings';
 
 export interface AppRouteMeta {
   id: AppRouteId;
-  path: '/' | '/charts' | '/solar' | '/raw';
+  path: '/' | '/charts' | '/solar' | '/raw' | '/settings';
   label: string;
   shellTitle: string;
   mobileSignalLabel: string;
@@ -59,6 +59,17 @@ export const APP_ROUTES: AppRouteMeta[] = [
     heroTitle: 'Raw AC500 data explorer',
     summary: 'Inspect the live field footprint exactly as the stack receives it, with search and category grouping tuned for troubleshooting and trust.',
     icon: Table2,
+  },
+  {
+    id: 'settings',
+    path: '/settings',
+    label: 'Settings',
+    shellTitle: 'Settings',
+    mobileSignalLabel: 'Prefs',
+    kicker: 'App preferences',
+    heroTitle: 'Settings and preferences',
+    summary: 'Manage app-owned preferences like theme, alerts, and dashboard behavior without confusing them with live AC500 telemetry or unsupported device controls.',
+    icon: Settings2,
   },
 ];
 

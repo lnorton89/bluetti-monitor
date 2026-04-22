@@ -8,11 +8,13 @@ import Overview from './pages/Overview';
 import Charts from './pages/Charts';
 import RawData from './pages/RawData';
 import Solar from './pages/Solar';
+import Settings from './pages/Settings';
 import { useBatteryFullNotifications } from './lib/notifications';
 import { useShellStore } from './store/shell';
 import { useWsStore } from './store/ws';
 import { useTelemetryState } from './hooks/useTelemetryState';
 import { formatRelativeTime } from './lib/time';
+import { useAppSettingsStore } from './store/settings';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5_000, retry: 2 } },
@@ -27,6 +29,7 @@ function Layout() {
   const lastUpdate = useWsStore((s) => s.lastUpdate);
   const shellRouteId = useShellStore((s) => s.routeId);
   const shellSignalValue = useShellStore((s) => s.value);
+  const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Telemetry state for stale indicator in shell
@@ -138,7 +141,7 @@ function Layout() {
                 <span>{batteryPercent}% battery</span>
               </div>
             ) : null}
-            {lastUpdate ? (
+            {showFreshness && lastUpdate ? (
               <div
                 className="top-bar-metric muted"
                 data-testid="shell-status-freshness"
@@ -162,6 +165,7 @@ function Layout() {
               <Route path="/charts" element={<Charts />} />
               <Route path="/solar" element={<Solar />} />
               <Route path="/raw" element={<RawData />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </div>
         </div>

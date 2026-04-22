@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useWsStore } from '../store/ws';
 import { useShellStore } from '../store/shell';
+import { useAppSettingsStore } from '../store/settings';
 import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, StatusChip, EmptyState, StatHelpTooltip, type StatHelpContent } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
@@ -54,12 +55,6 @@ function getText(state: DeviceState, field: string) {
 
 function hasField(state: DeviceState, field: string) {
   return state[field] !== undefined;
-}
-
-function getBool(state: DeviceState, field: string) {
-  const value = getText(state, field);
-  if (value === null) return null;
-  return value === 'True' || value === 'true' || value === '1' || value === 'ON';
 }
 
 function formatNumber(value: number, digits = 0) {
@@ -122,6 +117,38 @@ function batteryTone(percent: number | null) {
   if (percent >= 60) return 'var(--green)';
   if (percent >= 25) return 'var(--amber)';
   return 'var(--red)';
+}
+
+function describeInputMix(dcInput: number, acInput: number) {
+  if (dcInput > 0 && acInput > 0) {
+    return 'Solar plus grid assist are both active right now.';
+  }
+
+  if (dcInput > 0) {
+    return 'Solar-side DC input is feeding the system right now.';
+  }
+
+  if (acInput > 0) {
+    return 'AC shore or grid input is carrying the incoming power right now.';
+  }
+
+  return 'No meaningful incoming power is being reported right now.';
+}
+
+function describeOutputMix(acOutput: number, dcOutput: number) {
+  if (acOutput > 0 && dcOutput > 0) {
+    return 'The AC500 is serving both AC and DC loads.';
+  }
+
+  if (acOutput > 0) {
+    return 'The current demand is mostly on the AC side.';
+  }
+
+  if (dcOutput > 0) {
+    return 'The current demand is mostly on the DC side.';
+  }
+
+  return 'No active output load is being reported right now.';
 }
 
 function describeActivity(totalIn: number, totalOut: number, gridIn: number, solarIn: number) {
@@ -246,12 +273,22 @@ function Hero({ state }: { state: DeviceState }) {
   const batteryDigits = 0;
   const powerDigits = 0;
 
-  const statusChips = [
-    { label: 'AC Output', value: getBool(state, 'ac_output_on') },
-    { label: 'DC Output', value: getBool(state, 'dc_output_on') },
-    { label: 'Grid Charge', value: getBool(state, 'grid_charge_on') },
-    { label: 'Bluetooth', value: getBool(state, 'bluetooth_connected') },
-  ].filter((item) => item.value !== null);
+  const inputSummary = describeInputMix(dcInput, acInput);
+  const outputSummary = describeOutputMix(acOutput, dcOutput);
+  const inputStatus = dcInput > 0 && acInput > 0
+    ? 'Solar + grid active'
+    : dcInput > 0
+      ? 'Solar active'
+      : acInput > 0
+        ? 'Grid active'
+        : 'No active input';
+  const outputStatus = acOutput > 0 && dcOutput > 0
+    ? 'AC + DC active'
+    : acOutput > 0
+      ? 'AC active'
+      : dcOutput > 0
+        ? 'DC active'
+        : 'No active load';
 
   return (
     <Card className="hero-card">
@@ -327,44 +364,33 @@ function Hero({ state }: { state: DeviceState }) {
 
             <BatteryEstimates state={state} />
           </div>
-
-          {statusChips.length > 0 ? (
-            <div className="mode-chip-row">
-              {statusChips.map((chip) => (
-                <div
-                  key={chip.label}
-                  className="mode-chip"
-                  data-on={chip.value ? 'true' : 'false'}
-                >
-                  <span className="mode-chip-label">{chip.label}</span>
-                  <strong>{chip.value ? 'On' : 'Off'}</strong>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
 
         <div className="power-flow-panel">
           <div className="power-node input">
-            <div className="power-node-label">
-              <Sun size={16} />
-              Input
-              <StatHelpTooltip
-                label="Input"
-                content={{
-                  summary: 'Input is the live power entering the AC500 from DC and AC sources.',
-                  dataPoints: [
-                    formatNumericFieldDetail(state, 'dc_input_power', 'W'),
-                    formatNumericFieldDetail(state, 'ac_input_power', 'W'),
-                  ],
-                  calculation: [
-                    'total input = dc_input_power + ac_input_power',
-                    'The split rows beneath the total show those same two contributors.',
-                  ],
-                }}
-              />
+            <div className="power-node-head">
+              <div className="power-node-label">
+                <Sun size={16} />
+                Input
+                <StatHelpTooltip
+                  label="Input"
+                  content={{
+                    summary: 'Input is the live power entering the AC500 from DC and AC sources.',
+                    dataPoints: [
+                      formatNumericFieldDetail(state, 'dc_input_power', 'W'),
+                      formatNumericFieldDetail(state, 'ac_input_power', 'W'),
+                    ],
+                    calculation: [
+                      'total input = dc_input_power + ac_input_power',
+                      'The split rows beneath the total show those same two contributors.',
+                    ],
+                  }}
+                />
+              </div>
+              <span className="power-node-kicker">Source side</span>
             </div>
             <div className="power-node-total">{formatNumber(totalIn)} W</div>
+            <div className="power-node-note">{inputStatus}</div>
             <div className="power-node-split">
               <span>DC input</span>
               <strong>{formatNumber(dcInput)} W</strong>
@@ -373,47 +399,8 @@ function Hero({ state }: { state: DeviceState }) {
               <span>AC input</span>
               <strong>{formatNumber(acInput)} W</strong>
             </div>
-            {generation !== null ? (
-              <div className="power-node-split">
-              <span>Generated energy</span>
-              <strong>{formatNumber(generation, 1)} kWh</strong>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="power-flow-arrow">
-            <ArrowRight size={24} />
-          </div>
-
-          <div className="power-node battery">
-            <div className="power-node-label">
-              <Battery size={16} />
-              Reserve
-              <StatHelpTooltip
-                label="Reserve"
-                content={{
-                  summary: 'Reserve combines the battery percent with the live power-direction check.',
-                  dataPoints: [
-                    formatNumericFieldDetail(state, 'total_battery_percent', '%'),
-                    `Computed net balance: ${formatNumber(net)} W`,
-                  ],
-                  calculation: [
-                    'Show total_battery_percent as the reserve value.',
-                    "If net balance is >= 0 label the battery path as Charging, otherwise label it Discharging.",
-                  ],
-                }}
-              />
-            </div>
-            <div className="power-node-total">
-              {battery === null ? '--' : `${formatNumber(battery)}%`}
-            </div>
-            <div className="power-node-split">
-              <span>Battery path</span>
-              <strong>{net >= 0 ? 'Charging' : 'Discharging'}</strong>
-            </div>
-            <div className="power-node-split">
-              <span>Net</span>
-              <strong>{net >= 0 ? '+' : ''}{formatNumber(net)} W</strong>
+            <div className="power-node-foot">
+              <span>{generation !== null ? `Generated ${formatNumber(generation, 1)} kWh` : inputSummary}</span>
             </div>
           </div>
 
@@ -422,25 +409,29 @@ function Hero({ state }: { state: DeviceState }) {
           </div>
 
           <div className="power-node output">
-            <div className="power-node-label">
-              <Plug size={16} />
-              Output
-              <StatHelpTooltip
-                label="Output"
-                content={{
-                  summary: 'Output is the live load the AC500 is serving right now.',
-                  dataPoints: [
-                    formatNumericFieldDetail(state, 'ac_output_power', 'W'),
-                    formatNumericFieldDetail(state, 'dc_output_power', 'W'),
-                  ],
-                  calculation: [
-                    'total output = ac_output_power + dc_output_power',
-                    'The split rows beneath the total show the AC and DC load components.',
-                  ],
-                }}
-              />
+            <div className="power-node-head">
+              <div className="power-node-label">
+                <Plug size={16} />
+                Output
+                <StatHelpTooltip
+                  label="Output"
+                  content={{
+                    summary: 'Output is the live load the AC500 is serving right now.',
+                    dataPoints: [
+                      formatNumericFieldDetail(state, 'ac_output_power', 'W'),
+                      formatNumericFieldDetail(state, 'dc_output_power', 'W'),
+                    ],
+                    calculation: [
+                      'total output = ac_output_power + dc_output_power',
+                      'The split rows beneath the total show the AC and DC load components.',
+                    ],
+                  }}
+                />
+              </div>
+              <span className="power-node-kicker">Load side</span>
             </div>
             <div className="power-node-total">{formatNumber(totalOut)} W</div>
+            <div className="power-node-note">{outputStatus}</div>
             <div className="power-node-split">
               <span>AC load</span>
               <strong>{formatNumber(acOutput)} W</strong>
@@ -448,6 +439,9 @@ function Hero({ state }: { state: DeviceState }) {
             <div className="power-node-split">
               <span>DC load</span>
               <strong>{formatNumber(dcOutput)} W</strong>
+            </div>
+            <div className="power-node-foot">
+              <span>{outputSummary}</span>
             </div>
           </div>
         </div>
@@ -696,6 +690,7 @@ export default function Overview() {
   const connected = useWsStore((s) => s.connected);
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
+  const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
 
   // Telemetry state for loading/offline/stale detection
   const { isLoading, isOffline, isStale, staleSeverity, reconnect, devices } = useTelemetryState();
@@ -728,7 +723,7 @@ export default function Overview() {
   return (
     <div className="overview-page animate-fade-in">
       {/* Stale data indicator */}
-      {showStaleIndicator && (
+      {showFreshness && showStaleIndicator && (
         <div className="stale-indicator" data-severity={staleSeverity!}>
           <RefreshCw size={12} />
           <span>{staleSeverity === 'stale' ? 'Data stale' : 'Data aging'}</span>
