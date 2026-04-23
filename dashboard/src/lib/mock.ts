@@ -56,6 +56,8 @@ const mockHistoryRows = historyIntervals.map((minutesAgo, index, all) => {
 
 export const mockState: AllState = {
   AC5002237000003358: {
+    device_type: { value: 'AC500', ts: isoOffset(0) },
+    serial_number: { value: '2237000003358', ts: isoOffset(0) },
     dc_input_power: { value: '742', ts: isoOffset(0) },
     ac_input_power: { value: '0', ts: isoOffset(0) },
     ac_output_power: { value: '486', ts: isoOffset(0) },
@@ -98,6 +100,8 @@ export const mockHistory: Record<string, HistoryPoint[]> = {
   battery_range_to_full: mockHistoryRows.map((point) => ({ value: String(point.batteryToFull), ts: point.ts })),
   internal_temp: mockHistoryRows.map((point) => ({ value: String(point.internalTemp), ts: point.ts })),
   fan_speed: mockHistoryRows.map((point) => ({ value: String(point.fanSpeed), ts: point.ts })),
+  device_type: [{ value: 'AC500', ts: isoOffset(0) }],
+  serial_number: [{ value: '2237000003358', ts: isoOffset(0) }],
 };
 
 export function getMockDevices() {

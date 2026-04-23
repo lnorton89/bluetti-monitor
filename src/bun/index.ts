@@ -248,6 +248,11 @@ function formatLogLines(args: unknown[]): string[] {
 
 function formatLogArg(value: unknown): string[] {
   if (typeof value === "string") {
+    // Try to parse as JSON log payload (from bluetti-mqtt-node library)
+    const parsed = tryParseJsonLog(value);
+    if (parsed !== null && isStructuredLogPayload(parsed)) {
+      return [formatStructuredLogPayload(parsed)];
+    }
     return [formatLogText(value)];
   }
 
@@ -263,6 +268,16 @@ function formatLogArg(value: unknown): string[] {
     return [formatLogText(JSON.stringify(value))];
   } catch {
     return [formatLogText(String(value))];
+  }
+}
+
+// Helper to try parsing a string as JSON, returning null if invalid
+function tryParseJsonLog(value: string): unknown {
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === "object" && parsed !== null ? parsed : null;
+  } catch {
+    return null;
   }
 }
 
@@ -298,9 +313,18 @@ function formatStructuredLogPayload(payload: {
   timestamp?: unknown;
 }) {
   if (isCompactPollingMessage(payload.message)) {
-    const compact = formatCompactPollingCycle(payload.context);
-    if (compact !== null) {
-      return compact;
+    if (payload.message === "Polling cycle completed") {
+      const compact = formatCompactPollingCycle(payload.context);
+      if (compact !== null) {
+        return compact;
+      }
+    }
+
+    if (payload.message === "Polling telemetry summary") {
+      const compact = formatCompactTelemetrySummary(payload.context);
+      if (compact !== null) {
+        return compact;
+      }
     }
   }
 
@@ -415,7 +439,7 @@ function isIsoTimestamp(value: unknown): boolean {
 }
 
 function isCompactPollingMessage(message: string): boolean {
-  return message === "Polling cycle completed";
+  return message === "Polling cycle completed" || message === "Polling telemetry summary";
 }
 
 function formatCompactPollingCycle(context: unknown): string | null {
@@ -466,6 +490,91 @@ function formatCompactPollingCycle(context: unknown): string | null {
   }
 
   return `Polling cycle completed | ${cycleSegment} | ${telemetryParts.join(" ")}`;
+}
+
+function formatCompactTelemetrySummary(context: unknown): string | null {
+  if (typeof context !== "object" || context === null) {
+    return null;
+  }
+
+  const record = context as Record<string, unknown>;
+  const address = record["address"];
+  const fastIntervalMs = record["fastIntervalMs"];
+  const fullIntervalMs = record["fullIntervalMs"];
+  const commandDelayMs = record["commandDelayMs"];
+  const telemetry = record["telemetry"];
+
+  if (
+    typeof address !== "string"
+    || typeof fastIntervalMs !== "number"
+    || typeof fullIntervalMs !== "number"
+    || typeof commandDelayMs !== "number"
+    || typeof telemetry !== "object"
+    || telemetry === null
+  ) {
+    return null;
+  }
+
+  const tel = telemetry as Record<string, unknown>;
+  const cycleCount = tel["cycleCount"];
+  const fastCycleCount = tel["fastCycleCount"];
+  const fullCycleCount = tel["fullCycleCount"];
+  const successfulCommandCount = tel["successfulCommandCount"];
+  const expectedErrorCount = tel["expectedErrorCount"];
+  const busyErrorCount = tel["busyErrorCount"];
+  const commandWriteCount = tel["commandWriteCount"];
+  const parserPublishCount = tel["parserPublishCount"];
+  const averageCycleDurationMs = tel["averageCycleDurationMs"];
+  const averageCommandDurationMs = tel["averageCommandDurationMs"];
+  const maxCycleDurationMs = tel["maxCycleDurationMs"];
+  const maxCommandDurationMs = tel["maxCommandDurationMs"];
+
+  if (
+    typeof cycleCount !== "number"
+    || typeof fastCycleCount !== "number"
+    || typeof fullCycleCount !== "number"
+    || typeof successfulCommandCount !== "number"
+    || typeof expectedErrorCount !== "number"
+    || typeof busyErrorCount !== "number"
+    || typeof commandWriteCount !== "number"
+    || typeof parserPublishCount !== "number"
+    || typeof averageCycleDurationMs !== "number"
+    || typeof averageCommandDurationMs !== "number"
+    || typeof maxCycleDurationMs !== "number"
+    || typeof maxCommandDurationMs !== "number"
+  ) {
+    return null;
+  }
+
+  const telemetryParts = [
+    `${address}`,
+    `${cycleCount} cycles (${fastCycleCount} fast/${fullCycleCount} full)`,
+    `${successfulCommandCount} ok`,
+  ];
+
+  if (expectedErrorCount > 0) {
+    telemetryParts.push(`${expectedErrorCount} err`);
+  }
+
+  if (busyErrorCount > 0) {
+    telemetryParts.push(`${busyErrorCount} busy`);
+  }
+
+  if (commandWriteCount > 0) {
+    telemetryParts.push(`${commandWriteCount} writes`);
+  }
+
+  if (parserPublishCount > 0) {
+    telemetryParts.push(`${parserPublishCount} pub`);
+  }
+
+  telemetryParts.push(
+    `${fastIntervalMs}ms fast/${fullIntervalMs}ms full/${commandDelayMs}ms delay`,
+    `${averageCycleDurationMs}ms avg cycle/${averageCommandDurationMs}ms avg cmd`,
+    `${maxCycleDurationMs}ms max cycle/${maxCommandDurationMs}ms max cmd`,
+  );
+
+  return `Polling telemetry summary | ${telemetryParts.join(" | ")}`;
 }
 
 function renderLogScalar(value: unknown): string {

@@ -1726,20 +1726,20 @@ input:focus-visible,
 }
 
 .settings-page {
-  gap: 16px;
+  gap: 12px;
 }
 
 .settings-scope-grid,
 .settings-option-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
 .settings-scope-card,
 .settings-choice-card {
   min-width: 0;
-  padding: 14px;
+  padding: 12px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-3) 84%, transparent);
@@ -1747,6 +1747,10 @@ input:focus-visible,
 
 .settings-choice-card {
   text-align: left;
+}
+
+.settings-choice-card--compact {
+  min-height: 100%;
 }
 
 .settings-choice-card.is-active {
@@ -1783,7 +1787,7 @@ input:focus-visible,
 .settings-scope-copy,
 .settings-toggle-description,
 .settings-inline-note {
-  margin-top: 10px;
+  margin-top: 8px;
   color: var(--text-dim);
   font-size: 14px;
 }
@@ -1791,17 +1795,27 @@ input:focus-visible,
 .settings-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+}
+
+.settings-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .settings-control-block {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-3) 84%, transparent);
+}
+
+.settings-control-block.is-disabled {
+  opacity: 0.7;
 }
 
 .settings-toggle-row {
@@ -1809,7 +1823,7 @@ input:focus-visible,
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px;
+  padding: 12px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-3) 84%, transparent);
@@ -1855,6 +1869,7 @@ input:focus-visible,
 
 .settings-switch:disabled {
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .settings-switch-thumb {
@@ -1899,6 +1914,18 @@ input:focus-visible,
   border-color: color-mix(in srgb, var(--amber) 65%, var(--border));
   background: var(--amber-glow);
   color: var(--amber);
+}
+
+.settings-choice-card:disabled,
+.settings-segmented-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-footnote {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .control-grid {

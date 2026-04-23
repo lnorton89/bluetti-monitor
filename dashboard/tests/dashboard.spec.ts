@@ -5,7 +5,7 @@ test('renders overview cleanly in mock mode', async ({ page }) => {
 
   await expect(page.getByTestId('shell-title')).toHaveText('Overview');
   await expect(page.getByTestId('shell-route-signal')).toContainText('Battery');
-  await expect(page.locator('.device-header').filter({ hasText: 'AC5002237000003358' })).toBeVisible();
+  await expect(page.locator('.device-header').filter({ hasText: 'AC500' })).toBeVisible();
   await expect(page.getByText('Input Bus')).toBeVisible();
   await expect(page.locator('.hero-battery').filter({ hasText: 'Battery Reserve' })).toContainText('67%');
 

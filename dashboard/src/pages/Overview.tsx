@@ -23,6 +23,7 @@ import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { BatteryEstimates } from '../components/BatteryEstimates';
+import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
 
 type FieldValue = { value: string; ts: string };
 type DeviceState = Record<string, FieldValue>;
@@ -92,7 +93,7 @@ function rawNumericTooltip(
   note?: string,
 ): StatHelpContent {
   return {
-    summary: `${label} is a direct reading from the live AC500 telemetry.`,
+    summary: `${label} is a direct reading from the live device telemetry.`,
     dataPoints: [formatNumericFieldDetail(state, field, unit, digits)],
     calculation: [
       'Read the current field value from the selected device state.',
@@ -137,7 +138,7 @@ function describeInputMix(dcInput: number, acInput: number) {
 
 function describeOutputMix(acOutput: number, dcOutput: number) {
   if (acOutput > 0 && dcOutput > 0) {
-    return 'The AC500 is serving both AC and DC loads.';
+    return 'The device is serving both AC and DC loads.';
   }
 
   if (acOutput > 0) {
@@ -181,18 +182,18 @@ function describeActivity(totalIn: number, totalOut: number, gridIn: number, sol
 
   return {
     label: 'Supplying Load',
-    description: 'The AC500 is discharging to support connected loads.',
+    description: 'The device is discharging to support connected loads.',
     tone: 'var(--amber)',
     icon: ArrowUpRight,
   };
 }
 
 function modelName(state: DeviceState, deviceId: string) {
-  return getText(state, 'device_type') ?? deviceId.split('-')[0] ?? deviceId;
+  return getDeviceModel(state, deviceId);
 }
 
 function deviceSerial(state: DeviceState, deviceId: string) {
-  return getText(state, 'serial_number') ?? deviceId.replace(/^AC500-/, '');
+  return getDeviceSerial(state, deviceId);
 }
 
 function StatPanel({
@@ -258,7 +259,7 @@ function InfoTable({
   );
 }
 
-function Hero({ state }: { state: DeviceState }) {
+function Hero({ model, state }: { model: string; state: DeviceState }) {
   const dcInput = getNumber(state, 'dc_input_power') ?? 0;
   const acInput = getNumber(state, 'ac_input_power') ?? 0;
   const acOutput = getNumber(state, 'ac_output_power') ?? 0;
@@ -294,7 +295,7 @@ function Hero({ state }: { state: DeviceState }) {
     <Card className="hero-card">
       <div className="hero-grid">
         <div className="hero-copy">
-          <div className="hero-kicker">AC500 Live Snapshot</div>
+          <div className="hero-kicker">{model} Live Snapshot</div>
           <div className="hero-mode-row">
             <div className="hero-mode-pill" style={{ color: mode.tone, borderColor: mode.tone }}>
               <ModeIcon size={16} />
@@ -375,7 +376,7 @@ function Hero({ state }: { state: DeviceState }) {
                 <StatHelpTooltip
                   label="Input"
                   content={{
-                    summary: 'Input is the live power entering the AC500 from DC and AC sources.',
+                    summary: 'Input is the live power entering the selected device from DC and AC sources.',
                     dataPoints: [
                       formatNumericFieldDetail(state, 'dc_input_power', 'W'),
                       formatNumericFieldDetail(state, 'ac_input_power', 'W'),
@@ -416,7 +417,7 @@ function Hero({ state }: { state: DeviceState }) {
                 <StatHelpTooltip
                   label="Output"
                   content={{
-                    summary: 'Output is the live load the AC500 is serving right now.',
+                    summary: 'Output is the live load the selected device is serving right now.',
                     dataPoints: [
                       formatNumericFieldDetail(state, 'ac_output_power', 'W'),
                       formatNumericFieldDetail(state, 'dc_output_power', 'W'),
@@ -450,7 +451,7 @@ function Hero({ state }: { state: DeviceState }) {
   );
 }
 
-function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state: DeviceState; connected: boolean }) {
+function DeviceOverview({ deviceId, state, connected }: { deviceId: string; state: DeviceState; connected: boolean }) {
   const latest = latestTimestamp(state);
   const model = modelName(state, deviceId);
   const serial = deviceSerial(state, deviceId);
@@ -485,7 +486,7 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
       detail: upsMode ? `UPS ${upsMode}` : null,
       accent: 'var(--cat-output)',
       tooltip: {
-        summary: 'AC Output Mode shows the inverter mode text currently reported by the AC500.',
+        summary: 'AC Output Mode shows the inverter mode text currently reported by the device.',
         dataPoints: [
           formatTextFieldDetail(state, 'ac_output_mode'),
           ...(upsMode ? [formatTextFieldDetail(state, 'ups_mode')] : []),
@@ -595,7 +596,7 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
             {model}
           </div>
           <div className="device-subtitle">
-            Built around the AC500 field set this app actually receives: input, output, internal bus, mode, and identity data.
+            Built around the live field set this app actually receives: input, output, internal bus, mode, and identity data.
           </div>
         </div>
 
@@ -608,7 +609,7 @@ function Ac500Overview({ deviceId, state, connected }: { deviceId: string; state
         </div>
       </div>
 
-      <Hero state={state} />
+      <Hero model={model} state={state} />
 
       <div className="tile-grid tile-grid--fit">
         {topCards.map((card) => (
@@ -751,7 +752,7 @@ export default function Overview() {
         />
       ) : (
         devices.map((deviceId) => (
-          <Ac500Overview
+          <DeviceOverview
             key={deviceId}
             deviceId={deviceId}
             state={wsState[deviceId]}

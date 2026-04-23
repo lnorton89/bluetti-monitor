@@ -15,7 +15,7 @@ export default defineConfig({
       manifest: {
         name: 'Bluetti Monitor',
         short_name: 'Bluetti',
-        description: 'Personal monitoring dashboard for Bluetti AC500',
+        description: 'Personal monitoring dashboard for Bluetti power systems',
         theme_color: '#1a1a2e',
         background_color: '#0f0f1a',
         display: 'standalone',

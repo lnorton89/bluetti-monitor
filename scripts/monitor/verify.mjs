@@ -59,7 +59,7 @@ async function waitForDeviceData(beforeSnapshot) {
   }
 
   throw new Error(
-    "The API did not show updated device data after the one-shot bridge publish. Check Docker, Bluetooth, and the AC500 connection.",
+    "The API did not show updated device data after the one-shot bridge publish. Check Docker, Bluetooth, and the device connection.",
   );
 }
 

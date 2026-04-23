@@ -7,8 +7,8 @@
     "lib/bluetti-mqtt-node"
   ],
   "scripts": {
-    "desktop:dev": "electrobun dev --watch",
-    "desktop:start": "electrobun dev",
+    "desktop:dev": "node ./scripts/dev-desktop.mjs --watch-electrobun",
+    "desktop:start": "node ./scripts/dev-desktop.mjs",
     "dashboard:test": "npm --prefix dashboard run test:e2e",
     "monitor:start": "node ./scripts/monitor/start.mjs",
     "monitor:verify": "node ./scripts/monitor/verify.mjs",

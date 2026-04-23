@@ -21,7 +21,8 @@ const MAX_FAST_POLL_INTERVAL_MS = 12_000;
 const MAX_FULL_POLL_INTERVAL_MS = 60_000;
 const MAX_COMMAND_DELAY_MS = 1_000;
 const DEFAULT_LOG_LEVEL: LogLevel = normalizeLogLevel(Bun.env["BLUETTI_LOG_LEVEL"]);
-const FALLBACK_MAC = "24:4C:AB:2C:24:8E";
+const CONFIGURED_FALLBACK_MAC = Bun.env["BLUETTI_DEVICE_MAC"]?.trim().toUpperCase();
+const CONFIGURED_FALLBACK_NAME = Bun.env["BLUETTI_DEVICE_NAME"]?.trim() || "Bluetti device (configured)";
 const WORKSPACE_ROOT = findWorkspaceRoot();
 const HELPER_EXE_PATH = resolve(
   WORKSPACE_ROOT,
@@ -52,11 +53,11 @@ export interface BluettiMqttService {
   stop: () => void;
 }
 
-export async function discoverAC500(): Promise<BluetoothDevice> {
-  console.log("[bluetooth] Looking for AC500...");
+export async function discoverBluettiDevice(): Promise<BluetoothDevice> {
+  console.log("[bluetooth] Looking for a supported Bluetti device...");
 
   for (let attempt = 0; attempt < SCAN_RETRY_COUNT; attempt += 1) {
-    const device = await scanForAC500();
+    const device = await scanForBluettiDevice();
     if (device) {
       return device;
     }
@@ -67,8 +68,15 @@ export async function discoverAC500(): Promise<BluetoothDevice> {
     }
   }
 
-  console.log(`[bluetooth] Auto-discovery failed, using fallback MAC: ${FALLBACK_MAC}`);
-  return { mac: FALLBACK_MAC, name: "AC500 (fallback)" };
+  const configuredFallback = getConfiguredFallbackDevice();
+  if (configuredFallback) {
+    console.log(`[bluetooth] Auto-discovery failed, using configured fallback MAC: ${configuredFallback.mac}`);
+    return configuredFallback;
+  }
+
+  throw new Error(
+    "No supported Bluetti device was discovered. Set BLUETTI_DEVICE_MAC to use a known device address.",
+  );
 }
 
 export async function startBluettiMqttService(
@@ -129,7 +137,7 @@ export async function startBluettiMqttService(
   };
 }
 
-async function scanForAC500(): Promise<BluetoothDevice | null> {
+async function scanForBluettiDevice(): Promise<BluetoothDevice | null> {
   console.log("[bluetooth] Scanning for Bluetti devices...");
   await assertNodeRuntimeWorks();
 
@@ -150,7 +158,7 @@ function parseDiscoveredDevices(devices: readonly DiscoveredBluetoothDevice[]): 
     }
 
     const normalizedName = device.name.trim() || "Unknown";
-    if (looksLikeBluetti(normalizedName)) {
+    if (looksLikeBluettiDevice(normalizedName)) {
       return {
         mac: device.address.toUpperCase(),
         name: normalizedName,
@@ -170,13 +178,28 @@ function parseRssi(rawRssi: number | undefined): number | undefined {
   return Number.isFinite(rawRssi) ? rawRssi : undefined;
 }
 
-function looksLikeBluetti(name: string): boolean {
+function looksLikeBluettiDevice(name: string): boolean {
   const normalized = name.toLowerCase();
-  return normalized.includes("ac500") || normalized.includes("bluetti");
+  return normalized.includes("bluetti") || /^(ac200m|ac300|ac500|ac60|eb3a|ep500p|ep500|ep600)\d*$/i.test(name);
 }
 
 function isValidMacAddress(mac: string): boolean {
   return /^([0-9A-F]{2}[:-]){5}[0-9A-F]{2}$/i.test(mac);
+}
+
+function getConfiguredFallbackDevice(): BluetoothDevice | null {
+  if (!CONFIGURED_FALLBACK_MAC) {
+    return null;
+  }
+
+  if (!isValidMacAddress(CONFIGURED_FALLBACK_MAC)) {
+    throw new Error(`BLUETTI_DEVICE_MAC is not a valid MAC address: ${CONFIGURED_FALLBACK_MAC}`);
+  }
+
+  return {
+    mac: CONFIGURED_FALLBACK_MAC,
+    name: CONFIGURED_FALLBACK_NAME,
+  };
 }
 
 async function verifyServiceStartup(runPromise: Promise<void>, gracePeriodMs: number) {

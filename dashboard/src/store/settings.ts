@@ -14,6 +14,11 @@ export interface AppSettings {
     defaultAnalyticsWindow: '1h' | '6h' | '24h' | '72h';
     showFreshness: boolean;
   };
+  desktop: {
+    logCaptureEnabled: boolean;
+    logRetainBytes: number;
+    logTruncateAtBytes: number;
+  };
 }
 
 interface AppSettingsStore extends AppSettings {
@@ -22,10 +27,15 @@ interface AppSettingsStore extends AppSettings {
   setBatteryFullBrowser: (enabled: boolean) => void;
   setBatteryFullDesktop: (enabled: boolean) => void;
   setDefaultAnalyticsWindow: (window: AppSettings['dashboard']['defaultAnalyticsWindow']) => void;
+  setDesktopLogCaptureEnabled: (enabled: boolean) => void;
+  setDesktopLogRetainBytes: (bytes: number) => void;
+  setDesktopLogTruncateAtBytes: (bytes: number) => void;
   setShowFreshness: (enabled: boolean) => void;
 }
 
 const STORAGE_KEY = 'bluetti-monitor:settings';
+const LOG_TRUNCATE_BYTES_OPTIONS = [512 * 1024, 1024 * 1024, 5 * 1024 * 1024, 10 * 1024 * 1024] as const;
+const LOG_RETAIN_BYTES_OPTIONS = [128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024] as const;
 
 const DEFAULT_SETTINGS: AppSettings = {
   appearance: {
@@ -38,6 +48,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   dashboard: {
     defaultAnalyticsWindow: '24h',
     showFreshness: true,
+  },
+  desktop: {
+    logCaptureEnabled: true,
+    logRetainBytes: 256 * 1024,
+    logTruncateAtBytes: 1024 * 1024,
   },
 };
 
@@ -61,6 +76,10 @@ function sanitizeAnalyticsWindow(value: unknown): AppSettings['dashboard']['defa
     : DEFAULT_SETTINGS.dashboard.defaultAnalyticsWindow;
 }
 
+function sanitizeOptionValue<T extends readonly number[]>(value: unknown, allowed: T, fallback: T[number]) {
+  return typeof value === 'number' && allowed.includes(value) ? value : fallback;
+}
+
 function sanitizeSettings(candidate: unknown): AppSettings {
   if (!isRecord(candidate)) {
     return DEFAULT_SETTINGS;
@@ -69,6 +88,20 @@ function sanitizeSettings(candidate: unknown): AppSettings {
   const appearance = isRecord(candidate.appearance) ? candidate.appearance : {};
   const alerts = isRecord(candidate.alerts) ? candidate.alerts : {};
   const dashboard = isRecord(candidate.dashboard) ? candidate.dashboard : {};
+  const desktop = isRecord(candidate.desktop) ? candidate.desktop : {};
+  const logTruncateAtBytes = sanitizeOptionValue(
+    desktop.logTruncateAtBytes,
+    LOG_TRUNCATE_BYTES_OPTIONS,
+    DEFAULT_SETTINGS.desktop.logTruncateAtBytes,
+  );
+  const logRetainBytes = Math.min(
+    sanitizeOptionValue(
+      desktop.logRetainBytes,
+      LOG_RETAIN_BYTES_OPTIONS,
+      DEFAULT_SETTINGS.desktop.logRetainBytes,
+    ),
+    logTruncateAtBytes,
+  );
 
   return {
     appearance: {
@@ -90,6 +123,14 @@ function sanitizeSettings(candidate: unknown): AppSettings {
         dashboard.showFreshness,
         DEFAULT_SETTINGS.dashboard.showFreshness,
       ),
+    },
+    desktop: {
+      logCaptureEnabled: sanitizeBoolean(
+        desktop.logCaptureEnabled,
+        DEFAULT_SETTINGS.desktop.logCaptureEnabled,
+      ),
+      logRetainBytes,
+      logTruncateAtBytes,
     },
   };
 }
@@ -124,6 +165,7 @@ function toPersistedSettings(state: AppSettingsStore): AppSettings {
     appearance: state.appearance,
     alerts: state.alerts,
     dashboard: state.dashboard,
+    desktop: state.desktop,
   };
 }
 
@@ -203,6 +245,54 @@ export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
         dashboard: {
           ...state.dashboard,
           defaultAnalyticsWindow: window,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setDesktopLogCaptureEnabled(enabled) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        desktop: {
+          ...state.desktop,
+          logCaptureEnabled: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setDesktopLogRetainBytes(bytes) {
+    set((state) => {
+      const sanitized = Math.min(
+        sanitizeOptionValue(bytes, LOG_RETAIN_BYTES_OPTIONS, state.desktop.logRetainBytes),
+        state.desktop.logTruncateAtBytes,
+      );
+      const nextState: AppSettingsStore = {
+        ...state,
+        desktop: {
+          ...state.desktop,
+          logRetainBytes: sanitized,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setDesktopLogTruncateAtBytes(bytes) {
+    set((state) => {
+      const sanitized = sanitizeOptionValue(bytes, LOG_TRUNCATE_BYTES_OPTIONS, state.desktop.logTruncateAtBytes);
+      const nextState: AppSettingsStore = {
+        ...state,
+        desktop: {
+          ...state.desktop,
+          logTruncateAtBytes: sanitized,
+          logRetainBytes: Math.min(state.desktop.logRetainBytes, sanitized),
         },
       };
       persistSettings(toPersistedSettings(nextState));

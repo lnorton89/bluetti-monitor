@@ -1,8 +1,6 @@
 type FieldValue = { value: string; ts: string };
 export type DeviceState = Record<string, FieldValue>;
 
-const AC500_CAPACITY_WH = 5120;
-
 function getField(state: DeviceState, field: string): number | null {
   const raw = state[field]?.value;
   if (raw === undefined) return null;
@@ -17,6 +15,36 @@ export function getBatteryPercent(state: DeviceState): number | null {
     getField(state, 'soc') ??
     getField(state, 'charge_level')
   );
+}
+
+export function getBatteryCapacityWh(state: DeviceState): number | null {
+  const directCapacity = getField(state, 'battery_capacity') ?? getField(state, 'pack_capacity');
+  if (directCapacity !== null && directCapacity > 0) {
+    return directCapacity;
+  }
+
+  const remainingCapacity = getRemainingCapacityWh(state);
+  const batteryPercent = getBatteryPercent(state);
+  if (remainingCapacity === null || batteryPercent === null || batteryPercent <= 0) {
+    return null;
+  }
+
+  return remainingCapacity / (batteryPercent / 100);
+}
+
+export function getRemainingCapacityWh(state: DeviceState): number | null {
+  const remainingCapacity = getField(state, 'remaining_capacity');
+  if (remainingCapacity !== null && remainingCapacity >= 0) {
+    return remainingCapacity;
+  }
+
+  const capacityWh = getField(state, 'battery_capacity') ?? getField(state, 'pack_capacity');
+  const batteryPercent = getBatteryPercent(state);
+  if (capacityWh === null || batteryPercent === null) {
+    return null;
+  }
+
+  return (batteryPercent / 100) * capacityWh;
 }
 
 export function formatDuration(minutes: number | null): string {
@@ -35,18 +63,16 @@ export function estimateRuntimeMinutes(state: DeviceState): number | null {
   const rangeToEmpty = getField(state, 'battery_range_to_empty');
   if (rangeToEmpty !== null && rangeToEmpty >= 0) return rangeToEmpty;
 
-  const batteryPercent = getBatteryPercent(state);
   const acOutputW = getField(state, 'ac_output_power');
   const dcOutputW = getField(state, 'dc_output_power');
-
-  if (batteryPercent === null) return null;
 
   const totalOutputW = (acOutputW ?? 0) + (dcOutputW ?? 0);
   if (totalOutputW <= 0) return null;
 
-  const remainingWh = (batteryPercent / 100) * AC500_CAPACITY_WH;
-  const usableWh = Math.max(0, remainingWh - 100);
-  return (usableWh / totalOutputW) * 60;
+  const remainingWh = getRemainingCapacityWh(state);
+  if (remainingWh === null || remainingWh <= 0) return null;
+
+  return (remainingWh / totalOutputW) * 60;
 }
 
 export function isChargingFromGrid(state: DeviceState): boolean {
@@ -66,14 +92,12 @@ export function estimateChargeTimeMinutes(state: DeviceState): number | null {
   const rangeToFull = getField(state, 'battery_range_to_full');
   if (rangeToFull !== null && rangeToFull >= 0) return rangeToFull;
 
-  const batteryPercent = getBatteryPercent(state);
   const acInputW = getField(state, 'ac_input_power');
-
-  if (batteryPercent === null) return null;
-  if (batteryPercent >= 100) return null;
-
-  const remainingWh = (batteryPercent / 100) * AC500_CAPACITY_WH;
-  const deficitWh = AC500_CAPACITY_WH - remainingWh;
+  const capacityWh = getBatteryCapacityWh(state);
+  const remainingWh = getRemainingCapacityWh(state);
+  if (capacityWh === null || remainingWh === null) return null;
+  if (remainingWh >= capacityWh) return null;
+  const deficitWh = capacityWh - remainingWh;
 
   const pv1 = getField(state, 'pv1_power') ?? 0;
   const pv2 = getField(state, 'pv2_power') ?? 0;

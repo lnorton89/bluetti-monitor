@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
-export const DEFAULT_FALLBACK_MAC = "24:4C:AB:2C:24:8E";
+export const DEFAULT_FALLBACK_MAC = process.env.BLUETTI_DEVICE_MAC?.trim().toUpperCase() ?? null;
 export const BROKER_URL = "mqtt://127.0.0.1:1883";
 export const API_URL = "http://127.0.0.1:8000";
 export const DASHBOARD_URL = "http://localhost:8540";
@@ -128,14 +128,18 @@ export async function resolveDeviceAddress() {
       return { mac, source: "discovery" };
     }
   } catch (error) {
-    console.warn("[monitor] Discovery did not return a usable device, falling back to known MAC.");
+    console.warn("[monitor] Discovery did not return a usable device.");
     if (error instanceof Error && error.message) {
       console.warn(error.message);
     }
   }
 
-  console.log(`[monitor] Using fallback MAC ${DEFAULT_FALLBACK_MAC}.`);
-  return { mac: DEFAULT_FALLBACK_MAC, source: "fallback" };
+  if (DEFAULT_FALLBACK_MAC) {
+    console.log(`[monitor] Using configured fallback MAC ${DEFAULT_FALLBACK_MAC}.`);
+    return { mac: DEFAULT_FALLBACK_MAC, source: "fallback" };
+  }
+
+  throw new Error("No supported Bluetti device discovered. Set BLUETTI_DEVICE_MAC to use a known address.");
 }
 
 export function getLanUrls() {
@@ -184,5 +188,5 @@ export function sleep(ms) {
 }
 
 function looksLikeBluetti(name) {
-  return typeof name === "string" && /bluetti|ac500/i.test(name);
+  return typeof name === "string" && /bluetti|ac200m|ac300|ac500|ac60|eb3a|ep500p|ep500|ep600/i.test(name);
 }

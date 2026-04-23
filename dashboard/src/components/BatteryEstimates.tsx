@@ -4,6 +4,7 @@ import type { DeviceState } from '../lib/battery-estimates';
 import {
   estimateRuntimeMinutes,
   estimateChargeTimeMinutes,
+  getBatteryCapacityWh,
   isCharging,
   formatDuration,
   isBatteryFull,
@@ -17,25 +18,19 @@ interface BatteryEstimatesProps {
 }
 
 /**
- * Detect if runtime estimate uses fallback calculation
- * Fallback is used when device doesn't provide battery_range_to_empty
+ * Detect if runtime estimate uses derived telemetry rather than a direct range field.
  */
 function isRuntimeEstimated(state: DeviceState): boolean {
-  // If device provides direct value, it's not estimated
   if (state['battery_range_to_empty'] !== undefined) return false;
-  // Fallback uses AC500 capacity constant
-  return true;
+  return estimateRuntimeMinutes(state) !== null;
 }
 
 /**
- * Detect if charge time estimate uses fallback calculation
- * Fallback is used when device doesn't provide battery_range_to_full
+ * Detect if charge time estimate uses derived telemetry rather than a direct range field.
  */
 function isChargeEstimated(state: DeviceState): boolean {
-  // If device provides direct value, it's not estimated
   if (state['battery_range_to_full'] !== undefined) return false;
-  // Fallback uses AC500 capacity constant
-  return true;
+  return estimateChargeTimeMinutes(state) !== null;
 }
 
 function EstimateConfidence({ estimated }: { estimated: boolean }) {
@@ -52,37 +47,43 @@ function EstimateConfidence({ estimated }: { estimated: boolean }) {
 }
 
 function buildRuntimeTooltip(state: DeviceState, estimated: boolean): StatHelpContent {
+  const capacityWh = getBatteryCapacityWh(state);
   return {
     summary: estimated
       ? 'Runtime is estimated because the device did not publish a direct battery_range_to_empty value.'
       : 'Runtime comes from the device-reported battery_range_to_empty field.',
     dataPoints: [
       `battery_range_to_empty: ${state['battery_range_to_empty']?.value ?? 'unavailable'}`,
+      `battery_capacity: ${state['battery_capacity']?.value ?? state['pack_capacity']?.value ?? 'unavailable'}`,
+      `remaining_capacity: ${state['remaining_capacity']?.value ?? 'unavailable'}`,
       `total_battery_percent: ${state['total_battery_percent']?.value ?? state['battery_percent']?.value ?? state['soc']?.value ?? state['charge_level']?.value ?? 'unavailable'}`,
       `ac_output_power: ${state['ac_output_power']?.value ?? '0'}`,
       `dc_output_power: ${state['dc_output_power']?.value ?? '0'}`,
     ],
     calculation: estimated
       ? [
-          'Fallback remainingWh = batteryPercent / 100 * 5120 Wh',
-          'Fallback usableWh = max(remainingWh - 100 Wh, 0)',
-          'Fallback runtimeMinutes = usableWh / (ac_output_power + dc_output_power) * 60',
+          'Use remaining_capacity directly when the device publishes it.',
+          `Otherwise derive remaining energy from battery percent and live capacity${capacityWh ? ` (~${Math.round(capacityWh)} Wh right now)` : ''}.`,
+          'runtimeMinutes = remainingWh / (ac_output_power + dc_output_power) * 60',
         ]
       : [
           'Read battery_range_to_empty directly from live telemetry.',
           'Format the reported minutes into h/m display text.',
         ],
-    note: estimated ? 'This assumes the AC500 5120 Wh base capacity and current load stay roughly steady.' : undefined,
+    note: estimated ? 'The estimate depends on the current load and whatever battery-capacity telemetry the device exposes.' : undefined,
   };
 }
 
 function buildChargeTooltip(state: DeviceState, estimated: boolean): StatHelpContent {
+  const capacityWh = getBatteryCapacityWh(state);
   return {
     summary: estimated
       ? 'Time to Full is estimated because the device did not publish battery_range_to_full.'
       : 'Time to Full comes from the device-reported battery_range_to_full field.',
     dataPoints: [
       `battery_range_to_full: ${state['battery_range_to_full']?.value ?? 'unavailable'}`,
+      `battery_capacity: ${state['battery_capacity']?.value ?? state['pack_capacity']?.value ?? 'unavailable'}`,
+      `remaining_capacity: ${state['remaining_capacity']?.value ?? 'unavailable'}`,
       `battery percent: ${state['total_battery_percent']?.value ?? state['battery_percent']?.value ?? state['soc']?.value ?? state['charge_level']?.value ?? 'unavailable'}`,
       `ac_input_power: ${state['ac_input_power']?.value ?? '0'}`,
       `pv1_power: ${state['pv1_power']?.value ?? '0'}`,
@@ -90,8 +91,9 @@ function buildChargeTooltip(state: DeviceState, estimated: boolean): StatHelpCon
     ],
     calculation: estimated
       ? [
-          'remainingWh = batteryPercent / 100 * 5120 Wh',
-          'deficitWh = 5120 Wh - remainingWh',
+          `Estimate total capacity from live battery-capacity telemetry${capacityWh ? ` (~${Math.round(capacityWh)} Wh right now)` : ''}.`,
+          'Estimate remaining energy from remaining_capacity or battery percent.',
+          'deficitWh = capacityWh - remainingWh',
           'chargeMinutes = deficitWh / (ac_input_power + pv1_power + pv2_power) * 60',
         ]
       : [

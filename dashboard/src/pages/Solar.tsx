@@ -161,7 +161,7 @@ export default function Solar() {
       <div className="page-stack animate-fade-in">
         <EmptyState
           title="Waiting for solar telemetry"
-          description="Once the AC500 starts publishing live input fields, this page will turn into a dedicated solar workspace for both PV inputs, charge tracking, and harvest history."
+          description="Once the selected device starts publishing live input fields, this page will turn into a dedicated solar workspace for both PV inputs, charge tracking, and harvest history."
         />
       </div>
     );
@@ -241,7 +241,7 @@ export default function Solar() {
           kicker="Solar workspace"
           title="One place to track both solar inputs and charging progress"
           icon={Sun}
-          description="This page is centered on the AC500's solar-side telemetry: total harvest, per-input string behavior, output coverage, and a battery full-charge estimate tied back to the fields your stack actually receives."
+          description="This page is centered on the device's solar-side telemetry: total harvest, per-input string behavior, output coverage, and a battery full-charge estimate tied back to the fields your stack actually receives."
           meta={
             <div className="workspace-panel-meta">
               <StatusChip label={solarQuery.data?.bucketLabel ?? buildCoverageLabel(range.bucketMs)} variant="info" />
@@ -312,7 +312,7 @@ export default function Solar() {
 
       <div className="tile-grid tile-grid--cols-4 solar-score-grid">
         <MetricTile label="Solar right now" value={formatMetricValue(liveSnapshot.totalSolar, 'W')} detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'} accent="var(--cat-input)" tooltip={{
-          summary: 'Solar right now is the live total solar input reaching the AC500.',
+          summary: 'Solar right now is the live total solar input reaching the selected device.',
           dataPoints: [
             resolvedFieldLine('Direct total field', resolved.totalSolar, liveSnapshot.totalSolar, 'W'),
             resolvedFieldLine('PV1 field', resolved.pv1Power, liveSnapshot.pv1Power, 'W'),
@@ -657,7 +657,7 @@ export default function Solar() {
                 className="solar-forecast-card"
               >
                 <p className="analytics-report-copy">
-                  {chargeEstimate.sourceLabel}. When the AC500 reports a direct time-to-full value, that wins. Otherwise this page derives the estimate from the recent battery-percent climb and the configured charge ceiling.
+                  {chargeEstimate.sourceLabel}. When the device reports a direct time-to-full value, that wins. Otherwise this page derives the estimate from the recent battery-percent climb and the configured charge ceiling.
                 </p>
                 <div className="solar-forecast-value">{formatDuration(chargeEstimate.minutes)}</div>
                 <div className="solar-forecast-meta">

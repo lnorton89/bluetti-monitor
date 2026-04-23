@@ -278,7 +278,7 @@ export default function Charts() {
       <Card className="analytics-hero-card surface-card">
         <PageHeader
           kicker="Telemetry analytics"
-          title="Charts that explain what the AC500 has been doing"
+          title="Charts that explain what the device has been doing"
           icon={Activity}
           description="This workspace turns the field history you are already collecting into report-style views for power balance, charging posture, battery movement, and thermal behavior."
           meta={

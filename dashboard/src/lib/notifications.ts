@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AllState, DeviceState } from './api';
+import { isDesktopHostAvailable, sendToDesktopHost } from './desktop-host';
 import { useAppSettingsStore } from '../store/settings';
 
 export type BrowserNotificationPermissionState =
@@ -113,13 +114,7 @@ function showBrowserNotification(payload: BatteryFullNotificationPayload) {
 }
 
 function sendDesktopNotification(payload: BatteryFullNotificationPayload) {
-  const hostBridge = (window as Window & {
-    __electrobunSendToHost?: (message: unknown) => void;
-  }).__electrobunSendToHost;
-
-  if (typeof hostBridge === 'function') {
-    hostBridge(payload);
-  }
+  sendToDesktopHost(payload);
 }
 
 export function useBatteryFullNotifications(allState: AllState) {
@@ -128,9 +123,7 @@ export function useBatteryFullNotifications(allState: AllState) {
   const deviceSnapshotsRef = useRef<Record<string, BatterySnapshot>>({});
   const browserBatteryFullEnabled = useAppSettingsStore((s) => s.alerts.batteryFullBrowser);
   const desktopBatteryFullEnabled = useAppSettingsStore((s) => s.alerts.batteryFullDesktop);
-  const desktopNotificationsAvailable =
-    typeof window !== 'undefined'
-    && typeof (window as Window & { __electrobunSendToHost?: unknown }).__electrobunSendToHost === 'function';
+  const desktopNotificationsAvailable = isDesktopHostAvailable();
 
   useEffect(() => {
     setBrowserNotificationPermission(getBrowserNotificationPermission());
