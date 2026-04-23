@@ -1,44 +1,45 @@
-import { Clock, BatteryCharging, Info } from 'lucide-react';
-import { StatHelpTooltip, type StatHelpContent } from './ui';
-import type { DeviceState } from '../lib/battery-estimates';
+import { useQuery } from '@tanstack/react-query';
+import { BatteryCharging, Clock, Info } from 'lucide-react';
+import { fetchHistory } from '../lib/api';
+import type { DeviceState, HistoryPoint } from '../lib/battery-estimates';
 import {
-  estimateRuntimeMinutes,
   estimateChargeTimeMinutes,
-  getBatteryCapacityWh,
-  isCharging,
+  estimateChargeTimeMinutesFromHistory,
+  estimateRuntimeMinutes,
+  estimateRuntimeMinutesFromInferredCapacity,
+  estimateRuntimeMinutesFromHistory,
   formatDuration,
-  isBatteryFull,
-  isBatteryEmpty,
-  isSystemIdle,
+  getBatteryCapacityWh,
   getBatteryPercent,
+  getBatteryRangeEndPercent,
+  getBatteryRangeStartPercent,
+  isBatteryEmpty,
+  isBatteryFull,
+  isCharging,
+  isSystemIdle,
 } from '../lib/battery-estimates';
+import { StatHelpTooltip, type StatHelpContent } from './ui';
 
 interface BatteryEstimatesProps {
+  deviceId?: string;
   state: DeviceState;
 }
 
-/**
- * Detect if runtime estimate uses derived telemetry rather than a direct range field.
- */
-function isRuntimeEstimated(state: DeviceState): boolean {
-  if (state['battery_range_to_empty'] !== undefined) return false;
-  return estimateRuntimeMinutes(state) !== null;
-}
-
-/**
- * Detect if charge time estimate uses derived telemetry rather than a direct range field.
- */
-function isChargeEstimated(state: DeviceState): boolean {
-  if (state['battery_range_to_full'] !== undefined) return false;
-  return estimateChargeTimeMinutes(state) !== null;
-}
+const BATTERY_HISTORY_FIELDS = [
+  'total_battery_percent',
+  'battery_percent',
+  'charge_level',
+  'soc',
+  'pack_soc',
+  'pack_battery_percent',
+] as const;
 
 function EstimateConfidence({ estimated }: { estimated: boolean }) {
   if (!estimated) return null;
   return (
     <span
       className="estimate-confidence"
-      title="Based on typical values — actual rate may vary"
+      title="Based on current telemetry and recent trend data; actual rate may vary"
     >
       <Info size={10} />
       <span>estimated</span>
@@ -46,8 +47,21 @@ function EstimateConfidence({ estimated }: { estimated: boolean }) {
   );
 }
 
+function getHistoryPointValue(state: DeviceState, fields: readonly string[]): string {
+  for (const field of fields) {
+    const value = state[field]?.value;
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
+  return 'unavailable';
+}
+
 function buildRuntimeTooltip(state: DeviceState, estimated: boolean): StatHelpContent {
   const capacityWh = getBatteryCapacityWh(state);
+  const floorPercent = getBatteryRangeStartPercent(state);
+
   return {
     summary: estimated
       ? 'Runtime is estimated because the device did not publish a direct battery_range_to_empty value.'
@@ -56,7 +70,8 @@ function buildRuntimeTooltip(state: DeviceState, estimated: boolean): StatHelpCo
       `battery_range_to_empty: ${state['battery_range_to_empty']?.value ?? 'unavailable'}`,
       `battery_capacity: ${state['battery_capacity']?.value ?? state['pack_capacity']?.value ?? 'unavailable'}`,
       `remaining_capacity: ${state['remaining_capacity']?.value ?? 'unavailable'}`,
-      `total_battery_percent: ${state['total_battery_percent']?.value ?? state['battery_percent']?.value ?? state['soc']?.value ?? state['charge_level']?.value ?? 'unavailable'}`,
+      `battery percent: ${getHistoryPointValue(state, BATTERY_HISTORY_FIELDS)}`,
+      `battery_range_start: ${state['battery_range_start']?.value ?? String(floorPercent)}`,
       `ac_output_power: ${state['ac_output_power']?.value ?? '0'}`,
       `dc_output_power: ${state['dc_output_power']?.value ?? '0'}`,
     ],
@@ -65,17 +80,23 @@ function buildRuntimeTooltip(state: DeviceState, estimated: boolean): StatHelpCo
           'Use remaining_capacity directly when the device publishes it.',
           `Otherwise derive remaining energy from battery percent and live capacity${capacityWh ? ` (~${Math.round(capacityWh)} Wh right now)` : ''}.`,
           'runtimeMinutes = remainingWh / (ac_output_power + dc_output_power) * 60',
+          'If no battery-capacity field is available, infer effective capacity from recent battery-percent change and net battery power.',
+          `If capacity telemetry is unavailable, derive runtime from recent battery-percent decline down to the ${floorPercent}% floor.`,
         ]
       : [
           'Read battery_range_to_empty directly from live telemetry.',
           'Format the reported minutes into h/m display text.',
         ],
-    note: estimated ? 'The estimate depends on the current load and whatever battery-capacity telemetry the device exposes.' : undefined,
+    note: estimated
+      ? 'The estimate prefers direct device fields, then live power plus capacity telemetry, then recent battery-percent trend.'
+      : undefined,
   };
 }
 
 function buildChargeTooltip(state: DeviceState, estimated: boolean): StatHelpContent {
   const capacityWh = getBatteryCapacityWh(state);
+  const targetPercent = getBatteryRangeEndPercent(state);
+
   return {
     summary: estimated
       ? 'Time to Full is estimated because the device did not publish battery_range_to_full.'
@@ -84,8 +105,10 @@ function buildChargeTooltip(state: DeviceState, estimated: boolean): StatHelpCon
       `battery_range_to_full: ${state['battery_range_to_full']?.value ?? 'unavailable'}`,
       `battery_capacity: ${state['battery_capacity']?.value ?? state['pack_capacity']?.value ?? 'unavailable'}`,
       `remaining_capacity: ${state['remaining_capacity']?.value ?? 'unavailable'}`,
-      `battery percent: ${state['total_battery_percent']?.value ?? state['battery_percent']?.value ?? state['soc']?.value ?? state['charge_level']?.value ?? 'unavailable'}`,
-      `ac_input_power: ${state['ac_input_power']?.value ?? '0'}`,
+      `battery percent: ${getHistoryPointValue(state, BATTERY_HISTORY_FIELDS)}`,
+      `battery_range_end: ${state['battery_range_end']?.value ?? String(targetPercent)}`,
+      `ac_input_power: ${state['ac_input_power']?.value ?? state['grid_charge_power']?.value ?? '0'}`,
+      `dc_input_power: ${state['dc_input_power']?.value ?? state['pv_input_power']?.value ?? state['solar_power']?.value ?? '0'}`,
       `pv1_power: ${state['pv1_power']?.value ?? '0'}`,
       `pv2_power: ${state['pv2_power']?.value ?? '0'}`,
     ],
@@ -94,43 +117,72 @@ function buildChargeTooltip(state: DeviceState, estimated: boolean): StatHelpCon
           `Estimate total capacity from live battery-capacity telemetry${capacityWh ? ` (~${Math.round(capacityWh)} Wh right now)` : ''}.`,
           'Estimate remaining energy from remaining_capacity or battery percent.',
           'deficitWh = capacityWh - remainingWh',
-          'chargeMinutes = deficitWh / (ac_input_power + pv1_power + pv2_power) * 60',
+          'chargeMinutes = deficitWh / chargePower * 60',
+          `If capacity telemetry is unavailable, derive time to full from recent battery-percent climb toward ${targetPercent}%.`,
         ]
       : [
           'Read battery_range_to_full directly from live telemetry.',
           'Format the reported minutes into h/m display text.',
         ],
-    note: estimated ? 'The estimate assumes current AC + solar charge rates stay close to the present readings.' : undefined,
+    note: estimated
+      ? 'The estimate prefers direct device fields, then live charge power plus capacity telemetry, then recent battery-percent trend.'
+      : undefined,
   };
 }
 
-export function BatteryEstimates({ state }: BatteryEstimatesProps) {
+async function fetchBatteryHistory(deviceId: string): Promise<HistoryPoint[]> {
+  const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+
+  for (const field of BATTERY_HISTORY_FIELDS) {
+    const history = await fetchHistory(deviceId, field, { limit: 120, since });
+    if (history.length > 1) {
+      return history;
+    }
+  }
+
+  return [];
+}
+
+export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
   const charging = isCharging(state);
   const isFull = isBatteryFull(state);
   const isEmpty = isBatteryEmpty(state);
   const isIdle = isSystemIdle(state);
   const batteryPercent = getBatteryPercent(state);
-  const runtimeEstimated = isRuntimeEstimated(state);
-  const chargeEstimated = isChargeEstimated(state);
+  const batteryHistoryQuery = useQuery({
+    queryKey: ['battery-estimate-history', deviceId],
+    enabled: Boolean(deviceId),
+    staleTime: 60_000,
+    queryFn: () => fetchBatteryHistory(deviceId!),
+  });
 
-  let runtimeDisplay = '—';
+  const history = batteryHistoryQuery.data ?? [];
+  const runtimeDirectMinutes = estimateRuntimeMinutes(state);
+  const runtimeHistoryMinutes = estimateRuntimeMinutesFromHistory(state, history);
+  const runtimeInferredMinutes = estimateRuntimeMinutesFromInferredCapacity(state, history);
+  const chargeDirectMinutes = estimateChargeTimeMinutes(state);
+  const chargeHistoryMinutes = estimateChargeTimeMinutesFromHistory(state, history);
+  const runtimeMinutes = runtimeDirectMinutes ?? runtimeInferredMinutes ?? runtimeHistoryMinutes;
+  const chargeMinutes = chargeDirectMinutes ?? chargeHistoryMinutes;
+  const runtimeEstimated = state['battery_range_to_empty'] === undefined && runtimeMinutes !== null;
+  const chargeEstimated = state['battery_range_to_full'] === undefined && chargeMinutes !== null;
+
+  let runtimeDisplay = '--';
   if (isEmpty) {
     runtimeDisplay = '0m';
   } else if (isIdle) {
-    runtimeDisplay = '—';
+    runtimeDisplay = '--';
   } else {
-    const runtimeMinutes = estimateRuntimeMinutes(state);
-    runtimeDisplay = formatDuration(runtimeMinutes);
+    runtimeDisplay = formatDuration(runtimeMinutes).replace('â€”', '--');
   }
 
-  let chargeDisplay = '—';
+  let chargeDisplay = '--';
   if (isFull) {
     chargeDisplay = 'Full';
   } else if (isIdle && !charging) {
-    chargeDisplay = '—';
+    chargeDisplay = '--';
   } else {
-    const chargeMinutes = estimateChargeTimeMinutes(state);
-    chargeDisplay = formatDuration(chargeMinutes);
+    chargeDisplay = formatDuration(chargeMinutes).replace('â€”', '--');
   }
 
   const getRuntimeTone = () => {
@@ -139,6 +191,10 @@ export function BatteryEstimates({ state }: BatteryEstimatesProps) {
     if (batteryPercent >= 20) return 'var(--amber)';
     return 'var(--red)';
   };
+
+  const showChargeEstimate = charging || isFull || chargeMinutes !== null;
+  const runtimeMissing = runtimeDisplay === '--';
+  const chargeMissing = chargeDisplay === '--';
 
   return (
     <div className="battery-estimates">
@@ -151,9 +207,9 @@ export function BatteryEstimates({ state }: BatteryEstimatesProps) {
         <span className="estimate-value" style={{ color: getRuntimeTone() }}>
           {runtimeDisplay}
         </span>
-        <EstimateConfidence estimated={runtimeEstimated && runtimeDisplay !== '—'} />
+        <EstimateConfidence estimated={runtimeEstimated && !runtimeMissing} />
       </div>
-      {(charging || isFull) && (
+      {showChargeEstimate && (
         <div className="estimate-item charging">
           <BatteryCharging size={14} className="estimate-icon" />
           <span className="estimate-label-group">
@@ -164,7 +220,7 @@ export function BatteryEstimates({ state }: BatteryEstimatesProps) {
             />
           </span>
           <span className="estimate-value">{chargeDisplay}</span>
-          <EstimateConfidence estimated={chargeEstimated && chargeDisplay !== '—'} />
+          <EstimateConfidence estimated={chargeEstimated && !chargeMissing} />
         </div>
       )}
     </div>

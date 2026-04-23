@@ -444,27 +444,6 @@ input:focus-visible,
   text-align: center;
 }
 
-.sidebar-stack-note {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-stack-label {
-  color: var(--text-muted);
-  font-family: var(--font-cond);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.sidebar-stack-copy {
-  color: var(--text-dim);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .sidebar-status-row {
   display: flex;
   align-items: center;

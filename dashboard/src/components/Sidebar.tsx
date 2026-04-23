@@ -75,11 +75,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
           {lastUpdate && <div className="sidebar-status-time">{formatTime(lastUpdate)}</div>}
         </div>
-
-        <div className="sidebar-section sidebar-stack-note">
-          <div className="sidebar-stack-label">Signal Path</div>
-          <div className="sidebar-stack-copy">MQTT bridge, API cache, and dashboard view aligned for daily monitoring.</div>
-        </div>
       </aside>
     </>
   );

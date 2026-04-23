@@ -259,7 +259,7 @@ function InfoTable({
   );
 }
 
-function Hero({ model, state }: { model: string; state: DeviceState }) {
+function Hero({ model, state, deviceId }: { model: string; state: DeviceState; deviceId: string }) {
   const dcInput = getNumber(state, 'dc_input_power') ?? 0;
   const acInput = getNumber(state, 'ac_input_power') ?? 0;
   const acOutput = getNumber(state, 'ac_output_power') ?? 0;
@@ -363,7 +363,7 @@ function Hero({ model, state }: { model: string; state: DeviceState }) {
               </strong>
             </div>
 
-            <BatteryEstimates state={state} />
+            <BatteryEstimates deviceId={deviceId} state={state} />
           </div>
         </div>
 
@@ -609,7 +609,7 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
         </div>
       </div>
 
-      <Hero model={model} state={state} />
+      <Hero model={model} state={state} deviceId={deviceId} />
 
       <div className="tile-grid tile-grid--fit">
         {topCards.map((card) => (

@@ -1,5 +1,21 @@
 type FieldValue = { value: string; ts: string };
 export type DeviceState = Record<string, FieldValue>;
+export type HistoryPoint = { value: string; ts: string };
+
+const BATTERY_PERCENT_FIELDS = [
+  'total_battery_percent',
+  'battery_percent',
+  'soc',
+  'charge_level',
+  'pack_soc',
+  'pack_battery_percent',
+] as const;
+
+const BATTERY_CAPACITY_FIELDS = ['battery_capacity', 'pack_capacity'] as const;
+const REMAINING_CAPACITY_FIELDS = ['remaining_capacity'] as const;
+const AC_INPUT_FIELDS = ['ac_input_power', 'grid_charge_power'] as const;
+const SOLAR_INPUT_FIELDS = ['dc_input_power', 'pv_input_power', 'solar_power'] as const;
+const SPLIT_SOLAR_FIELDS = ['pv1_power', 'pv2_power', 'dc_input_power1', 'dc_input_power2'] as const;
 
 function getField(state: DeviceState, field: string): number | null {
   const raw = state[field]?.value;
@@ -8,17 +24,40 @@ function getField(state: DeviceState, field: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function getFirstField(state: DeviceState, fields: readonly string[]): number | null {
+  for (const field of fields) {
+    const value = getField(state, field);
+    if (value !== null) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function getSummedFields(state: DeviceState, fields: readonly string[]): number | null {
+  let foundValue = false;
+  let sum = 0;
+
+  for (const field of fields) {
+    const value = getField(state, field);
+    if (value === null) {
+      continue;
+    }
+
+    foundValue = true;
+    sum += value;
+  }
+
+  return foundValue ? sum : null;
+}
+
 export function getBatteryPercent(state: DeviceState): number | null {
-  return (
-    getField(state, 'total_battery_percent') ??
-    getField(state, 'battery_percent') ??
-    getField(state, 'soc') ??
-    getField(state, 'charge_level')
-  );
+  return getFirstField(state, BATTERY_PERCENT_FIELDS);
 }
 
 export function getBatteryCapacityWh(state: DeviceState): number | null {
-  const directCapacity = getField(state, 'battery_capacity') ?? getField(state, 'pack_capacity');
+  const directCapacity = getFirstField(state, BATTERY_CAPACITY_FIELDS);
   if (directCapacity !== null && directCapacity > 0) {
     return directCapacity;
   }
@@ -33,12 +72,12 @@ export function getBatteryCapacityWh(state: DeviceState): number | null {
 }
 
 export function getRemainingCapacityWh(state: DeviceState): number | null {
-  const remainingCapacity = getField(state, 'remaining_capacity');
+  const remainingCapacity = getFirstField(state, REMAINING_CAPACITY_FIELDS);
   if (remainingCapacity !== null && remainingCapacity >= 0) {
     return remainingCapacity;
   }
 
-  const capacityWh = getField(state, 'battery_capacity') ?? getField(state, 'pack_capacity');
+  const capacityWh = getFirstField(state, BATTERY_CAPACITY_FIELDS);
   const batteryPercent = getBatteryPercent(state);
   if (capacityWh === null || batteryPercent === null) {
     return null;
@@ -85,23 +124,21 @@ export function isChargingFromGrid(state: DeviceState): boolean {
 }
 
 export function isCharging(state: DeviceState): boolean {
-  return isChargingFromGrid(state) || (getField(state, 'dc_input_power') ?? 0) > 0;
+  return isChargingFromGrid(state) || getTotalInputPower(state) > 0;
 }
 
 export function estimateChargeTimeMinutes(state: DeviceState): number | null {
   const rangeToFull = getField(state, 'battery_range_to_full');
   if (rangeToFull !== null && rangeToFull >= 0) return rangeToFull;
 
-  const acInputW = getField(state, 'ac_input_power');
+  const acInputW = getFirstField(state, AC_INPUT_FIELDS);
   const capacityWh = getBatteryCapacityWh(state);
   const remainingWh = getRemainingCapacityWh(state);
   if (capacityWh === null || remainingWh === null) return null;
   if (remainingWh >= capacityWh) return null;
   const deficitWh = capacityWh - remainingWh;
 
-  const pv1 = getField(state, 'pv1_power') ?? 0;
-  const pv2 = getField(state, 'pv2_power') ?? 0;
-  const solarInputW = pv1 + pv2;
+  const solarInputW = getFirstField(state, SOLAR_INPUT_FIELDS) ?? getSummedFields(state, SPLIT_SOLAR_FIELDS) ?? 0;
   const totalChargeW = (acInputW ?? 0) + solarInputW;
 
   if (totalChargeW <= 0) return null;
@@ -124,14 +161,155 @@ export function getTotalOutputPower(state: DeviceState): number {
 }
 
 export function getTotalInputPower(state: DeviceState): number {
-  return (
-    (getField(state, 'ac_input_power') ?? 0) +
-    (getField(state, 'dc_input_power') ?? 0) +
-    (getField(state, 'solar_power') ?? 0) +
-    (getField(state, 'pv_input_power') ?? 0)
-  );
+  const acInput = getFirstField(state, AC_INPUT_FIELDS) ?? 0;
+  const solarInput = getFirstField(state, SOLAR_INPUT_FIELDS) ?? getSummedFields(state, SPLIT_SOLAR_FIELDS) ?? 0;
+
+  return acInput + solarInput;
 }
 
 export function isSystemIdle(state: DeviceState): boolean {
   return getTotalOutputPower(state) === 0 && getTotalInputPower(state) === 0;
+}
+
+export function getBatteryRangeStartPercent(state: DeviceState): number {
+  const configuredFloor = getField(state, 'battery_range_start');
+  if (configuredFloor !== null && configuredFloor >= 0 && configuredFloor <= 100) {
+    return configuredFloor;
+  }
+
+  return 0;
+}
+
+export function getBatteryRangeEndPercent(state: DeviceState): number {
+  const configuredCeiling = getField(state, 'battery_range_end');
+  if (configuredCeiling !== null && configuredCeiling >= 0 && configuredCeiling <= 100) {
+    return configuredCeiling;
+  }
+
+  return 100;
+}
+
+function parseHistoryPoints(history: HistoryPoint[]): Array<{ percent: number; ts: number }> {
+  return history
+    .map((point) => ({
+      percent: Number.parseFloat(point.value),
+      ts: Date.parse(point.ts),
+    }))
+    .filter((point) => Number.isFinite(point.percent) && Number.isFinite(point.ts))
+    .sort((left, right) => left.ts - right.ts);
+}
+
+export function estimateBatteryTrendPercentPerHour(history: HistoryPoint[]): number | null {
+  const points = parseHistoryPoints(history);
+  if (points.length < 2) {
+    return null;
+  }
+
+  const first = points[0];
+  const last = points.at(-1) ?? first;
+  const elapsedHours = (last.ts - first.ts) / 3_600_000;
+  if (elapsedHours <= 0) {
+    return null;
+  }
+
+  const percentChange = last.percent - first.percent;
+  return percentChange / elapsedHours;
+}
+
+export function inferBatteryCapacityWhFromTrend(
+  state: DeviceState,
+  history: HistoryPoint[],
+): number | null {
+  const percentPerHour = estimateBatteryTrendPercentPerHour(history);
+  if (percentPerHour === null || percentPerHour === 0) {
+    return null;
+  }
+
+  const netBatteryPower = getTotalInputPower(state) - getTotalOutputPower(state);
+  if (!Number.isFinite(netBatteryPower) || Math.abs(netBatteryPower) < 25) {
+    return null;
+  }
+
+  const capacityWh = Math.abs(netBatteryPower) / (Math.abs(percentPerHour) / 100);
+  if (!Number.isFinite(capacityWh) || capacityWh <= 0) {
+    return null;
+  }
+
+  return capacityWh;
+}
+
+export function estimateRuntimeMinutesFromHistory(
+  state: DeviceState,
+  history: HistoryPoint[],
+): number | null {
+  const currentPercent = getBatteryPercent(state);
+  if (currentPercent === null) {
+    return null;
+  }
+
+  const floorPercent = getBatteryRangeStartPercent(state);
+  if (currentPercent <= floorPercent) {
+    return 0;
+  }
+
+  const percentPerHour = estimateBatteryTrendPercentPerHour(history);
+  if (percentPerHour === null || percentPerHour >= 0) {
+    return null;
+  }
+
+  return ((currentPercent - floorPercent) / Math.abs(percentPerHour)) * 60;
+}
+
+export function estimateRuntimeMinutesFromInferredCapacity(
+  state: DeviceState,
+  history: HistoryPoint[],
+): number | null {
+  const currentPercent = getBatteryPercent(state);
+  if (currentPercent === null) {
+    return null;
+  }
+
+  const floorPercent = getBatteryRangeStartPercent(state);
+  if (currentPercent <= floorPercent) {
+    return 0;
+  }
+
+  const totalOutputW = getTotalOutputPower(state);
+  if (totalOutputW <= 0) {
+    return null;
+  }
+
+  const inferredCapacityWh = inferBatteryCapacityWhFromTrend(state, history);
+  if (inferredCapacityWh === null) {
+    return null;
+  }
+
+  const usableRemainingWh = ((currentPercent - floorPercent) / 100) * inferredCapacityWh;
+  if (usableRemainingWh <= 0) {
+    return null;
+  }
+
+  return (usableRemainingWh / totalOutputW) * 60;
+}
+
+export function estimateChargeTimeMinutesFromHistory(
+  state: DeviceState,
+  history: HistoryPoint[],
+): number | null {
+  const currentPercent = getBatteryPercent(state);
+  if (currentPercent === null) {
+    return null;
+  }
+
+  const targetPercent = Math.max(currentPercent, getBatteryRangeEndPercent(state));
+  if (currentPercent >= targetPercent) {
+    return 0;
+  }
+
+  const percentPerHour = estimateBatteryTrendPercentPerHour(history);
+  if (percentPerHour === null || percentPerHour <= 0) {
+    return null;
+  }
+
+  return ((targetPercent - currentPercent) / percentPerHour) * 60;
 }
