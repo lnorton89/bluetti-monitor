@@ -231,9 +231,9 @@ function initializeDesktopLogging() {
 }
 
 function writeConsoleLine(level: "INFO" | "WARN" | "ERROR", writer: (...args: unknown[]) => void, args: unknown[]) {
-  writer(...args);
   const lines = formatLogLines(args);
   for (const line of lines) {
+    writer(line);
     appendDesktopLogLine(`[${resolveDesktopLogLevel(level, line)}] ${line}`);
   }
 }
