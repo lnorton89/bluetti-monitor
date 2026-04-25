@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { BatteryCharging, Clock, Info } from 'lucide-react';
+import { BatteryCharging } from 'lucide-react';
 import { fetchHistory } from '../lib/api';
 import type { DeviceState, HistoryPoint } from '../lib/battery-estimates';
 import {
   estimateChargeTimeMinutes,
   estimateChargeTimeMinutesFromHistory,
   estimateRuntimeMinutes,
-  estimateRuntimeMinutesFromInferredCapacity,
   estimateRuntimeMinutesFromHistory,
   formatDuration,
   getBatteryCapacityWh,
@@ -33,19 +32,6 @@ const BATTERY_HISTORY_FIELDS = [
   'pack_soc',
   'pack_battery_percent',
 ] as const;
-
-function EstimateConfidence({ estimated }: { estimated: boolean }) {
-  if (!estimated) return null;
-  return (
-    <span
-      className="estimate-confidence"
-      title="Based on current telemetry and recent trend data; actual rate may vary"
-    >
-      <Info size={10} />
-      <span>estimated</span>
-    </span>
-  );
-}
 
 function getHistoryPointValue(state: DeviceState, fields: readonly string[]): string {
   for (const field of fields) {
@@ -80,7 +66,6 @@ function buildRuntimeTooltip(state: DeviceState, estimated: boolean): StatHelpCo
           'Use remaining_capacity directly when the device publishes it.',
           `Otherwise derive remaining energy from battery percent and live capacity${capacityWh ? ` (~${Math.round(capacityWh)} Wh right now)` : ''}.`,
           'runtimeMinutes = remainingWh / (ac_output_power + dc_output_power) * 60',
-          'If no battery-capacity field is available, infer effective capacity from recent battery-percent change and net battery power.',
           `If capacity telemetry is unavailable, derive runtime from recent battery-percent decline down to the ${floorPercent}% floor.`,
         ]
       : [
@@ -159,11 +144,10 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
   const history = batteryHistoryQuery.data ?? [];
   const runtimeDirectMinutes = estimateRuntimeMinutes(state);
   const runtimeHistoryMinutes = estimateRuntimeMinutesFromHistory(state, history);
-  const runtimeInferredMinutes = estimateRuntimeMinutesFromInferredCapacity(state, history);
   const chargeDirectMinutes = estimateChargeTimeMinutes(state);
   const chargeHistoryMinutes = estimateChargeTimeMinutesFromHistory(state, history);
-  const runtimeMinutes = runtimeDirectMinutes ?? runtimeInferredMinutes ?? runtimeHistoryMinutes;
-  const chargeMinutes = chargeDirectMinutes ?? chargeHistoryMinutes;
+  const runtimeMinutes = runtimeDirectMinutes ?? runtimeHistoryMinutes;
+  const chargeMinutes = charging ? (chargeDirectMinutes ?? chargeHistoryMinutes) : null;
   const runtimeEstimated = state['battery_range_to_empty'] === undefined && runtimeMinutes !== null;
   const chargeEstimated = state['battery_range_to_full'] === undefined && chargeMinutes !== null;
 
@@ -193,13 +177,9 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
   };
 
   const showChargeEstimate = charging || isFull || chargeMinutes !== null;
-  const runtimeMissing = runtimeDisplay === '--';
-  const chargeMissing = chargeDisplay === '--';
-
   return (
     <div className="battery-estimates">
       <div className="estimate-item">
-        <Clock size={14} className="estimate-icon" />
         <span className="estimate-label-group">
           <span className="estimate-label">Runtime</span>
           <StatHelpTooltip label="Runtime" content={buildRuntimeTooltip(state, runtimeEstimated)} />
@@ -207,7 +187,6 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
         <span className="estimate-value" style={{ color: getRuntimeTone() }}>
           {runtimeDisplay}
         </span>
-        <EstimateConfidence estimated={runtimeEstimated && !runtimeMissing} />
       </div>
       {showChargeEstimate && (
         <div className="estimate-item charging">
@@ -220,7 +199,6 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
             />
           </span>
           <span className="estimate-value">{chargeDisplay}</span>
-          <EstimateConfidence estimated={chargeEstimated && !chargeMissing} />
         </div>
       )}
     </div>

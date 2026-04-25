@@ -7,6 +7,7 @@
     "lib/bluetti-mqtt-node"
   ],
   "scripts": {
+    "desktop:build": "npm --prefix lib/bluetti-mqtt-node run build && electrobun build --env=stable",
     "desktop:dev": "node ./scripts/dev-desktop.mjs --watch-electrobun",
     "desktop:start": "node ./scripts/dev-desktop.mjs",
     "dashboard:test": "npm --prefix dashboard run test:e2e",

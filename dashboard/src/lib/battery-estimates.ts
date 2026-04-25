@@ -16,6 +16,7 @@ const REMAINING_CAPACITY_FIELDS = ['remaining_capacity'] as const;
 const AC_INPUT_FIELDS = ['ac_input_power', 'grid_charge_power'] as const;
 const SOLAR_INPUT_FIELDS = ['dc_input_power', 'pv_input_power', 'solar_power'] as const;
 const SPLIT_SOLAR_FIELDS = ['pv1_power', 'pv2_power', 'dc_input_power1', 'dc_input_power2'] as const;
+const POWER_FLOW_DEADBAND_W = 20;
 
 function getField(state: DeviceState, field: string): number | null {
   const raw = state[field]?.value;
@@ -117,14 +118,24 @@ export function estimateRuntimeMinutes(state: DeviceState): number | null {
 export function isChargingFromGrid(state: DeviceState): boolean {
   const gridCharge = state['grid_charge_on']?.value;
   const acCharge = state['ac_charging_on']?.value;
-  return gridCharge === 'True' || gridCharge === 'true' ||
-         gridCharge === '1' || gridCharge === 'ON' ||
-         acCharge === 'True' || acCharge === 'true' ||
-         acCharge === '1' || acCharge === 'ON';
+  const acInputPower = getFirstField(state, AC_INPUT_FIELDS) ?? 0;
+  const gridChargeEnabled = gridCharge === 'True' || gridCharge === 'true' ||
+    gridCharge === '1' || gridCharge === 'ON';
+  const acChargeEnabled = acCharge === 'True' || acCharge === 'true' ||
+    acCharge === '1' || acCharge === 'ON';
+
+  return (gridChargeEnabled || acChargeEnabled) && acInputPower > POWER_FLOW_DEADBAND_W;
 }
 
 export function isCharging(state: DeviceState): boolean {
-  return isChargingFromGrid(state) || getTotalInputPower(state) > 0;
+  const totalInputPower = getTotalInputPower(state);
+  const totalOutputPower = getTotalOutputPower(state);
+
+  if (isChargingFromGrid(state)) {
+    return true;
+  }
+
+  return totalInputPower > totalOutputPower + POWER_FLOW_DEADBAND_W;
 }
 
 export function estimateChargeTimeMinutes(state: DeviceState): number | null {
@@ -199,14 +210,72 @@ function parseHistoryPoints(history: HistoryPoint[]): Array<{ percent: number; t
     .sort((left, right) => left.ts - right.ts);
 }
 
-export function estimateBatteryTrendPercentPerHour(history: HistoryPoint[]): number | null {
-  const points = parseHistoryPoints(history);
-  if (points.length < 2) {
+function buildDistinctHistory(points: Array<{ percent: number; ts: number }>): Array<{ percent: number; ts: number }> {
+  const distinct: Array<{ percent: number; ts: number }> = [];
+
+  for (const point of points) {
+    const last = distinct.at(-1);
+    if (last && last.percent === point.percent) {
+      distinct[distinct.length - 1] = point;
+      continue;
+    }
+
+    distinct.push(point);
+  }
+
+  return distinct;
+}
+
+function getTrailingTrendSegment(
+  history: HistoryPoint[],
+): { direction: "charging" | "discharging"; first: { percent: number; ts: number }; last: { percent: number; ts: number } } | null {
+  const distinct = buildDistinctHistory(parseHistoryPoints(history));
+  if (distinct.length < 2) {
     return null;
   }
 
-  const first = points[0];
-  const last = points.at(-1) ?? first;
+  const last = distinct.at(-1);
+  const penultimate = distinct.at(-2);
+  if (!last || !penultimate || last.percent === penultimate.percent) {
+    return null;
+  }
+
+  const direction = last.percent > penultimate.percent ? "charging" : "discharging";
+  let firstIndex = distinct.length - 2;
+
+  while (firstIndex > 0) {
+    const current = distinct[firstIndex];
+    const previous = distinct[firstIndex - 1];
+    const delta = current.percent - previous.percent;
+
+    if (direction === "charging" && delta <= 0) {
+      break;
+    }
+
+    if (direction === "discharging" && delta >= 0) {
+      break;
+    }
+
+    firstIndex -= 1;
+  }
+
+  return {
+    direction,
+    first: distinct[firstIndex],
+    last,
+  };
+}
+
+function estimateBatteryTrendPercentPerHourForDirection(
+  history: HistoryPoint[],
+  direction: "charging" | "discharging",
+): number | null {
+  const segment = getTrailingTrendSegment(history);
+  if (segment === null || segment.direction !== direction) {
+    return null;
+  }
+
+  const { first, last } = segment;
   const elapsedHours = (last.ts - first.ts) / 3_600_000;
   if (elapsedHours <= 0) {
     return null;
@@ -216,26 +285,13 @@ export function estimateBatteryTrendPercentPerHour(history: HistoryPoint[]): num
   return percentChange / elapsedHours;
 }
 
-export function inferBatteryCapacityWhFromTrend(
-  state: DeviceState,
-  history: HistoryPoint[],
-): number | null {
-  const percentPerHour = estimateBatteryTrendPercentPerHour(history);
-  if (percentPerHour === null || percentPerHour === 0) {
+export function estimateBatteryTrendPercentPerHour(history: HistoryPoint[]): number | null {
+  const segment = getTrailingTrendSegment(history);
+  if (segment === null) {
     return null;
   }
 
-  const netBatteryPower = getTotalInputPower(state) - getTotalOutputPower(state);
-  if (!Number.isFinite(netBatteryPower) || Math.abs(netBatteryPower) < 25) {
-    return null;
-  }
-
-  const capacityWh = Math.abs(netBatteryPower) / (Math.abs(percentPerHour) / 100);
-  if (!Number.isFinite(capacityWh) || capacityWh <= 0) {
-    return null;
-  }
-
-  return capacityWh;
+  return estimateBatteryTrendPercentPerHourForDirection(history, segment.direction);
 }
 
 export function estimateRuntimeMinutesFromHistory(
@@ -252,46 +308,13 @@ export function estimateRuntimeMinutesFromHistory(
     return 0;
   }
 
-  const percentPerHour = estimateBatteryTrendPercentPerHour(history);
+  const percentPerHour = estimateBatteryTrendPercentPerHourForDirection(history, "discharging");
   if (percentPerHour === null || percentPerHour >= 0) {
     return null;
   }
 
   return ((currentPercent - floorPercent) / Math.abs(percentPerHour)) * 60;
 }
-
-export function estimateRuntimeMinutesFromInferredCapacity(
-  state: DeviceState,
-  history: HistoryPoint[],
-): number | null {
-  const currentPercent = getBatteryPercent(state);
-  if (currentPercent === null) {
-    return null;
-  }
-
-  const floorPercent = getBatteryRangeStartPercent(state);
-  if (currentPercent <= floorPercent) {
-    return 0;
-  }
-
-  const totalOutputW = getTotalOutputPower(state);
-  if (totalOutputW <= 0) {
-    return null;
-  }
-
-  const inferredCapacityWh = inferBatteryCapacityWhFromTrend(state, history);
-  if (inferredCapacityWh === null) {
-    return null;
-  }
-
-  const usableRemainingWh = ((currentPercent - floorPercent) / 100) * inferredCapacityWh;
-  if (usableRemainingWh <= 0) {
-    return null;
-  }
-
-  return (usableRemainingWh / totalOutputW) * 60;
-}
-
 export function estimateChargeTimeMinutesFromHistory(
   state: DeviceState,
   history: HistoryPoint[],
@@ -306,7 +329,7 @@ export function estimateChargeTimeMinutesFromHistory(
     return 0;
   }
 
-  const percentPerHour = estimateBatteryTrendPercentPerHour(history);
+  const percentPerHour = estimateBatteryTrendPercentPerHourForDirection(history, "charging");
   if (percentPerHour === null || percentPerHour <= 0) {
     return null;
   }

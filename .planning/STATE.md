@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 
 Milestone: None active
 Status: v1.2 archived and closed out
-Last activity: 2026-04-22 - Completed quick task 260422-jma: Improve the bluetooth polling entry format in log files
+Last activity: 2026-04-25 - Completed quick task 260425-k1x: Commit and push so trees are clean
 
 ## Accumulated Context
 
@@ -54,6 +54,7 @@ Decisions are logged in PROJECT.md.
 | 260422-fast | Remove deprecated `baseUrl` from root `tsconfig.json` while keeping the workspace path alias working | 2026-04-22 | working tree | root |
 | 260422-z8q | Improve the Settings route UI and add persisted desktop log controls for enable/disable and truncation policy | 2026-04-22 | working tree | root |
 | 260422-jma | Improve the bluetooth polling entry format in log files | 2026-04-22 | 3362046 | [260422-jma-improve-the-bluetooth-polling-entry-form](./quick/260422-jma-improve-the-bluetooth-polling-entry-form/) |
+| 260425-k1x | Commit and push so trees are clean | 2026-04-25 | working tree | [260425-k1x-commit-and-push-so-trees-are-clean](./quick/260425-k1x-commit-and-push-so-trees-are-clean/) |
 
 ## Session Continuity
 
