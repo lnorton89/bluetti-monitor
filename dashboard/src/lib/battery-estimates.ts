@@ -89,7 +89,7 @@ export function getRemainingCapacityWh(state: DeviceState): number | null {
 
 export function formatDuration(minutes: number | null): string {
   if (minutes === null || !Number.isFinite(minutes) || minutes < 1) {
-    return '—';
+    return '--';
   }
   const hours = Math.floor(minutes / 60);
   const mins = Math.round(minutes % 60);
@@ -103,16 +103,13 @@ export function estimateRuntimeMinutes(state: DeviceState): number | null {
   const rangeToEmpty = getField(state, 'battery_range_to_empty');
   if (rangeToEmpty !== null && rangeToEmpty >= 0) return rangeToEmpty;
 
-  const acOutputW = getField(state, 'ac_output_power');
-  const dcOutputW = getField(state, 'dc_output_power');
-
-  const totalOutputW = (acOutputW ?? 0) + (dcOutputW ?? 0);
-  if (totalOutputW <= 0) return null;
+  const netDischargeW = getTotalOutputPower(state) - getTotalInputPower(state);
+  if (netDischargeW <= POWER_FLOW_DEADBAND_W) return null;
 
   const remainingWh = getRemainingCapacityWh(state);
   if (remainingWh === null || remainingWh <= 0) return null;
 
-  return (remainingWh / totalOutputW) * 60;
+  return (remainingWh / netDischargeW) * 60;
 }
 
 export function isChargingFromGrid(state: DeviceState): boolean {
@@ -142,24 +139,23 @@ export function estimateChargeTimeMinutes(state: DeviceState): number | null {
   const rangeToFull = getField(state, 'battery_range_to_full');
   if (rangeToFull !== null && rangeToFull >= 0) return rangeToFull;
 
-  const acInputW = getFirstField(state, AC_INPUT_FIELDS);
   const capacityWh = getBatteryCapacityWh(state);
   const remainingWh = getRemainingCapacityWh(state);
   if (capacityWh === null || remainingWh === null) return null;
-  if (remainingWh >= capacityWh) return null;
-  const deficitWh = capacityWh - remainingWh;
+  const targetWh = capacityWh * (getBatteryRangeEndPercent(state) / 100);
+  if (remainingWh >= targetWh) return 0;
+  const deficitWh = targetWh - remainingWh;
 
-  const solarInputW = getFirstField(state, SOLAR_INPUT_FIELDS) ?? getSummedFields(state, SPLIT_SOLAR_FIELDS) ?? 0;
-  const totalChargeW = (acInputW ?? 0) + solarInputW;
+  const netChargeW = getTotalInputPower(state) - getTotalOutputPower(state);
 
-  if (totalChargeW <= 0) return null;
+  if (netChargeW <= POWER_FLOW_DEADBAND_W) return null;
 
-  return (deficitWh / totalChargeW) * 60;
+  return (deficitWh / netChargeW) * 60;
 }
 
 export function isBatteryFull(state: DeviceState): boolean {
   const percent = getBatteryPercent(state);
-  return percent !== null && percent >= 100;
+  return percent !== null && percent >= getBatteryRangeEndPercent(state);
 }
 
 export function isBatteryEmpty(state: DeviceState): boolean {

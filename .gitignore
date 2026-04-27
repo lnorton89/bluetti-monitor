@@ -81,6 +81,10 @@ mosquitto/log/
 # Local development data
 .dev-data/
 
+# Analytics reports
+reports/
+.tmp-report-*/
+
 # TODO files
 TODO
 TODO.md
