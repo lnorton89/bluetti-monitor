@@ -1,7 +1,9 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { BrowserWindow } from "electrobun/bun";
+import { Tray } from "electrobun/bun";
 import { Utils } from "electrobun/bun";
+import { dlopen, FFIType, suffix } from "bun:ffi";
 import {
   discoverBluettiDevice,
   startBluettiMqttService as launchBluettiMqttService,
@@ -146,6 +148,7 @@ desktopHostEvents.on("host-message", (event: { data?: { detail?: unknown } }) =>
 
 mainWindow.setTitle(buildWindowTitle(titlebarState));
 initializeDesktopLogging();
+configureDesktopIcons();
 
 function nudgeLoadedWebview() {
   mainWindow.webview.executeJavascript(`
@@ -1136,4 +1139,113 @@ function findWorkspaceRoot(): string {
   }
 
   return process.cwd();
+}
+
+function resolveAppAsset(fileName: string): string {
+  const candidates = [
+    resolve(appRoot, "assets", fileName),
+    resolve(import.meta.dir, "..", "assets", fileName),
+    resolve(process.cwd(), "..", "Resources", "app", "assets", fileName),
+  ];
+
+  return candidates.find((candidate) => existsSync(candidate)) ?? candidates[0];
+}
+
+function configureDesktopIcons() {
+  const iconPath = resolveAppAsset("icon.ico");
+
+  if (!existsSync(iconPath)) {
+    console.warn(`[desktop:icon] icon not found at ${iconPath}`);
+    return;
+  }
+
+  setWindowIcon(iconPath);
+  createTrayIcon(iconPath);
+
+  for (const delayMs of [250, 1000, 2500]) {
+    setTimeout(() => {
+      setWindowIcon(iconPath);
+    }, delayMs);
+  }
+}
+
+function setWindowIcon(iconPath: string) {
+  const dllPath = resolveNativeWrapperPath();
+
+  if (!dllPath) {
+    console.warn("[desktop:icon] libNativeWrapper was not found");
+    return;
+  }
+
+  try {
+    const lib = dlopen(dllPath, {
+      setWindowIcon: {
+        args: [FFIType.ptr, FFIType.cstring],
+        returns: FFIType.void,
+      },
+    });
+    const cstr = process.platform === "win32"
+      ? Buffer.from(`${iconPath}\0`, "utf-8")
+      : iconPath;
+    (lib.symbols as Record<string, (...args: unknown[]) => void>)["setWindowIcon"](mainWindow.ptr, cstr);
+    console.log(`[desktop:icon] window icon set from ${iconPath}`);
+    applyWin32WindowIcon(iconPath);
+  } catch (e) {
+    console.warn("[desktop:icon] could not set window icon:", (e as Error).message);
+    applyWin32WindowIcon(iconPath);
+  }
+}
+
+function createTrayIcon(iconPath: string) {
+  try {
+    new Tray({ image: iconPath, title: "Bluetti Monitor", template: false });
+    console.log(`[desktop:tray] tray icon set from ${iconPath}`);
+  } catch (e) {
+    console.warn("[desktop:tray] could not create tray icon:", (e as Error).message);
+  }
+}
+
+function resolveNativeWrapperPath(): string | null {
+  const dllName = `libNativeWrapper.${suffix}`;
+  const candidates = [
+    resolve(process.cwd(), dllName),
+    resolve(dirname(process.execPath), dllName),
+    resolve(import.meta.dir, "..", "..", "..", "bin", dllName),
+  ];
+
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
+function applyWin32WindowIcon(iconPath: string) {
+  if (process.platform !== "win32") {
+    return;
+  }
+
+  const scriptPath = resolve(appRoot, "scripts", "set-window-icon.ps1");
+  if (!existsSync(scriptPath)) {
+    console.warn(`[desktop:icon] Win32 icon helper not found at ${scriptPath}`);
+    return;
+  }
+
+  const child = Bun.spawn(
+    [
+      "powershell.exe",
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      scriptPath,
+      "-IconPath",
+      iconPath,
+      "-TitlePrefix",
+      "Bluetti Monitor",
+    ],
+    {
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
+
+  void streamProcessOutput(child.stdout, "icon-helper:stdout");
+  void streamProcessOutput(child.stderr, "icon-helper:stderr");
 }

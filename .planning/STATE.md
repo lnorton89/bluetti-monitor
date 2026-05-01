@@ -4,8 +4,8 @@ milestone: none
 milestone_name: none
 status: milestone_complete
 stopped_at: v1.2 archived and ready for next milestone
-last_updated: "2026-04-27T00:00:00.000Z"
-last_activity: 2026-04-27
+last_updated: "2026-05-01T00:00:00.000Z"
+last_activity: 2026-05-01
 progress:
   total_phases: 2
   completed_phases: 2
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 
 Milestone: None active
 Status: v1.2 archived and closed out
-Last activity: 2026-04-27 - Completed quick task 260427: Stabilize Runtime and Time to Full counters
+Last activity: 2026-05-01 - Completed quick task: Battery health runtime report
 
 ## Accumulated Context
 
@@ -56,6 +56,7 @@ Decisions are logged in PROJECT.md.
 | 260422-jma | Improve the bluetooth polling entry format in log files | 2026-04-22 | 3362046 | [260422-jma-improve-the-bluetooth-polling-entry-form](./quick/260422-jma-improve-the-bluetooth-polling-entry-form/) |
 | 260425-k1x | Commit and push so trees are clean | 2026-04-25 | working tree | [260425-k1x-commit-and-push-so-trees-are-clean](./quick/260425-k1x-commit-and-push-so-trees-are-clean/) |
 | 260427 | Stabilize Runtime and Time to Full counters | 2026-04-27 | working tree | [260427-fix-battery-estimate-counters](./quick/260427-fix-battery-estimate-counters/) |
+| 20260501 | Battery health runtime report | 2026-05-01 | working tree | [20260501-battery-health-runtime-report](./quick/20260501-battery-health-runtime-report/) |
 
 ## Session Continuity
 
