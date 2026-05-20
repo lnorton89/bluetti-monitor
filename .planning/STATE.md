@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: none
-status: milestone_complete
-stopped_at: v1.2 archived and ready for next milestone
-last_updated: "2026-05-01T00:00:00.000Z"
-last_activity: 2026-05-01
+milestone: v1.3
+milestone_name: Estimation Accuracy
+status: phase_complete
+stopped_at: phase 15 implemented and ready for UAT
+last_updated: "2026-05-18T00:00:00.000Z"
+last_activity: 2026-05-18
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  total_phases: 1
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
   percent: 100
 ---
 
@@ -21,13 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-22)
 
 **Core value:** I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
-**Current focus:** Planning the next milestone
+**Current focus:** v1.3 Estimation Accuracy
 
 ## Current Position
 
-Milestone: None active
-Status: v1.2 archived and closed out
-Last activity: 2026-05-01 - Completed quick task: Battery health runtime report
+Milestone: v1.3 Estimation Accuracy
+Phase: 15 - Estimation Accuracy Overhaul
+Plan: Complete
+Status: Phase 15 implemented; ready for human UAT
+Last activity: 2026-05-18 - Implemented Runtime and Time to Full overhaul with historical calibration and backtesting
 
 ## Accumulated Context
 
@@ -37,11 +39,17 @@ Decisions are logged in PROJECT.md.
 
 ### Pending Todos
 
-- Start the next milestone with `$gsd-new-milestone`
+- Run `$gsd-verify-work 15` for human validation against live telemetry.
 
 ### Blockers/Concerns
 
-- None
+- Runtime and Time to Full have already had a quick stabilization pass, so the next fix should avoid another instantaneous-formula patch and instead validate against stored history.
+
+### Roadmap Evolution
+
+- Milestone v1.3 started: Estimation Accuracy.
+- Phase 15 added: Estimation Accuracy Overhaul for Runtime and Time to Full.
+- Phase 15 implemented: canonical multi-tactic estimate model, history bundle API, dashboard confidence/source UI, and backtest report tooling.
 
 ### Quick Tasks Completed
 
@@ -57,6 +65,8 @@ Decisions are logged in PROJECT.md.
 | 260425-k1x | Commit and push so trees are clean | 2026-04-25 | working tree | [260425-k1x-commit-and-push-so-trees-are-clean](./quick/260425-k1x-commit-and-push-so-trees-are-clean/) |
 | 260427 | Stabilize Runtime and Time to Full counters | 2026-04-27 | working tree | [260427-fix-battery-estimate-counters](./quick/260427-fix-battery-estimate-counters/) |
 | 20260501 | Battery health runtime report | 2026-05-01 | working tree | [20260501-battery-health-runtime-report](./quick/20260501-battery-health-runtime-report/) |
+| 20260518 | Fix estimate sluggishness and layout regression | 2026-05-18 | working tree | [20260518-fix-estimate-sluggish-layout](./quick/20260518-fix-estimate-sluggish-layout/) |
+| 20260520 | Add README for the standalone analytics app | 2026-05-20 | working tree | [20260520-analytics-readme](./quick/20260520-analytics-readme/) |
 
 ## Session Continuity
 

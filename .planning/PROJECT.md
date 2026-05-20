@@ -8,6 +8,15 @@ Bluetti Monitor is a personal-first monitoring stack for a Bluetti AC500 that co
 
 I can reliably see the current state of my Bluetti system in one place without fighting brittle setup, unclear ownership between components, or hard-to-interpret telemetry.
 
+## Current Milestone: v1.3 Estimation Accuracy
+
+**Goal:** Replace the brittle Runtime and Time to Full counters with an estimation system that is transparent, historically calibrated, and validated against real AC500 telemetry.
+
+**Target features:**
+- Audit the available AC500 telemetry fields and current estimate consumers so runtime ownership is explicit.
+- Build a multi-tactic estimation model that combines direct device counters, instantaneous power balance, recent SOC trend, and historical calibration.
+- Backtest estimates against stored SQLite telemetry and surface confidence/source explanations in the dashboard.
+
 ## Current State
 
 - `v1.1 UI Cleanup And Reliability` shipped on 2026-04-21.
@@ -15,6 +24,7 @@ I can reliably see the current state of my Bluetti system in one place without f
 - Formal milestone verification is complete across the v1.1 chain, including backfilled evidence for the original Phase 06, 07, and 08 work.
 - `v1.2 Settings And Preferences` shipped on 2026-04-22 with a centralized settings surface and persisted app-owned preferences.
 - The current runtime shape remains Bun/Electrobun desktop shell + FastAPI API + React dashboard + `bluetti-mqtt-node` bridge.
+- Phase 15 of v1.3 is implemented: Runtime and Time to Full now use a canonical multi-tactic estimate model with source, confidence, historical calibration, and local backtesting support.
 
 ## Requirements
 
@@ -32,10 +42,13 @@ I can reliably see the current state of my Bluetti system in one place without f
 - The app now has a dedicated settings page for app-owned preferences instead of scattered one-off controls.
 - Settings persist safely across reloads and fall back cleanly when stored data is missing or invalid.
 - Theme, battery-full alerts, analytics default window, and freshness cues are now wired through the settings page as real persisted preferences.
+- Runtime and Time to Full estimates are computed through one canonical model that can use device counters, live net power, recent SOC trend, historical calibration, and historical similar-window matching.
+- Estimate displays include source and confidence details, with tooltip explanations for inputs and caveats.
+- Local SQLite telemetry can be backtested with `npm run estimate:backtest`.
 
 ### Active
 
-- The next milestone should define the next highest-value monitoring improvement rather than extending settings for its own sake.
+- Run human UAT for the new Runtime and Time to Full estimates against a real charge or discharge cycle.
 
 ### Out Of Scope
 
@@ -45,9 +58,9 @@ I can reliably see the current state of my Bluetti system in one place without f
 
 ## Next Milestone Goals
 
-- Choose the next milestone based on the highest-value monitoring gap rather than UI housekeeping alone.
-- Preserve the new settings ownership model instead of re-scattering app preferences through the shell.
-- Keep future work grounded in real telemetry, reliability, and daily-use monitoring value.
+- Make Runtime and Time to Full useful enough to trust during real discharge and charge cycles.
+- Prefer measured history, calibration, and confidence over fragile single-formula estimates.
+- Keep the implementation inside the current FastAPI, SQLite history, React dashboard, and Bun desktop shell architecture.
 
 ## Context
 
@@ -87,4 +100,22 @@ I can reliably see the current state of my Bluetti system in one place without f
 </details>
 
 ---
-*Last updated: 2026-04-22 after v1.2 Settings And Preferences shipped*
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `$gsd-transition`):
+1. Requirements invalidated? Move to Out of Scope with reason
+2. Requirements validated? Move to Validated with phase reference
+3. New requirements emerged? Add to Active
+4. Decisions to log? Add to Key Decisions
+5. "What This Is" still accurate? Update if drifted
+
+**After each milestone** (via `$gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check: still the right priority?
+3. Audit Out of Scope: reasons still valid?
+4. Update Context with current state
+
+---
+*Last updated: 2026-05-18 after Phase 15 Estimation Accuracy implementation*

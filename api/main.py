@@ -168,6 +168,54 @@ def get_history(
             ).fetchall()
     return [{"value": r["value"], "ts": r["ts"]} for r in rows]
 
+@app.get("/history/{device}")
+def get_history_bundle(
+    device: str,
+    fields: str = Query(description="Comma-separated field names"),
+    limit: int = Query(default=500, le=5000),
+    since: Optional[str] = Query(default=None, description="ISO8601 timestamp"),
+):
+    """
+    Historical readings for multiple fields on one device.
+    Returns { field: [{ value, ts }] } so estimate consumers can load a coherent
+    telemetry window without a fan-out of one-field requests.
+    """
+    requested = [field.strip() for field in fields.split(",") if field.strip()]
+    if not requested:
+        return {}
+
+    placeholders = ",".join("?" for _ in requested)
+    params: list[object] = [device, *requested]
+    since_clause = ""
+    if since:
+        since_clause = "AND ts>=?"
+        params.append(since)
+    params.append(limit)
+
+    with db_connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT field, value, ts
+            FROM (
+                SELECT
+                    field,
+                    value,
+                    ts,
+                    ROW_NUMBER() OVER (PARTITION BY field ORDER BY ts DESC) AS rn
+                FROM readings
+                WHERE device=? AND field IN ({placeholders}) {since_clause}
+            )
+            WHERE rn <= ?
+            ORDER BY field, ts DESC
+            """,
+            params,
+        ).fetchall()
+
+    bundled: dict[str, list[dict[str, str]]] = {field: [] for field in requested}
+    for row in rows:
+        bundled[row["field"]].append({"value": row["value"], "ts": row["ts"]})
+    return bundled
+
 @app.get("/devices")
 def get_devices():
     """List all devices seen so far."""

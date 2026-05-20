@@ -24,6 +24,7 @@ import { useShellStore } from '../store/shell';
 import { useAppSettingsStore } from '../store/settings';
 import { useWsStore } from '../store/ws';
 import { RANGE_PRESETS, useDeviceSelector, type RangePreset } from '../lib/shared-controls';
+import { buildBatteryEstimate, type EstimateHistory } from '../lib/battery-estimates';
 
 const FOCUS_OPTIONS = [
   { id: 'generation', label: 'Generation', icon: Sun },
@@ -73,6 +74,7 @@ type SolarTimelinePoint = {
 type SolarAnalyticsPayload = {
   timeline: SolarTimelinePoint[];
   resolvedFields: ResolvedSolarFields;
+  history: Record<SolarFieldKey, HistoryPoint[]>;
   bucketLabel: string;
   sinceIso: string;
 };
@@ -143,13 +145,15 @@ export default function Solar() {
           [field, await fetchHistory(selectedDevice, field, { limit: range.limit, since: sinceIso })] as const
         )),
       );
+      const resolvedHistory = mapResolvedHistory(resolvedFields, Object.fromEntries(historyEntries));
 
       return {
         timeline: buildSolarTimeline(
-          mapResolvedHistory(resolvedFields, Object.fromEntries(historyEntries)),
+          resolvedHistory,
           range.bucketMs,
         ),
         resolvedFields,
+        history: resolvedHistory,
         bucketLabel: buildCoverageLabel(range.bucketMs),
         sinceIso,
       };
@@ -202,7 +206,7 @@ export default function Solar() {
   const solarShare = inputSummary && inputSummary.avg > 0 && totalSolarSummary
     ? clampPercent((totalSolarSummary.avg / inputSummary.avg) * 100)
     : null;
-  const chargeEstimate = buildChargeEstimate(liveState, timeline, resolved, range);
+  const chargeEstimate = buildChargeEstimate(liveState, timeline, resolved, range, solarQuery.data?.history);
 
   return (
     <div className="page-stack animate-fade-in">
@@ -891,19 +895,28 @@ function buildChargeEstimate(
   timeline: SolarTimelinePoint[],
   resolved: ResolvedSolarFields,
   range: RangePreset,
+  historyByMetric?: Record<SolarFieldKey, HistoryPoint[]>,
 ): ChargeEstimate {
-  const reportedMinutes = getLiveNumber(state, resolved.batteryToFull);
   const currentPercent = getLiveNumber(state, resolved.batteryPercent);
   const configuredCeiling = getLiveNumber(state, resolved.chargeCeiling);
   const targetPercent = Math.max(currentPercent ?? 0, Math.min(100, configuredCeiling ?? 100));
+  const estimateHistory: EstimateHistory = {
+    batteryPercent: historyByMetric?.batteryPercent ?? [],
+    acInput: historyByMetric?.gridInput ?? [],
+    dcInput: historyByMetric?.totalSolar ?? [],
+    pv1Power: historyByMetric?.pv1Power ?? [],
+    pv2Power: historyByMetric?.pv2Power ?? [],
+    acOutput: historyByMetric?.acLoad ?? [],
+    dcOutput: historyByMetric?.dcLoad ?? [],
+    rangeToFull: historyByMetric?.batteryToFull ?? [],
+  };
+  const estimate = buildBatteryEstimate('charge', state, estimateHistory);
 
-  if (reportedMinutes !== null && reportedMinutes >= 0) {
+  if (estimate.minutes !== null) {
     return {
-      minutes: reportedMinutes,
-      sourceLabel: 'Device-reported battery_range_to_full',
-      detail: resolved.batteryToFull
-        ? `Using live ${resolved.batteryToFull} from the device`
-        : 'Using device-reported time to full',
+      minutes: estimate.minutes,
+      sourceLabel: estimate.sourceLabel,
+      detail: `${estimate.confidence} confidence: ${estimate.detail}`,
       targetPercent,
       percentPerHour: null,
     };

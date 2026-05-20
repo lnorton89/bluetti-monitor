@@ -13,6 +13,7 @@
     "dashboard:test": "npm --prefix dashboard run test:e2e",
     "monitor:start": "node ./scripts/monitor/start.mjs",
     "monitor:verify": "node ./scripts/monitor/verify.mjs",
+    "estimate:backtest": "python ./scripts/estimate_backtest.py",
     "stack:up": "docker compose up -d",
     "stack:down": "docker compose down"
   },

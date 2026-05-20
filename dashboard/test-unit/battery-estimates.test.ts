@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  buildBatteryEstimate,
   estimateChargeTimeMinutes,
   estimateRuntimeMinutes,
   formatDuration,
@@ -79,5 +80,42 @@ describe('battery estimate counters', () => {
       battery_capacity: '6000',
       ac_input_power: '900',
     }))).toBe(37);
+  });
+
+  test('returns structured confidence and source details for live power estimates', () => {
+    const estimate = buildBatteryEstimate('runtime', state({
+      total_battery_percent: '50',
+      battery_capacity: '6000',
+      ac_output_power: '700',
+      dc_output_power: '100',
+      dc_input_power: '200',
+    }));
+
+    expect(estimate.minutes).toBe(300);
+    expect(estimate.source).toBe('instant');
+    expect(estimate.confidence).toBe('medium');
+    expect(estimate.inputs.some((input) => input.includes('net discharge'))).toBe(true);
+  });
+
+  test('can use historical calibration when live capacity is missing', () => {
+    const estimate = buildBatteryEstimate('runtime', state({
+      total_battery_percent: '50',
+      ac_output_power: '1000',
+    }), {
+      batteryPercent: [
+        { value: '60', ts: '2026-04-27T09:00:00.000Z' },
+        { value: '55', ts: '2026-04-27T10:00:00.000Z' },
+        { value: '50', ts: '2026-04-27T11:00:00.000Z' },
+      ],
+      acOutput: [
+        { value: '600', ts: '2026-04-27T09:00:00.000Z' },
+        { value: '600', ts: '2026-04-27T10:00:00.000Z' },
+        { value: '600', ts: '2026-04-27T11:00:00.000Z' },
+      ],
+    });
+
+    expect(estimate.source).toBe('historical-calibration');
+    expect(Math.round(estimate.minutes ?? 0)).toBe(360);
+    expect(estimate.confidence).toBe('medium');
   });
 });

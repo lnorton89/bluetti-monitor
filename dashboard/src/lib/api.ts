@@ -52,3 +52,20 @@ export const fetchHistory = (
     ? Promise.resolve(getMockHistory(field, resolved))
     : api.get<HistoryPoint[]>(`/history/${device}/${field}`, { params: resolved }).then((r) => r.data);
 };
+
+export const fetchHistoryBundle = (
+  device: string,
+  fields: string[],
+  options: FetchHistoryOptions = {},
+) => {
+  const uniqueFields = [...new Set(fields)].filter(Boolean);
+
+  return IS_MOCK_MODE
+    ? Promise.resolve(Object.fromEntries(uniqueFields.map((field) => [field, getMockHistory(field, options)])))
+    : api.get<Record<string, HistoryPoint[]>>(`/history/${device}`, {
+        params: {
+          ...options,
+          fields: uniqueFields.join(','),
+        },
+      }).then((r) => r.data);
+};
