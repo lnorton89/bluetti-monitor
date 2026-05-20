@@ -68,6 +68,7 @@ Decisions are logged in PROJECT.md.
 | 20260518 | Fix estimate sluggishness and layout regression | 2026-05-18 | working tree | [20260518-fix-estimate-sluggish-layout](./quick/20260518-fix-estimate-sluggish-layout/) |
 | 20260520 | Add README for the standalone analytics app | 2026-05-20 | working tree | [20260520-analytics-readme](./quick/20260520-analytics-readme/) |
 | 20260520 | Update the main README for analytics and estimate tooling | 2026-05-20 | working tree | [20260520-main-readme-update](./quick/20260520-main-readme-update/) |
+| 20260520 | Use Google Sans in the standalone analytics app | 2026-05-20 | working tree | [20260520-google-sans-analytics](./quick/20260520-google-sans-analytics/) |
 
 ## Session Continuity
 

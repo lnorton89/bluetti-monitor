@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRootRoute, createRouter } from '@tanstack/react-router';
+import '@fontsource-variable/google-sans';
 import App from './App';
 import './index.css';
 
