@@ -70,6 +70,7 @@ Decisions are logged in PROJECT.md.
 | 20260520 | Update the main README for analytics and estimate tooling | 2026-05-20 | working tree | [20260520-main-readme-update](./quick/20260520-main-readme-update/) |
 | 20260520 | Use Google Sans in the standalone analytics app | 2026-05-20 | working tree | [20260520-google-sans-analytics](./quick/20260520-google-sans-analytics/) |
 | 20260520 | Fix analytics history range clipping | 2026-05-20 | working tree | [20260520-analytics-history-window](./quick/20260520-analytics-history-window/) |
+| 20260520 | Use rainbow colors for analytics charts | 2026-05-20 | working tree | [20260520-rainbow-analytics-charts](./quick/20260520-rainbow-analytics-charts/) |
 
 ## Session Continuity
 

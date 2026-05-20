@@ -45,7 +45,16 @@ import { formatFieldValue, formatMetric, getFieldMeta } from './lib/fields';
 import { formatFreshness, formatShortTime } from './lib/time';
 import { DenseTimeSeries } from './components/DenseTimeSeries';
 
-const CHART_COLORS = ['#22d3ee', '#f97316', '#a3e635', '#f472b6', '#c084fc', '#facc15'];
+const CHART_COLORS = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'];
+const RAINBOW = {
+  red: CHART_COLORS[0],
+  orange: CHART_COLORS[1],
+  yellow: CHART_COLORS[2],
+  green: CHART_COLORS[3],
+  cyan: CHART_COLORS[4],
+  blue: CHART_COLORS[5],
+  violet: CHART_COLORS[6],
+};
 const DEFAULT_COMPARISON_FIELDS = ['dc_input_power', 'ac_output_power', 'total_battery_percent'];
 
 function useLiveTelemetry() {
@@ -296,16 +305,16 @@ export default function App() {
                   <DenseTimeSeries
                     timestamps={timeline.map((row) => row.ts)}
                     series={[
-                      { label: 'Total input', color: '#22d3ee', values: timeline.map((row) => row.totalInput) },
-                      { label: 'Total output', color: '#f97316', values: timeline.map((row) => row.totalOutput) },
-                      { label: 'Net power', color: '#a3e635', values: timeline.map((row) => row.netPower) },
+                      { label: 'Total input', color: RAINBOW.red, values: timeline.map((row) => row.totalInput) },
+                      { label: 'Total output', color: RAINBOW.green, values: timeline.map((row) => row.totalOutput) },
+                      { label: 'Net power', color: RAINBOW.blue, values: timeline.map((row) => row.netPower) },
                     ]}
                   />
                 </div>
                 <div className="legend-strip">
-                  <span><i style={{ background: '#22d3ee' }} />Total input</span>
-                  <span><i style={{ background: '#f97316' }} />Total output</span>
-                  <span><i style={{ background: '#a3e635' }} />Net power</span>
+                  <span><i style={{ background: RAINBOW.red }} />Total input</span>
+                  <span><i style={{ background: RAINBOW.green }} />Total output</span>
+                  <span><i style={{ background: RAINBOW.blue }} />Net power</span>
                 </div>
               </article>
 
@@ -314,13 +323,13 @@ export default function App() {
                 <DenseTimeSeries
                   timestamps={timeline.map((row) => row.ts)}
                   series={[
-                    { label: 'SOC', color: '#a3e635', values: timeline.map((row) => row.batteryPercent) },
-                    { label: 'Voltage', color: '#38bdf8', values: timeline.map((row) => row.batteryVoltage) },
+                    { label: 'SOC', color: RAINBOW.green, values: timeline.map((row) => row.batteryPercent) },
+                    { label: 'Voltage', color: RAINBOW.cyan, values: timeline.map((row) => row.batteryVoltage) },
                   ]}
                 />
                 <div className="legend-strip compact">
-                  <span><i style={{ background: '#a3e635' }} />SOC</span>
-                  <span><i style={{ background: '#38bdf8' }} />Voltage</span>
+                  <span><i style={{ background: RAINBOW.green }} />SOC</span>
+                  <span><i style={{ background: RAINBOW.cyan }} />Voltage</span>
                 </div>
                 <div className="side-stats">
                   <SideStat label="SOC range" value={`${formatMetric(batterySummary?.min, '%', 1)} to ${formatMetric(batterySummary?.max, '%', 1)}`} />
