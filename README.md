@@ -232,7 +232,7 @@ Interactive docs: `http://localhost:8000/docs`
 
 | Param | Default | Max | Description |
 |-------|---------|-----|-------------|
-| `limit` | 500 | 5000 | Max rows to return |
+| `limit` | 500 | 100000 | Max rows to return per field |
 | `since` | - | - | ISO8601 timestamp (e.g., `2024-01-01T00:00:00Z`) |
 | `fields` | - | - | Comma-separated field list for bundled history endpoint |
 

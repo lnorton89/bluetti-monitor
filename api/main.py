@@ -17,6 +17,7 @@ log = logging.getLogger("bluetti-api")
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DB_PATH = os.getenv("DB_PATH", "/data/bluetti.db")
+MAX_HISTORY_ROWS = 100_000
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
@@ -146,7 +147,7 @@ def get_device_status(device: str):
 def get_history(
     device: str,
     field:  str,
-    limit:  int            = Query(default=500, le=5000),
+    limit:  int            = Query(default=500, le=MAX_HISTORY_ROWS),
     since:  Optional[str]  = Query(default=None, description="ISO8601 timestamp"),
 ):
     """
@@ -172,7 +173,7 @@ def get_history(
 def get_history_bundle(
     device: str,
     fields: str = Query(description="Comma-separated field names"),
-    limit: int = Query(default=500, le=5000),
+    limit: int = Query(default=500, le=MAX_HISTORY_ROWS),
     since: Optional[str] = Query(default=None, description="ISO8601 timestamp"),
 ):
     """

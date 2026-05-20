@@ -4,9 +4,9 @@ import { getFieldMeta, isNumericValue } from './fields';
 export const RANGE_PRESETS = [
   { id: '1h', label: '1H', minutes: 60, limit: 900, bucketMs: 60_000 },
   { id: '6h', label: '6H', minutes: 360, limit: 2_400, bucketMs: 5 * 60_000 },
-  { id: '24h', label: '24H', minutes: 1_440, limit: 5_000, bucketMs: 15 * 60_000 },
-  { id: '3d', label: '3D', minutes: 4_320, limit: 5_000, bucketMs: 60 * 60_000 },
-  { id: '7d', label: '7D', minutes: 10_080, limit: 5_000, bucketMs: 2 * 60 * 60_000 },
+  { id: '24h', label: '24H', minutes: 1_440, limit: 12_000, bucketMs: 15 * 60_000 },
+  { id: '3d', label: '3D', minutes: 4_320, limit: 36_000, bucketMs: 60 * 60_000 },
+  { id: '7d', label: '7D', minutes: 10_080, limit: 84_000, bucketMs: 2 * 60 * 60_000 },
 ] as const;
 
 export type RangeId = typeof RANGE_PRESETS[number]['id'];
