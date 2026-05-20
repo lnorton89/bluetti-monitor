@@ -11,6 +11,7 @@ Full monitoring stack for the Bluetti AC500 power station with a real-time deskt
 | `mosquitto` | MQTT broker | 1883 |
 | `api` | FastAPI REST + WebSocket server | 8000 |
 | `dashboard` | React monitoring UI | 8540 |
+| `analytics` | Standalone React analytics workspace | 5120 |
 
 ### Component Ownership
 
@@ -19,6 +20,7 @@ Full monitoring stack for the Bluetti AC500 power station with a real-time deskt
 | Desktop shell (`src/bun/`) | Stack orchestration, service startup, Bluetooth launch | `npm run desktop:dev` |
 | Node bridge (`bluetti-mqtt-node`) | BLE device polling, MQTT publishing | `bluetti-mqtt-node --broker mqtt://localhost:1883 <MAC>` |
 | Python API (`api/`) | MQTT subscription, data persistence, REST/WebSocket serving | `uvicorn main:app --reload` |
+| Analytics app (`analytics/`) | Historical telemetry exploration, derived metrics, dense field comparison | `npm run dev` from `analytics/` |
 
 Each component owns one clear part of the runtime flow with no duplicate BLE or MQTT code paths.
 
@@ -30,6 +32,8 @@ Each component owns one clear part of the runtime flow with no duplicate BLE or 
 - **Real-time monitoring** via WebSocket with live power and state updates
 - **Historical data** stored in SQLite with REST API access
 - **Interactive charts** for numeric fields with live refresh behavior
+- **Standalone analytics app** for historical power balance, battery movement, and arbitrary numeric field comparison
+- **Runtime and charge estimates** with confidence/source details and optional historical calibration
 - **Raw data table** with search and filtering
 - **Mock-mode dashboard tests** for responsive UI verification without hardware
 
@@ -60,6 +64,14 @@ bluetti-monitor/
 |   |   |   `-- time.ts      # Time formatting utilities
 |   |   `-- store/           # Zustand state management
 |   `-- tests/               # Playwright coverage for layout/navigation
+|-- analytics/
+|   |-- package.json
+|   |-- vite.config.ts        # Vite API/WS proxy configuration
+|   |-- README.md
+|   `-- src/
+|       |-- components/       # Dense uPlot time-series component
+|       |-- lib/              # API client, field metadata, analytics transforms
+|       `-- App.tsx           # Standalone analytics surface
 |-- mosquitto/
 |   `-- mosquitto.conf
 `-- src/
@@ -179,6 +191,28 @@ Complete field listing with search:
 
 ---
 
+## Analytics App
+
+The standalone analytics app lives in `analytics/` and is meant for deeper telemetry exploration without crowding the main monitoring dashboard.
+
+```powershell
+cd analytics
+npm install
+npm run dev
+```
+
+Analytics dev URL:
+
+```text
+http://localhost:5120
+```
+
+In development, Vite proxies `/api/*` to the FastAPI service at `http://localhost:8000/*` and proxies `/ws` to the API WebSocket. Mock mode is available with `VITE_MOCK_DATA=1` or `http://localhost:5120/?mock=1`.
+
+See [analytics/README.md](analytics/README.md) for the app-specific setup, API expectations, source map, and development notes.
+
+---
+
 ## REST API
 
 Base URL: `http://localhost:8000`
@@ -192,6 +226,7 @@ Interactive docs: `http://localhost:8000/docs`
 | GET | `/devices` | List of all seen devices |
 | GET | `/fields/{device}` | All fields recorded for a device |
 | GET | `/history/{device}/{field}` | Historical readings |
+| GET | `/history/{device}` | Bundled historical readings for multiple fields |
 
 ### History Query Params
 
@@ -199,6 +234,7 @@ Interactive docs: `http://localhost:8000/docs`
 |-------|---------|-----|-------------|
 | `limit` | 500 | 5000 | Max rows to return |
 | `since` | - | - | ISO8601 timestamp (e.g., `2024-01-01T00:00:00Z`) |
+| `fields` | - | - | Comma-separated field list for bundled history endpoint |
 
 ### Example
 
@@ -211,6 +247,26 @@ GET /history/AC5002237000003358/dc_input_power?limit=100
   { "value": "420", "ts": "2024-11-01T12:00:00+00:00" },
   { "value": "418", "ts": "2024-11-01T11:59:55+00:00" }
 ]
+```
+
+Bundled history example:
+
+```text
+GET /history/AC5002237000003358?fields=dc_input_power,ac_output_power,total_battery_percent&limit=500&since=2026-05-01T00:00:00Z
+```
+
+```json
+{
+  "dc_input_power": [
+    { "value": "420", "ts": "2026-05-01T12:00:00+00:00" }
+  ],
+  "ac_output_power": [
+    { "value": "135", "ts": "2026-05-01T12:00:00+00:00" }
+  ],
+  "total_battery_percent": [
+    { "value": "74", "ts": "2026-05-01T12:00:00+00:00" }
+  ]
+}
 ```
 
 ---
@@ -303,6 +359,9 @@ npm run monitor:start
 # Run the browser-first migration smoke check
 npm run monitor:verify
 
+# Run the estimate backtest report
+npm run estimate:backtest
+
 # Stop everything
 docker compose down
 
@@ -353,6 +412,23 @@ npm run test:e2e
 
 The Playwright suite runs the dashboard in `?mock=1` mode so it can validate launch layout, navigation, and responsive behavior without Docker, the API, or a live Bluetti device.
 
+### Analytics
+
+```powershell
+cd analytics
+npm install
+npm run dev
+```
+
+Vite dev server runs on `http://localhost:5120` with proxy to `localhost:8000`.
+
+For mock data:
+
+```powershell
+$env:VITE_MOCK_DATA = '1'
+npm run dev
+```
+
 ### API
 
 ```powershell
@@ -366,5 +442,5 @@ uvicorn main:app --reload
 ## Tech Stack
 
 - **Backend**: Python, FastAPI, aiomqtt, SQLite
-- **Frontend**: React, TypeScript, Vite, Zustand, Recharts
+- **Frontend**: React, TypeScript, Vite, Zustand, Recharts, uPlot, TanStack Query
 - **Infrastructure**: Docker, Mosquitto MQTT, nginx, Electrobun
