@@ -17,10 +17,12 @@ import {
 import {
   API_BASE,
   IS_MOCK_MODE,
+  IS_STATIC_ANALYTICS,
   WS_URL,
   fetchDevices,
   fetchFields,
   fetchHistoryBundle,
+  fetchStaticMetadata,
   fetchStatus,
   mockState,
   type AllState,
@@ -80,10 +82,17 @@ const EXCLUDED_COMPARISON_FIELDS = new Set([
 
 function useLiveTelemetry() {
   const [state, setState] = useState<AllState>(() => (IS_MOCK_MODE ? mockState : {}));
-  const [connected, setConnected] = useState(IS_MOCK_MODE);
+  const [connected, setConnected] = useState(IS_MOCK_MODE && !IS_STATIC_ANALYTICS);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
 
   useEffect(() => {
+    if (IS_STATIC_ANALYTICS) {
+      setState({});
+      setConnected(false);
+      setLastUpdate(null);
+      return undefined;
+    }
+
     if (IS_MOCK_MODE) {
       setState(mockState);
       setConnected(true);
@@ -150,6 +159,11 @@ export default function App() {
     queryKey: ['devices'],
     queryFn: fetchDevices,
   });
+  const staticMetadataQuery = useQuery({
+    queryKey: ['static-metadata'],
+    queryFn: fetchStaticMetadata,
+    enabled: IS_STATIC_ANALYTICS,
+  });
 
   const mergedState = Object.keys(live.state).length > 0 ? live.state : statusQuery.data ?? {};
   const devices = devicesQuery.data?.length ? devicesQuery.data : Object.keys(mergedState);
@@ -165,9 +179,17 @@ export default function App() {
 
   const liveState = mergedState[selectedDevice] ?? {};
   const range = RANGE_PRESETS.find((item) => item.id === rangeId) ?? RANGE_PRESETS[2];
+  const rangeAnchorMs = useMemo(
+    () => (
+      IS_STATIC_ANALYTICS && staticMetadataQuery.data?.generatedAt
+        ? Date.parse(staticMetadataQuery.data.generatedAt)
+        : Date.now()
+    ),
+    [staticMetadataQuery.data?.generatedAt],
+  );
   const sinceIso = useMemo(
-    () => new Date(Date.now() - range.minutes * 60_000).toISOString(),
-    [range.minutes],
+    () => new Date(rangeAnchorMs - range.minutes * 60_000).toISOString(),
+    [range.minutes, rangeAnchorMs],
   );
 
   const fieldsQuery = useQuery({
@@ -224,10 +246,15 @@ export default function App() {
             <h1>Analytics</h1>
           </div>
           <div className="status-row">
-            <StatusPill active={live.connected} label={live.connected ? 'Live stream' : 'Offline'} />
+            <StatusPill
+              active={live.connected}
+              label={IS_STATIC_ANALYTICS ? 'Static export' : live.connected ? 'Live stream' : 'Offline'}
+            />
             <span className="status-pill muted">
               <Activity size={15} />
-              {formatFreshness(latestTimestamp)}
+              {IS_STATIC_ANALYTICS
+                ? `Exported ${formatFreshness(staticMetadataQuery.data?.generatedAt ?? latestTimestamp)}`
+                : formatFreshness(latestTimestamp)}
             </span>
           </div>
         </header>
@@ -257,6 +284,7 @@ export default function App() {
             className="icon-button"
             type="button"
             aria-label="Refresh analytics"
+            disabled={IS_STATIC_ANALYTICS}
             onClick={() => void historyQuery.refetch()}
           >
             <RefreshCw size={18} />
@@ -336,7 +364,15 @@ export default function App() {
             />
 
             <section className="panel">
-              <PanelHeader icon={Wifi} title="Live Snapshot" subtitle={`${Object.keys(liveState).length} fields from ${API_BASE}`} />
+              <PanelHeader
+                icon={Wifi}
+                title={IS_STATIC_ANALYTICS ? 'Snapshot' : 'Live Snapshot'}
+                subtitle={
+                  IS_STATIC_ANALYTICS
+                    ? `${Object.keys(liveState).length} fields from 7D export`
+                    : `${Object.keys(liveState).length} fields from ${API_BASE}`
+                }
+              />
               <div className="snapshot-grid">
                 {Object.entries(liveState)
                   .filter(([field]) => field !== '_raw')

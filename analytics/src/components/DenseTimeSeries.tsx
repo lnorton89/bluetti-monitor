@@ -34,7 +34,7 @@ export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
 
     plotRef.current?.destroy();
 
-    const width = Math.max(320, host.clientWidth);
+    const width = Math.max(260, host.clientWidth);
     const plot = new uPlot(
       {
         width,
@@ -86,7 +86,7 @@ export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
     plotRef.current = plot;
 
     const resizeObserver = new ResizeObserver(([entry]) => {
-      plot.setSize({ width: Math.max(320, entry.contentRect.width), height: 260 });
+      plot.setSize({ width: Math.max(260, entry.contentRect.width), height: 260 });
     });
     resizeObserver.observe(host);
 

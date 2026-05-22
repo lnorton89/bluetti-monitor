@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 implemented; ready for human UAT
-Last activity: 2026-05-22 - Added analytics device select right padding
+Last activity: 2026-05-22 - Added Netlify static analytics build
 
 ## Accumulated Context
 
@@ -86,6 +86,8 @@ Decisions are logged in PROJECT.md.
 | 260522-dfc | Default Field Comparison selection | 2026-05-22 | working tree | [260522-dfc-default-field-comparison-selection](./quick/260522-dfc-default-field-comparison-selection/) |
 | 260522-twh | Match time window control height | 2026-05-22 | working tree | [260522-twh-time-window-height-match](./quick/260522-twh-time-window-height-match/) |
 | 260522-dsp | Device select padding | 2026-05-22 | working tree | [260522-dsp-device-select-padding](./quick/260522-dsp-device-select-padding/) |
+| 260522-mvf | Make analytics mobile view more friendly | 2026-05-22 | working tree | [260522-mvf-mobile-friendly-analytics](./quick/260522-mvf-mobile-friendly-analytics/) |
+| 260522-nas | Netlify static analytics export | 2026-05-22 | working tree | [260522-netlify-analytics-static-export](./quick/260522-netlify-analytics-static-export/) |
 
 ## Session Continuity
 

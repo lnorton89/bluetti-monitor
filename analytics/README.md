@@ -39,7 +39,19 @@ Starts the Vite dev server on `0.0.0.0:5120`. In dev, `/api/*` is proxied to `ht
 npm run build
 ```
 
-Runs TypeScript build checks and creates a production build.
+Runs TypeScript build checks and creates the normal API-backed production build.
+
+```powershell
+npm run export:production-data
+```
+
+Exports the last 7 days of local API telemetry into `public/analytics-data.json`. Override the API or window with `ANALYTICS_API_URL`, `ANALYTICS_EXPORT_DAYS`, and `ANALYTICS_EXPORT_LIMIT`.
+
+```powershell
+npm run build:production
+```
+
+Exports static telemetry, then builds the Netlify-friendly static app. This mode reads `analytics-data.json`, disables WebSocket/live refresh behavior, and includes the data file in `dist/`.
 
 ```powershell
 npm run preview
@@ -54,6 +66,7 @@ The app reads these optional Vite environment variables:
 - `VITE_API_URL`: API base URL. Defaults to `/api`.
 - `VITE_WS_URL`: WebSocket URL. Defaults to `/ws` on the current host.
 - `VITE_MOCK_DATA`: Set to `1` to use built-in mock telemetry.
+- `VITE_STATIC_ANALYTICS`: Set to `1` to read `analytics-data.json` instead of calling the API or WebSocket.
 
 Mock mode can also be enabled in the browser with:
 

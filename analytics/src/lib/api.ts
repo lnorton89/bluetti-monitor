@@ -4,11 +4,16 @@ export const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 export const WS_URL =
   import.meta.env.VITE_WS_URL
   ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
+export const IS_STATIC_ANALYTICS = import.meta.env.VITE_STATIC_ANALYTICS === '1';
 export const IS_MOCK_MODE =
-  import.meta.env.VITE_MOCK_DATA === '1'
-  || new URLSearchParams(window.location.search).get('mock') === '1';
+  !IS_STATIC_ANALYTICS
+  && (
+    import.meta.env.VITE_MOCK_DATA === '1'
+    || new URLSearchParams(window.location.search).get('mock') === '1'
+  );
 
 const api = axios.create({ baseURL: API_BASE });
+let staticDataPromise: Promise<StaticAnalyticsExport> | null = null;
 
 export interface FieldValue {
   value: string;
@@ -26,6 +31,28 @@ export interface HistoryPoint {
 export interface FetchHistoryOptions {
   limit?: number;
   since?: string;
+}
+
+export interface StaticHistoryRow {
+  device: string;
+  field: string;
+  value: string;
+  ts: string;
+}
+
+export interface StaticAnalyticsExport {
+  schemaVersion: 1;
+  generatedAt: string;
+  sourceApi?: string;
+  range: {
+    days: number;
+    since: string;
+    limit: number;
+  };
+  status: AllState;
+  devices: string[];
+  fieldsByDevice: Record<string, string[]>;
+  historyRows: StaticHistoryRow[];
 }
 
 const now = Date.now();
@@ -100,15 +127,56 @@ function mockHistoryFor(field: string, options: FetchHistoryOptions = {}) {
     .slice(0, limit);
 }
 
+async function fetchStaticData() {
+  staticDataPromise ??= fetch(`${import.meta.env.BASE_URL}analytics-data.json`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Static analytics data unavailable: ${response.status} ${response.statusText}`);
+      }
+      return response.json() as Promise<StaticAnalyticsExport>;
+    });
+
+  return staticDataPromise;
+}
+
+function staticHistoryFor(
+  data: StaticAnalyticsExport,
+  device: string,
+  field: string,
+  options: FetchHistoryOptions = {},
+) {
+  const sinceTs = options.since ? Date.parse(options.since) : null;
+  const limit = options.limit ?? data.range.limit;
+
+  return data.historyRows
+    .filter((row) => row.device === device && row.field === field)
+    .filter((point) => sinceTs === null || Date.parse(point.ts) >= sinceTs)
+    .map((row) => ({ value: row.value, ts: row.ts }))
+    .sort((left, right) => Date.parse(right.ts) - Date.parse(left.ts))
+    .slice(0, limit);
+}
+
 export async function fetchStatus() {
+  if (IS_STATIC_ANALYTICS) {
+    return fetchStaticData().then((data) => data.status);
+  }
+
   return IS_MOCK_MODE ? mockState : api.get<AllState>('/status').then((response) => response.data);
 }
 
 export async function fetchDevices() {
+  if (IS_STATIC_ANALYTICS) {
+    return fetchStaticData().then((data) => data.devices);
+  }
+
   return IS_MOCK_MODE ? Object.keys(mockState) : api.get<string[]>('/devices').then((response) => response.data);
 }
 
 export async function fetchFields(device: string) {
+  if (IS_STATIC_ANALYTICS) {
+    return fetchStaticData().then((data) => data.fieldsByDevice[device] ?? []);
+  }
+
   return IS_MOCK_MODE
     ? Object.keys(mockState[device] ?? {})
     : api.get<string[]>(`/fields/${device}`).then((response) => response.data);
@@ -125,12 +193,28 @@ export async function fetchHistoryBundle(
     return Object.fromEntries(uniqueFields.map((field) => [field, mockHistoryFor(field, options)]));
   }
 
+  if (IS_STATIC_ANALYTICS) {
+    const data = await fetchStaticData();
+    return Object.fromEntries(uniqueFields.map((field) => [field, staticHistoryFor(data, device, field, options)]));
+  }
+
   return api.get<Record<string, HistoryPoint[]>>(`/history/${device}`, {
     params: {
       ...options,
       fields: uniqueFields.join(','),
     },
   }).then((response) => response.data);
+}
+
+export async function fetchStaticMetadata() {
+  if (!IS_STATIC_ANALYTICS) {
+    return null;
+  }
+
+  return fetchStaticData().then((data) => ({
+    generatedAt: data.generatedAt,
+    range: data.range,
+  }));
 }
 
 export interface LiveUpdate {

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5120",
     "build": "tsc -b && vite build",
+    "export:production-data": "node scripts/export-static-data.mjs",
+    "build:production": "npm run export:production-data && tsc -b && vite build --mode static",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

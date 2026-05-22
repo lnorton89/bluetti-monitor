@@ -30,11 +30,17 @@ body {
 button,
 select,
 input {
+  max-width: 100%;
   font: inherit;
 }
 
 button {
   cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .shell {
@@ -53,7 +59,7 @@ button {
 
 .topbar h1 {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 4.6rem);
+  font-size: 4.6rem;
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: 0;
@@ -597,9 +603,14 @@ button {
 }
 
 @media (max-width: 760px) {
+  body {
+    background:
+      linear-gradient(180deg, #0f172a 0%, #020617 28rem);
+  }
+
   .shell {
-    width: min(100vw - 20px, 1480px);
-    padding-top: 14px;
+    width: 100%;
+    padding: 12px 10px 32px;
   }
 
   .topbar,
@@ -608,8 +619,26 @@ button {
     justify-content: stretch;
   }
 
+  .topbar {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .topbar h1 {
+    font-size: 2.45rem;
+  }
+
   .status-row {
-    justify-content: start;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .status-pill {
+    justify-content: center;
+    min-width: 0;
+    padding: 0 9px;
+    font-size: 0.82rem;
   }
 
   .controls-band,
@@ -617,14 +646,88 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .controls-band {
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px;
+  }
+
+  .control-field select,
+  .icon-button {
+    width: 100%;
+  }
+
   .segmented {
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: auto;
+    overflow: visible;
+  }
+
+  .segmented button {
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+
+  .panel-header {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .panel-header div {
+    min-width: 0;
+  }
+
+  .panel-header p {
+    line-height: 1.35;
   }
 
   .kpi-grid,
-  .snapshot-grid,
+  .snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi {
+    min-height: 102px;
+  }
+
+  .kpi strong {
+    font-size: 1.12rem;
+  }
+
   .side-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-frame {
+    min-height: 230px;
+  }
+
+  .dense-chart,
+  .empty-chart {
+    min-height: 220px;
+  }
+
+  .field-picker {
+    gap: 10px;
+  }
+
+  .field-chips {
+    max-height: 148px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .chip {
+    min-height: 34px;
+    padding: 0 10px;
+    line-height: 1.15;
   }
 
   .field-row {
@@ -634,5 +737,42 @@ button {
   .field-row strong,
   .panel-header p {
     text-align: left;
+  }
+
+  .legend-strip {
+    gap: 8px;
+    font-size: 0.78rem;
+  }
+
+  .legend-strip span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .snapshot-cell,
+  .side-stat {
+    min-width: 0;
+  }
+
+  .snapshot-cell strong,
+  .side-stat strong {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar h1 {
+    font-size: 2.15rem;
+  }
+
+  .kpi-grid,
+  .snapshot-grid,
+  .side-stats,
+  .status-row {
+    grid-template-columns: 1fr;
+  }
+
+  .segmented button {
+    font-size: 0.78rem;
   }
 }
