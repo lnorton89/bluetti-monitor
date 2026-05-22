@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 implemented; ready for human UAT
-Last activity: 2026-05-18 - Implemented Runtime and Time to Full overhaul with historical calibration and backtesting
+Last activity: 2026-05-22 - Added analytics device select right padding
 
 ## Accumulated Context
 
@@ -71,6 +71,21 @@ Decisions are logged in PROJECT.md.
 | 20260520 | Use Google Sans in the standalone analytics app | 2026-05-20 | working tree | [20260520-google-sans-analytics](./quick/20260520-google-sans-analytics/) |
 | 20260520 | Fix analytics history range clipping | 2026-05-20 | working tree | [20260520-analytics-history-window](./quick/20260520-analytics-history-window/) |
 | 20260520 | Use rainbow colors for analytics charts | 2026-05-20 | working tree | [20260520-rainbow-analytics-charts](./quick/20260520-rainbow-analytics-charts/) |
+| 260522-bvp | Analytics Battery Posture voltage line | 2026-05-22 | working tree | [260522-bvp-analytics-battery-posture-voltage-line](./quick/260522-bvp-analytics-battery-posture-voltage-line/) |
+| 260522-rfh | Remove Resolved Fields and align analytics panels | 2026-05-22 | working tree | [260522-rfh-remove-resolved-fields-align-analytics-panels](./quick/260522-rfh-remove-resolved-fields-align-analytics-panels/) |
+| 260522-bpl | Clarify Battery Posture labels | 2026-05-22 | working tree | [260522-bpl-clarify-battery-posture-labels](./quick/260522-bpl-clarify-battery-posture-labels/) |
+| 260522-fsl | Fix analytics Field Comparison spacing and search border | 2026-05-22 | working tree | [260522-fsl-fix-analytics-field-spacing-search-border](./quick/260522-fsl-fix-analytics-field-spacing-search-border/) |
+| 260522-fcc | Color code Field Comparison chips | 2026-05-22 | working tree | [260522-fcc-color-code-field-comparison-chips](./quick/260522-fcc-color-code-field-comparison-chips/) |
+| 260522-ghv | Add graph hover values | 2026-05-22 | working tree | [260522-ghv-add-graph-hover-values](./quick/260522-ghv-add-graph-hover-values/) |
+| 260522-aif | Add analytics icon favicon | 2026-05-22 | working tree | [260522-aif-add-analytics-icon-favicon](./quick/260522-aif-add-analytics-icon-favicon/) |
+| 260522-hub | Uppercase bold analytics header | 2026-05-22 | working tree | [260522-hub-uppercase-bold-analytics-header](./quick/260522-hub-uppercase-bold-analytics-header/) |
+| 260522-fcr | Isolate Field Comparison renders | 2026-05-22 | working tree | [260522-fcr-isolate-field-comparison-renders](./quick/260522-fcr-isolate-field-comparison-renders/) |
+| 260522-ckp | Compact analytics KPI cards | 2026-05-22 | working tree | [260522-ckp-compact-analytics-kpi-cards](./quick/260522-ckp-compact-analytics-kpi-cards/) |
+| 260522-kir | Right align KPI icons | 2026-05-22 | working tree | [260522-kir-right-align-kpi-icons](./quick/260522-kir-right-align-kpi-icons/) |
+| 260522-fcf | Filter comparison fields | 2026-05-22 | working tree | [260522-fcf-filter-comparison-fields](./quick/260522-fcf-filter-comparison-fields/) |
+| 260522-dfc | Default Field Comparison selection | 2026-05-22 | working tree | [260522-dfc-default-field-comparison-selection](./quick/260522-dfc-default-field-comparison-selection/) |
+| 260522-twh | Match time window control height | 2026-05-22 | working tree | [260522-twh-time-window-height-match](./quick/260522-twh-time-window-height-match/) |
+| 260522-dsp | Device select padding | 2026-05-22 | working tree | [260522-dsp-device-select-padding](./quick/260522-dsp-device-select-padding/) |
 
 ## Session Continuity
 
