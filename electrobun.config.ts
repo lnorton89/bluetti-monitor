@@ -27,6 +27,7 @@ export default {
     },
     win: {
       bundleCEF: false,
+      defaultRenderer: "native",
     },
   },
   scripts: {

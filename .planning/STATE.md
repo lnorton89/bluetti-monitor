@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 implemented; ready for human UAT
-Last activity: 2026-05-22 - Added Netlify static analytics build
+Last activity: 2026-05-23 - Resolved Windows CEF CPU issue by returning to native renderer
 
 ## Accumulated Context
 
@@ -88,6 +88,7 @@ Decisions are logged in PROJECT.md.
 | 260522-dsp | Device select padding | 2026-05-22 | working tree | [260522-dsp-device-select-padding](./quick/260522-dsp-device-select-padding/) |
 | 260522-mvf | Make analytics mobile view more friendly | 2026-05-22 | working tree | [260522-mvf-mobile-friendly-analytics](./quick/260522-mvf-mobile-friendly-analytics/) |
 | 260522-nas | Netlify static analytics export | 2026-05-22 | working tree | [260522-netlify-analytics-static-export](./quick/260522-netlify-analytics-static-export/) |
+| 260523-debug | Resolve Windows CEF CPU issue by returning to native renderer | 2026-05-23 | working tree | [.planning/debug/cef-gpu-process-cpu.md](./debug/cef-gpu-process-cpu.md) |
 
 ## Session Continuity
 
