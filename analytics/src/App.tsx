@@ -22,6 +22,7 @@ import { formatMetric } from './lib/fields';
 import { formatFreshness, formatShortTime } from './lib/time';
 import {
   ANALYTICS_DENSITY_KEY,
+  ANALYTICS_SKIN_KEY,
   ANALYTICS_THEME_KEY,
   COMPARISON_DEFAULT_FIELDS_KEY,
   DARK_CHART_COLORS,
@@ -29,10 +30,12 @@ import {
   LIGHT_CHART_COLORS,
   buildRainbow,
   getStoredAnalyticsDensity,
+  getStoredAnalyticsSkin,
   getStoredAnalyticsTheme,
   getStoredComparisonDefaultFields,
   isComparableField,
   type AnalyticsDensity,
+  type AnalyticsSkin,
   type AnalyticsTheme,
 } from './lib/constants';
 import { useLiveTelemetry } from './hooks/useLiveTelemetry';
@@ -58,6 +61,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<AnalyticsTheme>(getStoredAnalyticsTheme);
   const [densityMode, setDensityMode] = useState<AnalyticsDensity>(getStoredAnalyticsDensity);
+  const [skin, setSkin] = useState<AnalyticsSkin>(getStoredAnalyticsSkin);
   const [comparisonDefaultFields, setComparisonDefaultFields] = useState<string[]>(getStoredComparisonDefaultFields);
   const [customStart, setCustomStart] = useState(() => {
     const d = new Date(Date.now() - 7 * 24 * 60 * 60_000);
@@ -74,6 +78,11 @@ export default function App() {
     document.documentElement.setAttribute('data-analytics-theme', themeMode);
     window.localStorage.setItem(ANALYTICS_THEME_KEY, themeMode);
   }, [themeMode]);
+
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-analytics-skin', skin);
+    window.localStorage.setItem(ANALYTICS_SKIN_KEY, skin);
+  }, [skin]);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-analytics-density', densityMode);
@@ -309,10 +318,12 @@ export default function App() {
           availableComparisonFields={comparableFields}
           comparisonDefaultFields={comparisonDefaultFields}
           densityMode={densityMode}
+          skin={skin}
           themeMode={themeMode}
           onComparisonDefaultFieldsChange={setComparisonDefaultFields}
           onClose={() => setSettingsOpen(false)}
           onDensityChange={setDensityMode}
+          onSkinChange={setSkin}
           onThemeChange={setThemeMode}
         />
       ) : null}

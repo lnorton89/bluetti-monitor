@@ -36,14 +36,23 @@ export const EXCLUDED_COMPARISON_FIELDS = new Set([
   'ups_mode',
 ]);
 
+export const ANALYTICS_SKIN_KEY = 'bluetti-analytics:skin';
 export const ANALYTICS_THEME_KEY = 'bluetti-analytics:theme';
 export const ANALYTICS_DENSITY_KEY = 'bluetti-analytics:density';
 export const COMPARISON_DEFAULT_FIELDS_KEY = 'bluetti-analytics:comparison-default-fields';
 export const MAX_COMPARISON_FIELDS = 6;
 export const EMPTY_TIMELINE: [] = [];
 
+export type AnalyticsSkin = 'modern' | 'classic';
 export type AnalyticsTheme = 'dark' | 'light';
 export type AnalyticsDensity = 'comfortable' | 'compact';
+
+export function getStoredAnalyticsSkin(): AnalyticsSkin {
+  if (typeof window === 'undefined') {
+    return 'modern';
+  }
+  return window.localStorage.getItem(ANALYTICS_SKIN_KEY) === 'classic' ? 'classic' : 'modern';
+}
 
 export function getStoredAnalyticsTheme(): AnalyticsTheme {
   if (typeof window === 'undefined') {

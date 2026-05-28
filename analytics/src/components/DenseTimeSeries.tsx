@@ -17,18 +17,14 @@ interface DenseTimeSeriesProps {
   themeMode?: 'dark' | 'light';
 }
 
-const CHART_THEME = {
-  dark: {
-    axis: '#9aa0a6',
-    grid: 'rgba(231, 228, 238, 0.16)',
-    tick: 'rgba(231, 228, 238, 0.28)',
-  },
-  light: {
-    axis: '#6f6876',
-    grid: 'rgba(61, 58, 66, 0.08)',
-    tick: 'rgba(61, 58, 66, 0.22)',
-  },
-} satisfies Record<NonNullable<DenseTimeSeriesProps['themeMode']>, { axis: string; grid: string; tick: string }>;
+function getChartTheme() {
+  const style = getComputedStyle(document.documentElement);
+  return {
+    axis: style.getPropertyValue('--chart-axis').trim() || '#9aa0a6',
+    grid: style.getPropertyValue('--chart-grid').trim() || 'rgba(231, 228, 238, 0.16)',
+    tick: style.getPropertyValue('--chart-grid').trim() || 'rgba(231, 228, 238, 0.28)',
+  };
+}
 
 function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode = 'dark' }: DenseTimeSeriesProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -83,7 +79,7 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
 
       plotRef.current?.destroy();
 
-      const theme = CHART_THEME[themeMode];
+      const theme = getChartTheme();
       const width = Math.max(260, host.clientWidth);
       const currentData = dataRef.current ?? data;
       const plot = new uPlot(
@@ -165,7 +161,7 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
       return;
     }
 
-    const theme = CHART_THEME[themeMode];
+    const theme = getChartTheme();
     for (const axis of plot.axes ?? []) {
       axis.stroke = () => theme.axis;
       if (axis.grid) {

@@ -4,6 +4,7 @@ import {
   MAX_COMPARISON_FIELDS,
   normalizeComparisonFields,
   type AnalyticsDensity,
+  type AnalyticsSkin,
   type AnalyticsTheme,
 } from '../lib/constants';
 import { getFieldMeta } from '../lib/fields';
@@ -12,20 +13,24 @@ export function SettingsModal({
   availableComparisonFields,
   comparisonDefaultFields,
   densityMode,
+  skin,
+  themeMode,
   onComparisonDefaultFieldsChange,
   onClose,
   onDensityChange,
+  onSkinChange,
   onThemeChange,
-  themeMode,
 }: {
   availableComparisonFields: string[];
   comparisonDefaultFields: string[];
   densityMode: AnalyticsDensity;
+  skin: AnalyticsSkin;
+  themeMode: AnalyticsTheme;
   onComparisonDefaultFieldsChange: (fields: string[]) => void;
   onClose: () => void;
   onDensityChange: (density: AnalyticsDensity) => void;
+  onSkinChange: (skin: AnalyticsSkin) => void;
   onThemeChange: (theme: AnalyticsTheme) => void;
-  themeMode: AnalyticsTheme;
 }) {
   const [fieldSearch, setFieldSearch] = useState('');
   const selectedDefaultFields = useMemo(
@@ -69,6 +74,32 @@ export function SettingsModal({
             <X size={18} />
           </button>
         </header>
+        <div className="settings-row">
+          <div className="settings-row-copy">
+            <span>Skin</span>
+            <p>Choose the visual style for the analytics workspace.</p>
+          </div>
+          <div className="theme-switch" role="radiogroup" aria-label="Analytics skin">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={skin === 'modern'}
+              className={skin === 'modern' ? 'active' : ''}
+              onClick={() => onSkinChange('modern')}
+            >
+              Modern
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={skin === 'classic'}
+              className={skin === 'classic' ? 'active' : ''}
+              onClick={() => onSkinChange('classic')}
+            >
+              Classic
+            </button>
+          </div>
+        </div>
         <div className="settings-row">
           <div className="settings-row-copy">
             <span>Theme</span>
