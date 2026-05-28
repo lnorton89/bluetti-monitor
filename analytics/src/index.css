@@ -2187,6 +2187,18 @@ input:focus-visible {
   border-radius: 0;
 }
 
+:root[data-analytics-skin="classic"] .panel-header .field-search-trigger {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+}
+
+:root[data-analytics-skin="classic"] .field-search-trigger::before {
+  display: none;
+}
+
 :root[data-analytics-skin="classic"] .status-pill {
   border-radius: 0;
   border: 2px outset var(--border);
