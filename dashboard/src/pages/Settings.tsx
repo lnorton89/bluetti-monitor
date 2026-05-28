@@ -6,7 +6,12 @@ import { useBatteryFullNotifications } from '../lib/notifications';
 import { RANGE_PRESETS } from '../lib/shared-controls';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
-import { getEffectiveTheme, type ThemePreference, useAppSettingsStore } from '../store/settings';
+import {
+  getEffectiveTheme,
+  NTFY_INTERVAL_MINUTES_OPTIONS,
+  type ThemePreference,
+  useAppSettingsStore,
+} from '../store/settings';
 
 const THEME_OPTIONS: Array<{
   description: string;
@@ -102,6 +107,37 @@ function ToggleRow({
   );
 }
 
+function TextSettingRow({
+  description,
+  label,
+  onChange,
+  placeholder,
+  value,
+}: {
+  description: string;
+  label: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  value: string;
+}) {
+  return (
+    <label className="settings-text-row">
+      <div className="settings-toggle-copy">
+        <span className="settings-toggle-label">{label}</span>
+        <p className="settings-toggle-description">{description}</p>
+      </div>
+      <input
+        className="settings-text-input"
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        spellCheck={false}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
 export default function Settings() {
   const wsState = useWsStore((s) => s.state);
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
@@ -111,6 +147,10 @@ export default function Settings() {
   const themeMode = useAppSettingsStore((s) => s.appearance.themeMode);
   const batteryFullBrowser = useAppSettingsStore((s) => s.alerts.batteryFullBrowser);
   const batteryFullDesktop = useAppSettingsStore((s) => s.alerts.batteryFullDesktop);
+  const ntfyEnabled = useAppSettingsStore((s) => s.alerts.ntfyEnabled);
+  const ntfyIntervalMinutes = useAppSettingsStore((s) => s.alerts.ntfyIntervalMinutes);
+  const ntfyServer = useAppSettingsStore((s) => s.alerts.ntfyServer);
+  const ntfyTopic = useAppSettingsStore((s) => s.alerts.ntfyTopic);
   const defaultAnalyticsWindow = useAppSettingsStore((s) => s.dashboard.defaultAnalyticsWindow);
   const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
   const logCaptureEnabled = useAppSettingsStore((s) => s.desktop.logCaptureEnabled);
@@ -119,6 +159,10 @@ export default function Settings() {
   const setThemeMode = useAppSettingsStore((s) => s.setThemeMode);
   const setBatteryFullBrowser = useAppSettingsStore((s) => s.setBatteryFullBrowser);
   const setBatteryFullDesktop = useAppSettingsStore((s) => s.setBatteryFullDesktop);
+  const setNtfyEnabled = useAppSettingsStore((s) => s.setNtfyEnabled);
+  const setNtfyIntervalMinutes = useAppSettingsStore((s) => s.setNtfyIntervalMinutes);
+  const setNtfyServer = useAppSettingsStore((s) => s.setNtfyServer);
+  const setNtfyTopic = useAppSettingsStore((s) => s.setNtfyTopic);
   const setDefaultAnalyticsWindow = useAppSettingsStore((s) => s.setDefaultAnalyticsWindow);
   const setDesktopLogCaptureEnabled = useAppSettingsStore((s) => s.setDesktopLogCaptureEnabled);
   const setDesktopLogRetainBytes = useAppSettingsStore((s) => s.setDesktopLogRetainBytes);
@@ -309,6 +353,57 @@ export default function Settings() {
               disabled={!desktopNotificationsAvailable}
               onChange={(checked) => setBatteryFullDesktop(checked)}
             />
+            <ToggleRow
+              checked={ntfyEnabled}
+              label="ntfy power status notifications"
+              description="POST current input, output, and SOC to an ntfy topic on a recurring interval."
+              impact="Network"
+              onChange={(checked) => setNtfyEnabled(checked)}
+            />
+            <div className={`settings-control-block${ntfyEnabled ? '' : ' is-disabled'}`}>
+              <div className="settings-toggle-top">
+                <div>
+                  <span className="settings-toggle-label">ntfy destination</span>
+                  <p className="settings-toggle-description">
+                    Use your local or hosted ntfy server URL and the topic name that should receive Bluetti alerts.
+                  </p>
+                </div>
+                <span className="settings-impact-pill">Persists</span>
+              </div>
+              <div className="settings-text-grid">
+                <TextSettingRow
+                  label="Server"
+                  description="Base URL for your ntfy server."
+                  placeholder="https://ntfy.sh"
+                  value={ntfyServer}
+                  onChange={setNtfyServer}
+                />
+                <TextSettingRow
+                  label="Topic"
+                  description="Topic to publish battery-full alerts to."
+                  placeholder="bluetti-alerts"
+                  value={ntfyTopic}
+                  onChange={setNtfyTopic}
+                />
+              </div>
+              <div className="settings-toggle-top">
+                <span className="settings-toggle-label">Status interval</span>
+                <div className="settings-segmented" role="radiogroup" aria-label="ntfy status interval">
+                  {NTFY_INTERVAL_MINUTES_OPTIONS.map((minutes) => (
+                    <button
+                      key={minutes}
+                      type="button"
+                      role="radio"
+                      aria-checked={ntfyIntervalMinutes === minutes}
+                      className={`settings-segmented-button${ntfyIntervalMinutes === minutes ? ' is-active' : ''}`}
+                      onClick={() => setNtfyIntervalMinutes(minutes)}
+                    >
+                      {minutes}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
             {browserNotificationPermission === 'default' ? (
               <button
                 type="button"
@@ -321,6 +416,8 @@ export default function Settings() {
               </button>
             ) : null}
             <div className="settings-footnote">
+              ntfy messages are sent by this browser session while the dashboard is open.
+              {' '}
               {desktopNotificationsAvailable
                 ? 'Desktop bridge is available in this session.'
                 : 'Desktop bridge is not attached in this browser session.'}

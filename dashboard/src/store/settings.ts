@@ -9,6 +9,10 @@ export interface AppSettings {
   alerts: {
     batteryFullBrowser: boolean;
     batteryFullDesktop: boolean;
+    ntfyEnabled: boolean;
+    ntfyIntervalMinutes: number;
+    ntfyServer: string;
+    ntfyTopic: string;
   };
   dashboard: {
     defaultAnalyticsWindow: '1h' | '6h' | '24h' | '72h';
@@ -26,6 +30,10 @@ interface AppSettingsStore extends AppSettings {
   setThemeMode: (themeMode: ThemePreference) => void;
   setBatteryFullBrowser: (enabled: boolean) => void;
   setBatteryFullDesktop: (enabled: boolean) => void;
+  setNtfyEnabled: (enabled: boolean) => void;
+  setNtfyIntervalMinutes: (minutes: number) => void;
+  setNtfyServer: (server: string) => void;
+  setNtfyTopic: (topic: string) => void;
   setDefaultAnalyticsWindow: (window: AppSettings['dashboard']['defaultAnalyticsWindow']) => void;
   setDesktopLogCaptureEnabled: (enabled: boolean) => void;
   setDesktopLogRetainBytes: (bytes: number) => void;
@@ -34,6 +42,7 @@ interface AppSettingsStore extends AppSettings {
 }
 
 const STORAGE_KEY = 'bluetti-monitor:settings';
+export const NTFY_INTERVAL_MINUTES_OPTIONS = [5, 15, 30, 60] as const;
 const LOG_TRUNCATE_BYTES_OPTIONS = [512 * 1024, 1024 * 1024, 5 * 1024 * 1024, 10 * 1024 * 1024] as const;
 const LOG_RETAIN_BYTES_OPTIONS = [128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024] as const;
 
@@ -44,6 +53,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   alerts: {
     batteryFullBrowser: true,
     batteryFullDesktop: true,
+    ntfyEnabled: false,
+    ntfyIntervalMinutes: 15,
+    ntfyServer: 'https://ntfy.sh',
+    ntfyTopic: '',
   },
   dashboard: {
     defaultAnalyticsWindow: '24h',
@@ -74,6 +87,22 @@ function sanitizeAnalyticsWindow(value: unknown): AppSettings['dashboard']['defa
   return value === '1h' || value === '6h' || value === '24h' || value === '72h'
     ? value
     : DEFAULT_SETTINGS.dashboard.defaultAnalyticsWindow;
+}
+
+function sanitizeString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function sanitizeNtfyServer(value: unknown, fallback = DEFAULT_SETTINGS.alerts.ntfyServer) {
+  return typeof value === 'string' ? value.trim() : fallback;
+}
+
+function sanitizeNtfyIntervalMinutes(value: unknown, fallback = DEFAULT_SETTINGS.alerts.ntfyIntervalMinutes) {
+  return typeof value === 'number' && NTFY_INTERVAL_MINUTES_OPTIONS.includes(
+    value as typeof NTFY_INTERVAL_MINUTES_OPTIONS[number],
+  )
+    ? value
+    : fallback;
 }
 
 function sanitizeOptionValue<T extends readonly number[]>(value: unknown, allowed: T, fallback: T[number]) {
@@ -116,6 +145,13 @@ function sanitizeSettings(candidate: unknown): AppSettings {
         alerts.batteryFullDesktop,
         DEFAULT_SETTINGS.alerts.batteryFullDesktop,
       ),
+      ntfyEnabled: sanitizeBoolean(
+        alerts.ntfyEnabled,
+        DEFAULT_SETTINGS.alerts.ntfyEnabled,
+      ),
+      ntfyIntervalMinutes: sanitizeNtfyIntervalMinutes(alerts.ntfyIntervalMinutes),
+      ntfyServer: sanitizeNtfyServer(alerts.ntfyServer),
+      ntfyTopic: sanitizeString(alerts.ntfyTopic),
     },
     dashboard: {
       defaultAnalyticsWindow: sanitizeAnalyticsWindow(dashboard.defaultAnalyticsWindow),
@@ -231,6 +267,62 @@ export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
         alerts: {
           ...state.alerts,
           batteryFullDesktop: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setNtfyEnabled(enabled) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          ntfyEnabled: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setNtfyIntervalMinutes(minutes) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          ntfyIntervalMinutes: sanitizeNtfyIntervalMinutes(minutes, state.alerts.ntfyIntervalMinutes),
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setNtfyServer(server) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          ntfyServer: sanitizeNtfyServer(server, state.alerts.ntfyServer),
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setNtfyTopic(topic) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          ntfyTopic: sanitizeString(topic),
         },
       };
       persistSettings(toPersistedSettings(nextState));

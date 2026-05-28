@@ -6,12 +6,15 @@ import {
   CheckCircle2,
   Gauge,
   LineChart,
+  Moon,
   PlugZap,
   RefreshCw,
   Search,
+  Settings,
   Sun,
   Wifi,
   WifiOff,
+  X,
   Zap,
 } from 'lucide-react';
 import {
@@ -46,16 +49,17 @@ import { formatFieldValue, formatMetric, getFieldMeta } from './lib/fields';
 import { formatFreshness, formatShortTime } from './lib/time';
 import { DenseTimeSeries } from './components/DenseTimeSeries';
 
-const CHART_COLORS = ['#ff8fab', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
-const RAINBOW = {
-  red: CHART_COLORS[0],
-  orange: CHART_COLORS[1],
-  yellow: CHART_COLORS[2],
-  green: CHART_COLORS[3],
-  cyan: CHART_COLORS[4],
-  blue: CHART_COLORS[5],
-  violet: CHART_COLORS[6],
-};
+const DARK_CHART_COLORS = ['#ff8fab', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
+const LIGHT_CHART_COLORS = ['#b82355', '#a15c10', '#8b7a00', '#2f7d32', '#00889b', '#315fae', '#7650ad'];
+const buildRainbow = (colors: string[]) => ({
+  red: colors[0],
+  orange: colors[1],
+  yellow: colors[2],
+  green: colors[3],
+  cyan: colors[4],
+  blue: colors[5],
+  violet: colors[6],
+});
 const DEFAULT_COMPARISON_FIELDS = [
   'ac_input_power',
   'ac_output_power',
@@ -79,6 +83,17 @@ const EXCLUDED_COMPARISON_FIELDS = new Set([
   'time_control_on',
   'ups_mode',
 ]);
+const ANALYTICS_THEME_KEY = 'bluetti-analytics:theme';
+
+type AnalyticsTheme = 'dark' | 'light';
+
+function getStoredAnalyticsTheme(): AnalyticsTheme {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  return window.localStorage.getItem(ANALYTICS_THEME_KEY) === 'light' ? 'light' : 'dark';
+}
 
 function useLiveTelemetry() {
   const [state, setState] = useState<AllState>(() => (IS_MOCK_MODE ? mockState : {}));
@@ -149,7 +164,16 @@ function useLiveTelemetry() {
 export default function App() {
   const [rangeId, setRangeId] = useState<RangeId>('24h');
   const [selectedDevice, setSelectedDevice] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<AnalyticsTheme>(getStoredAnalyticsTheme);
+  const chartColors = themeMode === 'light' ? LIGHT_CHART_COLORS : DARK_CHART_COLORS;
+  const rainbow = useMemo(() => buildRainbow(chartColors), [chartColors]);
   const live = useLiveTelemetry();
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-analytics-theme', themeMode);
+    window.localStorage.setItem(ANALYTICS_THEME_KEY, themeMode);
+  }, [themeMode]);
 
   const statusQuery = useQuery({
     queryKey: ['status'],
@@ -263,7 +287,7 @@ export default function App() {
 
         <section className="controls-band">
           <label className="control-field">
-            <span>Device</span>
+            <span className="sr-only">Device</span>
             <select value={selectedDevice} onChange={(event) => setSelectedDevice(event.target.value)}>
               {devices.map((device) => (
                 <option key={device} value={device}>{device}</option>
@@ -275,7 +299,10 @@ export default function App() {
               <button
                 key={item.id}
                 type="button"
-                className={item.id === range.id ? 'active' : ''}
+                className={[
+                  item.id === range.id ? 'active' : '',
+                  item.id === range.id && live.connected ? 'is-live' : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => setRangeId(item.id)}
               >
                 {item.label}
@@ -290,6 +317,23 @@ export default function App() {
             onClick={() => void historyQuery.refetch()}
           >
             <RefreshCw size={18} />
+          </button>
+          <button
+            className="icon-button theme-toggle-button"
+            type="button"
+            aria-label={themeMode === 'dark' ? 'Switch analytics to light mode' : 'Switch analytics to dark mode'}
+            title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={() => setThemeMode((current) => current === 'dark' ? 'light' : 'dark')}
+          >
+            {themeMode === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+          <button
+            className="icon-button"
+            type="button"
+            aria-label="Open analytics settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings size={18} />
           </button>
         </section>
 
@@ -320,18 +364,19 @@ export default function App() {
                 />
                 <div className="chart-frame">
                   <DenseTimeSeries
+                    themeMode={themeMode}
                     timestamps={timeline.map((row) => row.ts)}
                     series={[
-                      { label: 'Total input', color: RAINBOW.red, values: timeline.map((row) => row.totalInput), unit: 'W', digits: 0 },
-                      { label: 'Total output', color: RAINBOW.green, values: timeline.map((row) => row.totalOutput), unit: 'W', digits: 0 },
-                      { label: 'Net power', color: RAINBOW.blue, values: timeline.map((row) => row.netPower), unit: 'W', digits: 0 },
+                      { label: 'Total input', color: rainbow.red, values: timeline.map((row) => row.totalInput), unit: 'W', digits: 0 },
+                      { label: 'Total output', color: rainbow.green, values: timeline.map((row) => row.totalOutput), unit: 'W', digits: 0 },
+                      { label: 'Net power', color: rainbow.blue, values: timeline.map((row) => row.netPower), unit: 'W', digits: 0 },
                     ]}
                   />
                 </div>
                 <div className="legend-strip">
-                  <span><i style={{ background: RAINBOW.red }} />Total input</span>
-                  <span><i style={{ background: RAINBOW.green }} />Total output</span>
-                  <span><i style={{ background: RAINBOW.blue }} />Net power</span>
+                  <span><i style={{ background: rainbow.red }} />Total input</span>
+                  <span><i style={{ background: rainbow.green }} />Total output</span>
+                  <span><i style={{ background: rainbow.blue }} />Net power</span>
                 </div>
                 <div className="side-stats">
                   <SideStat label="Net range" value={`${formatMetric(netSummary?.min, 'W')} to ${formatMetric(netSummary?.max, 'W')}`} />
@@ -347,15 +392,16 @@ export default function App() {
                   loading={historyQuery.isFetching}
                 />
                 <DenseTimeSeries
+                  themeMode={themeMode}
                   timestamps={timeline.map((row) => row.ts)}
                   series={[
-                    { label: 'Solar wattage', color: RAINBOW.yellow, values: timeline.map((row) => row.solarInput), unit: 'W', digits: 0 },
-                    { label: 'Solar voltage', color: RAINBOW.cyan, values: timeline.map((row) => row.solarVoltage), unit: 'V', digits: 1 },
+                    { label: 'Solar wattage', color: rainbow.yellow, values: timeline.map((row) => row.solarInput), unit: 'W', digits: 0 },
+                    { label: 'Solar voltage', color: rainbow.cyan, values: timeline.map((row) => row.solarVoltage), unit: 'V', digits: 1 },
                   ]}
                 />
                 <div className="legend-strip compact">
-                  <span><i style={{ background: RAINBOW.yellow }} />Solar wattage</span>
-                  <span><i style={{ background: RAINBOW.cyan }} />Solar voltage</span>
+                  <span><i style={{ background: rainbow.yellow }} />Solar wattage</span>
+                  <span><i style={{ background: rainbow.cyan }} />Solar voltage</span>
                 </div>
                 <div className="side-stats">
                   <SideStat label="Solar range" value={`${formatMetric(solarSummary?.min, 'W')} to ${formatMetric(solarSummary?.max, 'W')}`} />
@@ -371,13 +417,14 @@ export default function App() {
                   subtitle={resolved.batteryPercent ? `SOC trend from ${resolved.batteryPercent}` : 'No SOC field'}
                 />
                 <DenseTimeSeries
+                  themeMode={themeMode}
                   timestamps={timeline.map((row) => row.ts)}
                   series={[
-                    { label: 'SOC trend', color: RAINBOW.green, values: timeline.map((row) => row.batteryPercent), unit: '%', digits: 1 },
+                    { label: 'SOC trend', color: rainbow.green, values: timeline.map((row) => row.batteryPercent), unit: '%', digits: 1 },
                   ]}
                 />
                 <div className="legend-strip compact">
-                  <span><i style={{ background: RAINBOW.green }} />SOC trend</span>
+                  <span><i style={{ background: rainbow.green }} />SOC trend</span>
                 </div>
                 <div className="side-stats">
                   <SideStat label="SOC range" value={`${formatMetric(batterySummary?.min, '%', 1)} to ${formatMetric(batterySummary?.max, '%', 1)}`} />
@@ -392,6 +439,7 @@ export default function App() {
               limit={range.limit}
               numericFields={numericFields}
               sinceIso={sinceIso}
+              themeMode={themeMode}
             />
 
             <section className="panel">
@@ -419,6 +467,13 @@ export default function App() {
           </>
         )}
       </section>
+      {settingsOpen ? (
+        <SettingsModal
+          themeMode={themeMode}
+          onClose={() => setSettingsOpen(false)}
+          onThemeChange={setThemeMode}
+        />
+      ) : null}
     </main>
   );
 }
@@ -464,15 +519,18 @@ const FieldComparisonPanel = memo(function FieldComparisonPanel({
   limit,
   numericFields,
   sinceIso,
+  themeMode,
 }: {
   bucketMs: number;
   device: string;
   limit: number;
   numericFields: string[];
   sinceIso: string;
+  themeMode: AnalyticsTheme;
 }) {
   const [comparisonFields, setComparisonFields] = useState<string[]>(DEFAULT_COMPARISON_FIELDS);
   const [fieldSearch, setFieldSearch] = useState('');
+  const chartColors = themeMode === 'light' ? LIGHT_CHART_COLORS : DARK_CHART_COLORS;
   const comparableFields = useMemo(
     () => numericFields.filter(isComparableField),
     [numericFields],
@@ -555,12 +613,13 @@ const FieldComparisonPanel = memo(function FieldComparisonPanel({
         </div>
       </div>
       <DenseTimeSeries
+        themeMode={themeMode}
         timestamps={comparisonTimeline.map((row) => row.ts)}
         series={comparisonFields.map((field, index) => {
           const meta = getFieldMeta(field);
           return {
             label: meta.label,
-            color: CHART_COLORS[index % CHART_COLORS.length],
+            color: chartColors[index % chartColors.length],
             values: comparisonTimeline.map((row) => row[field]),
             unit: meta.unit,
             digits: meta.unit === 'kWh' ? 2 : meta.unit ? 1 : 0,
@@ -570,7 +629,7 @@ const FieldComparisonPanel = memo(function FieldComparisonPanel({
       <div className="legend-strip">
         {comparisonFields.map((field, index) => (
           <span key={field}>
-            <i style={{ background: CHART_COLORS[index % CHART_COLORS.length] }} />
+            <i style={{ background: chartColors[index % chartColors.length] }} />
             {getFieldMeta(field).label}
           </span>
         ))}
@@ -610,6 +669,77 @@ function SideStat({ label, value }: { label: string; value: string }) {
     <div className="side-stat">
       <span>{label}</span>
       <strong>{value}</strong>
+    </div>
+  );
+}
+
+function SettingsModal({
+  onClose,
+  onThemeChange,
+  themeMode,
+}: {
+  onClose: () => void;
+  onThemeChange: (theme: AnalyticsTheme) => void;
+  themeMode: AnalyticsTheme;
+}) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="settings-modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        aria-modal="true"
+        aria-labelledby="analytics-settings-title"
+        className="settings-modal"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="settings-modal-header">
+          <div>
+            <p className="eyebrow">Analytics</p>
+            <h2 id="analytics-settings-title">Settings</h2>
+          </div>
+          <button className="icon-button" type="button" aria-label="Close settings" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </header>
+        <div className="settings-row">
+          <div className="settings-row-copy">
+            <span>Theme</span>
+            <p>Switch the analytics workspace between dark and light modes.</p>
+          </div>
+          <div className="theme-switch" role="radiogroup" aria-label="Analytics theme">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={themeMode === 'dark'}
+              className={themeMode === 'dark' ? 'active' : ''}
+              onClick={() => onThemeChange('dark')}
+            >
+              <Moon size={15} />
+              Dark
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={themeMode === 'light'}
+              className={themeMode === 'light' ? 'active' : ''}
+              onClick={() => onThemeChange('light')}
+            >
+              <Sun size={15} />
+              Light
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

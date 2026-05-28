@@ -13,9 +13,10 @@ export interface DenseSeries {
 interface DenseTimeSeriesProps {
   timestamps: number[];
   series: DenseSeries[];
+  themeMode?: 'dark' | 'light';
 }
 
-export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
+export function DenseTimeSeries({ timestamps, series, themeMode = 'dark' }: DenseTimeSeriesProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
@@ -34,6 +35,9 @@ export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
 
     plotRef.current?.destroy();
 
+    const styles = window.getComputedStyle(host);
+    const axisStroke = styles.getPropertyValue('--chart-axis').trim() || '#9aa0a6';
+    const gridStroke = styles.getPropertyValue('--chart-grid').trim() || '#2a2d35';
     const width = Math.max(260, host.clientWidth);
     const plot = new uPlot(
       {
@@ -43,8 +47,8 @@ export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
         legend: { show: false },
         scales: { x: { time: true } },
         axes: [
-          { stroke: '#9aa0a6', grid: { stroke: '#2a2d35', width: 1 } },
-          { stroke: '#9aa0a6', grid: { stroke: '#2a2d35', width: 1 } },
+          { stroke: axisStroke, grid: { stroke: gridStroke, width: 1 } },
+          { stroke: axisStroke, grid: { stroke: gridStroke, width: 1 } },
         ],
         hooks: {
           setCursor: [
@@ -95,7 +99,7 @@ export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
       plot.destroy();
       plotRef.current = null;
     };
-  }, [data, series]);
+  }, [data, series, themeMode, timestamps.length]);
 
   if (timestamps.length === 0 || series.length === 0) {
     return <div className="empty-chart">Select numeric fields to render dense telemetry.</div>;

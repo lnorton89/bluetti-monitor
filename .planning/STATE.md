@@ -98,6 +98,20 @@ Decisions are logged in PROJECT.md.
 | 20260528 | Remove dead space between Power Balance chart and legend | 2026-05-28 | working tree | [20260528-power-balance-legend-gap](./quick/20260528-power-balance-legend-gap/) |
 | 20260528 | Retheme analytics with retro futuristic pastels and dark greys | 2026-05-28 | working tree | [20260528-retro-futuristic-pastel-theme](./quick/20260528-retro-futuristic-pastel-theme/) |
 | 20260528 | Soften analytics background and box borders | 2026-05-28 | working tree | [20260528-soften-analytics-background-borders](./quick/20260528-soften-analytics-background-borders/) |
+| 20260528 | Add ntfy delivery for battery-full notifications | 2026-05-28 | working tree | [20260528-ntfy-notifications](./quick/20260528-ntfy-notifications/) |
+| 20260528 | Make Settings page layout more compact and traditional | 2026-05-28 | working tree | [20260528-compact-settings-layout](./quick/20260528-compact-settings-layout/) |
+| 20260528 | Fix ntfy server slash editing and default server | 2026-05-28 | working tree | [20260528-fix-ntfy-server-input-default](./quick/20260528-fix-ntfy-server-input-default/) |
+| 20260528 | Change ntfy alerts to recurring input/output/SOC status notifications | 2026-05-28 | working tree | [20260528-periodic-ntfy-status](./quick/20260528-periodic-ntfy-status/) |
+| 20260528 | Add analytics settings modal with light/dark theme switch | 2026-05-28 | working tree | [20260528-analytics-settings-theme-modal](./quick/20260528-analytics-settings-theme-modal/) |
+| 20260528 | Theme analytics chart tooltips and topbar for light/dark mode | 2026-05-28 | working tree | [20260528-analytics-theme-tooltip-topbar](./quick/20260528-analytics-theme-tooltip-topbar/) |
+| 20260528 | Theme analytics device bar instead of title topbar | 2026-05-28 | working tree | [20260528-analytics-device-bar-theme](./quick/20260528-analytics-device-bar-theme/) |
+| 20260528 | Make analytics device select label inline and pad dropdown arrow | 2026-05-28 | working tree | [20260528-analytics-device-select-inline](./quick/20260528-analytics-device-select-inline/) |
+| 20260528 | Animate selected analytics time window while telemetry is live | 2026-05-28 | working tree | [20260528-live-time-window-bars](./quick/20260528-live-time-window-bars/) |
+| 20260528 | Remove visible analytics device selector label | 2026-05-28 | working tree | [20260528-remove-analytics-device-label](./quick/20260528-remove-analytics-device-label/) |
+| 20260528 | Make live analytics time-window bar animation seamless | 2026-05-28 | working tree | [20260528-seamless-live-window-bars](./quick/20260528-seamless-live-window-bars/) |
+| 20260528 | Add more right padding to the analytics device dropdown arrow | 2026-05-28 | working tree | [20260528-device-arrow-padding](./quick/20260528-device-arrow-padding/) |
+| 20260528 | Darken analytics graph colors in light mode | 2026-05-28 | working tree | [20260528-darken-light-chart-colors](./quick/20260528-darken-light-chart-colors/) |
+| 20260528 | Add inline analytics light/dark switch between refresh and settings | 2026-05-28 | working tree | [20260528-inline-analytics-theme-switch](./quick/20260528-inline-analytics-theme-switch/) |
 
 ## Session Continuity
 
