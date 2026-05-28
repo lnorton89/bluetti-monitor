@@ -97,17 +97,19 @@ export function buildTimeline(
     const gridInput = metricBuckets.gridInput.get(ts) ?? null;
     const acLoad = metricBuckets.acLoad.get(ts) ?? null;
     const dcLoad = metricBuckets.dcLoad.get(ts) ?? null;
+    const totalInput = solarInput !== null || gridInput !== null ? (solarInput ?? 0) + (gridInput ?? 0) : null;
+    const totalOutput = acLoad !== null || dcLoad !== null ? (acLoad ?? 0) + (dcLoad ?? 0) : null;
 
     return {
       ts,
       solarInput,
       solarVoltage,
       gridInput,
-      totalInput: sumNullable([solarInput, gridInput]),
+      totalInput,
       acLoad,
       dcLoad,
-      totalOutput: sumNullable([acLoad, dcLoad]),
-      netPower: hasAnyValue([solarInput, gridInput, acLoad, dcLoad])
+      totalOutput,
+      netPower: solarInput !== null || gridInput !== null || acLoad !== null || dcLoad !== null
         ? (solarInput ?? 0) + (gridInput ?? 0) - (acLoad ?? 0) - (dcLoad ?? 0)
         : null,
       batteryPercent: metricBuckets.batteryPercent.get(ts) ?? null,
@@ -138,26 +140,39 @@ export function buildComparisonTimeline(
 }
 
 export function summarize(rows: TimelinePoint[], key: keyof TimelinePoint): MetricSummary | null {
-  const values = rows
-    .map((row) => row[key])
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  let current: number | null = null;
+  let start: number | null = null;
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  let sum = 0;
+  let points = 0;
 
-  if (values.length === 0) {
-    return null;
+  for (const row of rows) {
+    const value = row[key];
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      continue;
+    }
+
+    start ??= value;
+    current = value;
+    min = Math.min(min, value);
+    max = Math.max(max, value);
+    sum += value;
+    points += 1;
   }
 
-  const current = values.at(-1) ?? null;
-  const start = values[0] ?? null;
-  const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+  if (points === 0) {
+    return null;
+  }
 
   return {
     current,
     start,
-    min: Math.min(...values),
-    max: Math.max(...values),
-    avg,
+    min,
+    max,
+    avg: sum / points,
     change: current !== null && start !== null ? current - start : null,
-    points: values.length,
+    points,
   };
 }
 
@@ -177,15 +192,26 @@ export function findPeak(rows: TimelinePoint[], key: keyof TimelinePoint) {
 }
 
 export function getEnergyDelta(rows: TimelinePoint[]) {
-  const values = rows
-    .map((row) => row.generatedEnergy)
-    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  let first: number | null = null;
+  let last: number | null = null;
+  let points = 0;
 
-  if (values.length < 2) {
+  for (const row of rows) {
+    const value = row.generatedEnergy;
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      continue;
+    }
+
+    first ??= value;
+    last = value;
+    points += 1;
+  }
+
+  if (points < 2 || first === null || last === null) {
     return null;
   }
 
-  const delta = values.at(-1)! - values[0]!;
+  const delta = last - first;
   return delta >= 0 ? delta : null;
 }
 
@@ -209,28 +235,32 @@ function bucketHistory(points: HistoryPoint[], bucketMs: number) {
     }
 
     const bucket = Math.floor(timestamp / bucketMs) * bucketMs;
-    const entry = buckets.get(bucket) ?? { sum: 0, count: 0 };
+    let entry = buckets.get(bucket);
+    if (!entry) {
+      entry = { sum: 0, count: 0 };
+      buckets.set(bucket, entry);
+    }
     entry.sum += value;
     entry.count += 1;
-    buckets.set(bucket, entry);
   }
 
-  return new Map(
-    [...buckets.entries()]
-      .sort((left, right) => left[0] - right[0])
-      .map(([bucket, entry]) => [bucket, entry.sum / entry.count]),
-  );
+  const averaged = new Map<number, number>();
+  const sortedBuckets = Array.from(buckets.keys()).sort((left, right) => left - right);
+  for (const bucket of sortedBuckets) {
+    const entry = buckets.get(bucket)!;
+    averaged.set(bucket, entry.sum / entry.count);
+  }
+
+  return averaged;
 }
 
 function collectTimestamps(series: Array<Map<number, number>>) {
-  return [...new Set(series.flatMap((item) => [...item.keys()]))].sort((left, right) => left - right);
-}
+  const timestamps = new Set<number>();
+  for (const item of series) {
+    for (const key of item.keys()) {
+      timestamps.add(key);
+    }
+  }
 
-function sumNullable(values: Array<number | null>) {
-  const present = values.filter((value): value is number => value !== null);
-  return present.length > 0 ? present.reduce((sum, value) => sum + value, 0) : null;
-}
-
-function hasAnyValue(values: Array<number | null>) {
-  return values.some((value) => value !== null);
+  return Array.from(timestamps).sort((left, right) => left - right);
 }

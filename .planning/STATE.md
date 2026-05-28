@@ -112,6 +112,8 @@ Decisions are logged in PROJECT.md.
 | 20260528 | Add more right padding to the analytics device dropdown arrow | 2026-05-28 | working tree | [20260528-device-arrow-padding](./quick/20260528-device-arrow-padding/) |
 | 20260528 | Darken analytics graph colors in light mode | 2026-05-28 | working tree | [20260528-darken-light-chart-colors](./quick/20260528-darken-light-chart-colors/) |
 | 20260528 | Add inline analytics light/dark switch between refresh and settings | 2026-05-28 | working tree | [20260528-inline-analytics-theme-switch](./quick/20260528-inline-analytics-theme-switch/) |
+| 20260528 | Reduce analytics chart rebuilds during load | 2026-05-28 | working tree | [20260528-analytics-load-render-warning](./quick/20260528-analytics-load-render-warning/) |
+| 20260528 | Add settings for Field Comparison default fields | 2026-05-28 | working tree | [20260528-field-comparison-default-settings](./quick/20260528-field-comparison-default-settings/) |
 
 ## Session Continuity
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 
@@ -11,97 +11,166 @@ export interface DenseSeries {
 }
 
 interface DenseTimeSeriesProps {
+  deferMs?: number;
   timestamps: number[];
   series: DenseSeries[];
   themeMode?: 'dark' | 'light';
 }
 
-export function DenseTimeSeries({ timestamps, series, themeMode = 'dark' }: DenseTimeSeriesProps) {
+const CHART_THEME = {
+  dark: {
+    axis: '#9aa0a6',
+    grid: 'rgba(231, 228, 238, 0.16)',
+    tick: 'rgba(231, 228, 238, 0.28)',
+  },
+  light: {
+    axis: '#6f6876',
+    grid: 'rgba(61, 58, 66, 0.08)',
+    tick: 'rgba(61, 58, 66, 0.22)',
+  },
+} satisfies Record<NonNullable<DenseTimeSeriesProps['themeMode']>, { axis: string; grid: string; tick: string }>;
+
+function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode = 'dark' }: DenseTimeSeriesProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const dataRef = useRef<uPlot.AlignedData | null>(null);
+  const plottedDataRef = useRef<uPlot.AlignedData | null>(null);
+  const timestampsRef = useRef(timestamps);
+  const seriesRef = useRef(series);
+  const hasData = timestamps.length > 0 && series.length > 0;
 
   const data = useMemo(() => {
     const x = timestamps.map((ts) => ts / 1000);
     return [x, ...series.map((item) => item.values.map((value) => value ?? null))] as uPlot.AlignedData;
   }, [series, timestamps]);
+  const seriesConfigKey = useMemo(
+    () => series.map((item) => `${item.label}:${item.color}:${item.unit ?? ''}:${item.digits ?? ''}`).join('|'),
+    [series],
+  );
 
   useEffect(() => {
-    const host = hostRef.current;
-    const tooltip = tooltipRef.current;
-    if (!host || !tooltip) {
+    timestampsRef.current = timestamps;
+    seriesRef.current = series;
+    dataRef.current = data;
+  }, [data, series, timestamps]);
+
+  useEffect(() => {
+    if (!hasData) {
+      plotRef.current?.destroy();
+      plotRef.current = null;
+      plottedDataRef.current = null;
       return undefined;
     }
 
-    plotRef.current?.destroy();
+    let cancelled = false;
+    let mountTimer: number | null = window.setTimeout(() => {
+      mountTimer = null;
+      if (cancelled) {
+        return;
+      }
 
-    const styles = window.getComputedStyle(host);
-    const axisStroke = styles.getPropertyValue('--chart-axis').trim() || '#9aa0a6';
-    const gridStroke = styles.getPropertyValue('--chart-grid').trim() || '#2a2d35';
-    const width = Math.max(260, host.clientWidth);
-    const plot = new uPlot(
-      {
-        width,
-        height: 260,
-        cursor: { drag: { x: true, y: false } },
-        legend: { show: false },
-        scales: { x: { time: true } },
-        axes: [
-          { stroke: axisStroke, grid: { stroke: gridStroke, width: 1 } },
-          { stroke: axisStroke, grid: { stroke: gridStroke, width: 1 } },
-        ],
-        hooks: {
-          setCursor: [
-            (chart) => {
-              const index = chart.cursor.idx;
-              if (index === null || index === undefined || index < 0 || index >= timestamps.length) {
-                tooltip.hidden = true;
-                return;
-              }
+      const host = hostRef.current;
+      const tooltip = tooltipRef.current;
+      if (!host || !tooltip) {
+        return;
+      }
 
-              tooltip.hidden = false;
-              tooltip.innerHTML = buildTooltipHtml(timestamps[index], series, index);
+      plotRef.current?.destroy();
 
-              const cursorLeft = chart.cursor.left ?? 0;
-              const cursorTop = chart.cursor.top ?? 0;
-              const tooltipWidth = tooltip.offsetWidth;
-              const tooltipHeight = tooltip.offsetHeight;
-              const xOffset = cursorLeft > chart.bbox.width - tooltipWidth - 24 ? -tooltipWidth - 12 : 12;
-              const yOffset = cursorTop > chart.bbox.height - tooltipHeight - 24 ? -tooltipHeight - 12 : 12;
+      const theme = CHART_THEME[themeMode];
+      const width = Math.max(260, host.clientWidth);
+      const currentData = dataRef.current ?? data;
+      const plot = new uPlot(
+        {
+          width,
+          height: 260,
+          cursor: { drag: { x: true, y: false } },
+          legend: { show: false },
+          scales: { x: { time: true } },
+          axes: [
+            { stroke: theme.axis, grid: { stroke: theme.grid, width: 1 }, ticks: { stroke: theme.tick, width: 1, size: 7 } },
+            { stroke: theme.axis, grid: { stroke: theme.grid, width: 1 }, ticks: { stroke: theme.tick, width: 1, size: 6 } },
+          ],
+          hooks: {
+            setCursor: [
+              (chart) => {
+                const index = chart.cursor.idx;
+                const currentTimestamps = timestampsRef.current;
+                const currentSeries = seriesRef.current;
+                if (index === null || index === undefined || index < 0 || index >= currentTimestamps.length) {
+                  tooltip.hidden = true;
+                  return;
+                }
 
-              tooltip.style.transform = `translate(${Math.max(8, cursorLeft + xOffset)}px, ${Math.max(8, cursorTop + yOffset)}px)`;
-            },
+                tooltip.hidden = false;
+                tooltip.innerHTML = buildTooltipHtml(currentTimestamps[index], currentSeries, index);
+
+                const cursorLeft = chart.cursor.left ?? 0;
+                const cursorTop = chart.cursor.top ?? 0;
+                const tooltipWidth = tooltip.offsetWidth;
+                const tooltipHeight = tooltip.offsetHeight;
+                const xOffset = cursorLeft > chart.bbox.width - tooltipWidth - 24 ? -tooltipWidth - 12 : 12;
+                const yOffset = cursorTop > chart.bbox.height - tooltipHeight - 24 ? -tooltipHeight - 12 : 12;
+
+                tooltip.style.transform = `translate(${Math.max(8, cursorLeft + xOffset)}px, ${Math.max(8, cursorTop + yOffset)}px)`;
+              },
+            ],
+          },
+          series: [
+            {},
+            ...series.map((item) => ({
+              label: item.label,
+              stroke: item.color,
+              width: 2,
+              points: { show: false },
+            })),
           ],
         },
-        series: [
-          {},
-          ...series.map((item) => ({
-            label: item.label,
-            stroke: item.color,
-            width: 2,
-            points: { show: false },
-          })),
-        ],
-      },
-      data,
-      host,
-    );
+        currentData,
+        host,
+      );
 
-    plotRef.current = plot;
+      plotRef.current = plot;
+      plottedDataRef.current = currentData;
 
-    const resizeObserver = new ResizeObserver(([entry]) => {
-      plot.setSize({ width: Math.max(260, entry.contentRect.width), height: 260 });
-    });
-    resizeObserver.observe(host);
+      const resizeObserver = new ResizeObserver(([entry]) => {
+        plot.setSize({ width: Math.max(260, entry.contentRect.width), height: 260 });
+      });
+      resizeObserver.observe(host);
+      resizeObserverRef.current = resizeObserver;
+    }, deferMs);
 
     return () => {
-      resizeObserver.disconnect();
-      plot.destroy();
+      cancelled = true;
+      if (mountTimer !== null) {
+        window.clearTimeout(mountTimer);
+      }
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      plotRef.current?.destroy();
       plotRef.current = null;
+      plottedDataRef.current = null;
     };
-  }, [data, series, themeMode, timestamps.length]);
+  }, [deferMs, hasData, seriesConfigKey, themeMode]);
 
-  if (timestamps.length === 0 || series.length === 0) {
+  useEffect(() => {
+    if (!plotRef.current || !hasData || plottedDataRef.current === data) {
+      return undefined;
+    }
+
+    const updateTimer = window.setTimeout(() => {
+      if (plotRef.current && plottedDataRef.current !== data) {
+        plotRef.current.setData(data);
+        plottedDataRef.current = data;
+      }
+    }, deferMs);
+
+    return () => window.clearTimeout(updateTimer);
+  }, [data, deferMs, hasData]);
+
+  if (!hasData) {
     return <div className="empty-chart">Select numeric fields to render dense telemetry.</div>;
   }
 
@@ -112,6 +181,9 @@ export function DenseTimeSeries({ timestamps, series, themeMode = 'dark' }: Dens
     </div>
   );
 }
+
+export const DenseTimeSeries = memo(DenseTimeSeriesComponent);
+DenseTimeSeries.displayName = 'DenseTimeSeries';
 
 function buildTooltipHtml(timestamp: number, series: DenseSeries[], index: number) {
   const rows = series
