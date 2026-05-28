@@ -2114,6 +2114,11 @@ input:focus-visible {
   border-radius: 0;
 }
 
+:root[data-analytics-skin="classic"] .panel-icon {
+  border-radius: 0;
+  background: transparent;
+}
+
 :root[data-analytics-skin="classic"] .side-stat,
 :root[data-analytics-skin="classic"] .snapshot-cell {
   border-radius: 0;
