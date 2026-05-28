@@ -13,6 +13,7 @@ export type RangeId = typeof RANGE_PRESETS[number]['id'];
 
 export const METRIC_ALIASES = {
   solarInput: ['dc_input_power', 'internal_dc_input_power', 'pv_input_power', 'solar_power'],
+  solarVoltage: ['internal_dc_input_voltage', 'pv_input_voltage', 'dc_input_voltage', 'solar_voltage'],
   gridInput: ['ac_input_power', 'grid_charge_power'],
   acLoad: ['ac_output_power', 'internal_power_one'],
   dcLoad: ['dc_output_power'],
@@ -28,6 +29,7 @@ export type ResolvedFields = Record<MetricKey, string | null>;
 export interface TimelinePoint {
   ts: number;
   solarInput: number | null;
+  solarVoltage: number | null;
   gridInput: number | null;
   totalInput: number | null;
   acLoad: number | null;
@@ -91,6 +93,7 @@ export function buildTimeline(
 
   return timestamps.map((ts) => {
     const solarInput = metricBuckets.solarInput.get(ts) ?? null;
+    const solarVoltage = metricBuckets.solarVoltage.get(ts) ?? null;
     const gridInput = metricBuckets.gridInput.get(ts) ?? null;
     const acLoad = metricBuckets.acLoad.get(ts) ?? null;
     const dcLoad = metricBuckets.dcLoad.get(ts) ?? null;
@@ -98,6 +101,7 @@ export function buildTimeline(
     return {
       ts,
       solarInput,
+      solarVoltage,
       gridInput,
       totalInput: sumNullable([solarInput, gridInput]),
       acLoad,

@@ -9,6 +9,12 @@ export interface FieldMeta {
 
 const FIELD_META: Record<string, FieldMeta> = {
   dc_input_power: { label: 'DC Input Power', unit: 'W', category: 'Input', numeric: true },
+  dc_input_voltage: { label: 'DC Input Voltage', unit: 'V', category: 'Input', numeric: true },
+  dc_input_frequency: { label: 'DC Input Frequency', unit: 'Hz', category: 'Input', numeric: true },
+  pv_input_voltage: { label: 'PV Input Voltage', unit: 'V', category: 'Input', numeric: true },
+  pv_input_frequency: { label: 'PV Input Frequency', unit: 'Hz', category: 'Input', numeric: true },
+  solar_voltage: { label: 'Solar Voltage', unit: 'V', category: 'Input', numeric: true },
+  solar_frequency: { label: 'Solar Frequency', unit: 'Hz', category: 'Input', numeric: true },
   internal_dc_input_power: { label: 'Internal DC Input', unit: 'W', category: 'Input', numeric: true },
   internal_dc_input_voltage: { label: 'Internal DC Voltage', unit: 'V', category: 'Input', numeric: true },
   internal_dc_input_current: { label: 'Internal DC Current', unit: 'A', category: 'Input', numeric: true },
@@ -96,4 +102,3 @@ export function formatFieldValue(field: string, raw: string | undefined) {
   const value = Number.parseFloat(raw);
   return Number.isFinite(value) ? formatMetric(value, meta.unit, meta.unit === 'kWh' ? 2 : 1) : raw;
 }
-

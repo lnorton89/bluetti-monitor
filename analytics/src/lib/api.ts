@@ -80,6 +80,8 @@ const mockRows = Array.from({ length: 288 }, (_, index) => {
   return {
     ts: isoOffset(minutesAgo),
     dc_input_power: solar,
+    internal_dc_input_voltage: round(32 + daylight * 112 + Math.sin(progress * Math.PI * 7) * 4, 1),
+    ac_input_frequency: grid > 0 ? round(60 + Math.sin(progress * Math.PI * 16) * 0.2, 1) : 0,
     ac_input_power: grid,
     ac_output_power: acLoad,
     dc_output_power: dcLoad,
@@ -108,6 +110,8 @@ export const mockState: AllState = {
     internal_power_one: { value: String(mockRows.at(-1)?.internal_power_one ?? 0), ts: isoOffset(0) },
     internal_power_two: { value: String(mockRows.at(-1)?.internal_power_two ?? 0), ts: isoOffset(0) },
     internal_dc_input_power: { value: String(mockRows.at(-1)?.internal_dc_input_power ?? 0), ts: isoOffset(0) },
+    internal_dc_input_voltage: { value: String(mockRows.at(-1)?.internal_dc_input_voltage ?? 0), ts: isoOffset(0) },
+    ac_input_frequency: { value: String(mockRows.at(-1)?.ac_input_frequency ?? 0), ts: isoOffset(0) },
     power_generation: { value: String(mockRows.at(-1)?.power_generation ?? 0), ts: isoOffset(0) },
     ac_output_on: { value: 'ON', ts: isoOffset(0) },
     dc_output_on: { value: 'OFF', ts: isoOffset(0) },

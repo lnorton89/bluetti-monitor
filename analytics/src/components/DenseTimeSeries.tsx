@@ -43,8 +43,8 @@ export function DenseTimeSeries({ timestamps, series }: DenseTimeSeriesProps) {
         legend: { show: false },
         scales: { x: { time: true } },
         axes: [
-          { stroke: '#6b7280', grid: { stroke: '#1f2937', width: 1 } },
-          { stroke: '#6b7280', grid: { stroke: '#1f2937', width: 1 } },
+          { stroke: '#9aa0a6', grid: { stroke: '#2a2d35', width: 1 } },
+          { stroke: '#9aa0a6', grid: { stroke: '#2a2d35', width: 1 } },
         ],
         hooks: {
           setCursor: [

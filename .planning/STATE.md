@@ -89,6 +89,15 @@ Decisions are logged in PROJECT.md.
 | 260522-mvf | Make analytics mobile view more friendly | 2026-05-22 | working tree | [260522-mvf-mobile-friendly-analytics](./quick/260522-mvf-mobile-friendly-analytics/) |
 | 260522-nas | Netlify static analytics export | 2026-05-22 | working tree | [260522-netlify-analytics-static-export](./quick/260522-netlify-analytics-static-export/) |
 | 260523-debug | Resolve Windows CEF CPU issue by returning to native renderer | 2026-05-23 | working tree | [.planning/debug/cef-gpu-process-cpu.md](./debug/cef-gpu-process-cpu.md) |
+| 20260528 | Add a solar input graph for voltage, wattage, and frequency in the analytics app | 2026-05-28 | working tree | [20260528-solar-input-graph](./quick/20260528-solar-input-graph/) |
+| 20260528 | Remove frequency from Solar Input and adjust analytics chart widths | 2026-05-28 | working tree | [20260528-analytics-layout-followup](./quick/20260528-analytics-layout-followup/) |
+| 20260528 | Add highlight stats to Power Balance and Solar Input analytics panels | 2026-05-28 | working tree | [20260528-analytics-panel-highlights](./quick/20260528-analytics-panel-highlights/) |
+| 20260528 | Add average solar wattage to Solar Input highlights | 2026-05-28 | working tree | [20260528-solar-wattage-avg-highlight](./quick/20260528-solar-wattage-avg-highlight/) |
+| 20260528 | Keep analytics panel highlights on one line | 2026-05-28 | working tree | [20260528-one-line-highlights](./quick/20260528-one-line-highlights/) |
+| 20260528 | Add subtle hover and focus effects to analytics surfaces | 2026-05-28 | working tree | [20260528-analytics-hover-effects](./quick/20260528-analytics-hover-effects/) |
+| 20260528 | Remove dead space between Power Balance chart and legend | 2026-05-28 | working tree | [20260528-power-balance-legend-gap](./quick/20260528-power-balance-legend-gap/) |
+| 20260528 | Retheme analytics with retro futuristic pastels and dark greys | 2026-05-28 | working tree | [20260528-retro-futuristic-pastel-theme](./quick/20260528-retro-futuristic-pastel-theme/) |
+| 20260528 | Soften analytics background and box borders | 2026-05-28 | working tree | [20260528-soften-analytics-background-borders](./quick/20260528-soften-analytics-background-borders/) |
 
 ## Session Continuity
 

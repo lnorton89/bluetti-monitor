@@ -46,7 +46,7 @@ import { formatFieldValue, formatMetric, getFieldMeta } from './lib/fields';
 import { formatFreshness, formatShortTime } from './lib/time';
 import { DenseTimeSeries } from './components/DenseTimeSeries';
 
-const CHART_COLORS = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'];
+const CHART_COLORS = ['#ff8fab', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'];
 const RAINBOW = {
   red: CHART_COLORS[0],
   orange: CHART_COLORS[1],
@@ -215,14 +215,16 @@ export default function App() {
   const inputSummary = summarize(timeline, 'totalInput');
   const outputSummary = summarize(timeline, 'totalOutput');
   const netSummary = summarize(timeline, 'netPower');
+  const solarSummary = summarize(timeline, 'solarInput');
+  const solarVoltageSummary = summarize(timeline, 'solarVoltage');
   const batterySummary = summarize(timeline, 'batteryPercent');
   const voltageSummary = summarize(timeline, 'batteryVoltage');
   const energyDelta = getEnergyDelta(timeline);
   const peakLoad = findPeak(timeline, 'totalOutput');
   const peakSolar = findPeak(timeline, 'solarInput');
   const solarShare = clampPercent(
-    inputSummary && summarize(timeline, 'solarInput') && inputSummary.avg > 0
-      ? (summarize(timeline, 'solarInput')!.avg / inputSummary.avg) * 100
+    inputSummary && solarSummary && inputSummary.avg > 0
+      ? (solarSummary.avg / inputSummary.avg) * 100
       : null,
   );
   const coverage = clampPercent(
@@ -238,7 +240,7 @@ export default function App() {
     .at(-1) ?? live.lastUpdate;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="analytics-root min-h-screen">
       <section className="shell">
         <header className="topbar">
           <div>
@@ -330,6 +332,35 @@ export default function App() {
                   <span><i style={{ background: RAINBOW.red }} />Total input</span>
                   <span><i style={{ background: RAINBOW.green }} />Total output</span>
                   <span><i style={{ background: RAINBOW.blue }} />Net power</span>
+                </div>
+                <div className="side-stats">
+                  <SideStat label="Net range" value={`${formatMetric(netSummary?.min, 'W')} to ${formatMetric(netSummary?.max, 'W')}`} />
+                  <SideStat label="Avg input / output" value={`${formatMetric(inputSummary?.avg, 'W')} / ${formatMetric(outputSummary?.avg, 'W')}`} />
+                </div>
+              </article>
+
+              <article className="panel solar-input-panel">
+                <PanelHeader
+                  icon={Sun}
+                  title="Solar Input"
+                  subtitle="Voltage and wattage history"
+                  loading={historyQuery.isFetching}
+                />
+                <DenseTimeSeries
+                  timestamps={timeline.map((row) => row.ts)}
+                  series={[
+                    { label: 'Solar wattage', color: RAINBOW.yellow, values: timeline.map((row) => row.solarInput), unit: 'W', digits: 0 },
+                    { label: 'Solar voltage', color: RAINBOW.cyan, values: timeline.map((row) => row.solarVoltage), unit: 'V', digits: 1 },
+                  ]}
+                />
+                <div className="legend-strip compact">
+                  <span><i style={{ background: RAINBOW.yellow }} />Solar wattage</span>
+                  <span><i style={{ background: RAINBOW.cyan }} />Solar voltage</span>
+                </div>
+                <div className="side-stats">
+                  <SideStat label="Solar range" value={`${formatMetric(solarSummary?.min, 'W')} to ${formatMetric(solarSummary?.max, 'W')}`} />
+                  <SideStat label="Solar wattage avg" value={formatMetric(solarSummary?.avg, 'W')} />
+                  <SideStat label="Solar voltage avg" value={formatMetric(solarVoltageSummary?.avg, 'V', 1)} />
                 </div>
               </article>
 
