@@ -630,12 +630,14 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
           icon={Sun}
           state={state}
           items={[
-            { label: 'DC Input', field: 'dc_input_power', unit: 'W', accent: 'var(--cat-input)' },
+            { label: 'DC Input Total', field: 'dc_input_power', unit: 'W', accent: 'var(--cat-input)' },
+            { label: '  DC1', field: 'dc_input_1_power', unit: 'W' },
+            { label: '  DC2', field: 'dc_input_2_power', unit: 'W' },
             { label: 'AC Input', field: 'ac_input_power', unit: 'W', accent: 'var(--cat-input)' },
             { label: 'AC Voltage', field: 'ac_input_voltage', unit: 'V' },
             { label: 'AC Frequency', field: 'ac_input_frequency', unit: 'Hz' },
-            { label: 'DC Voltage', field: 'internal_dc_input_voltage', unit: 'V' },
-            { label: 'DC Current', field: 'internal_dc_input_current', unit: 'A' },
+            { label: 'DC1 Voltage', field: 'dc_input_1_voltage', unit: 'V' },
+            { label: 'DC2 Voltage', field: 'dc_input_2_voltage', unit: 'V' },
           ]}
         />
 

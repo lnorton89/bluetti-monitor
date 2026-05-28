@@ -105,7 +105,7 @@ function getExplicitMode(deviceState: DeviceState): string | null {
 function inferModeFromPower(deviceState: DeviceState): string {
   const acInput = getFirstNumericValue(deviceState, ["ac_input_power", "grid_charge_power"]) ?? 0;
   const dcInput = getFirstNumericValue(deviceState, ["dc_input_power", "pv_input_power", "solar_power"])
-    ?? getSummedNumericValue(deviceState, ["pv1_power", "pv2_power", "dc_input_power1"])
+    ?? getSummedNumericValue(deviceState, ["dc_input_1_power", "dc_input_2_power", "pv1_power", "pv2_power", "dc_input_power1", "dc_input_power2"])
     ?? 0;
   const acOutput = getFirstNumericValue(deviceState, ["ac_output_power"]) ?? 0;
   const dcOutput = getFirstNumericValue(deviceState, ["dc_output_power"]) ?? 0;

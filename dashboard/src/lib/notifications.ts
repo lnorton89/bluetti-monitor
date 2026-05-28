@@ -66,7 +66,7 @@ function getFirstNumericValue(state: DeviceState, fields: string[]) {
 
 export function getCurrentInputWatts(state: DeviceState) {
   const gridInput = getFirstNumericValue(state, ['ac_input_power', 'grid_charge_power']) ?? 0;
-  const splitSolarInput = sumNumericFields(state, ['pv1_power', 'pv2_power', 'dc_input_power1', 'dc_input_power2']);
+  const splitSolarInput = sumNumericFields(state, ['dc_input_1_power', 'dc_input_2_power', 'pv1_power', 'pv2_power', 'dc_input_power1', 'dc_input_power2']);
   const totalSolarInput = getFirstNumericValue(state, ['dc_input_power', 'pv_input_power', 'solar_power']) ?? 0;
 
   return gridInput + (splitSolarInput > 0 ? splitSolarInput : totalSolarInput);

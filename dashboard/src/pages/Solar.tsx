@@ -34,10 +34,10 @@ const FOCUS_OPTIONS = [
 
 const SOLAR_FIELD_ALIASES = {
   totalSolar: ['dc_input_power', 'pv_input_power', 'solar_power'],
-  pv1Power: ['pv1_power', 'dc_input_power1'],
-  pv2Power: ['pv2_power', 'dc_input_power2'],
-  pv1Voltage: ['pv1_voltage', 'dc_input_voltage1'],
-  pv2Voltage: ['pv2_voltage', 'dc_input_voltage2'],
+  pv1Power: ['pv1_power', 'dc_input_1_power', 'dc_input_power1'],
+  pv2Power: ['pv2_power', 'dc_input_2_power', 'dc_input_power2'],
+  pv1Voltage: ['pv1_voltage', 'dc_input_1_voltage', 'dc_input_voltage1'],
+  pv2Voltage: ['pv2_voltage', 'dc_input_2_voltage', 'dc_input_voltage2'],
   pv1Current: ['pv1_current', 'dc_input_current1'],
   pv2Current: ['pv2_current', 'dc_input_current2'],
   solarVoltage: ['internal_dc_input_voltage', 'pv_input_voltage'],

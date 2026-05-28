@@ -169,7 +169,7 @@ In local development mode the desktop shell runs the FastAPI API on `http://127.
 
 AC500-specific layout built around the data this device actually reports:
 - **Hero snapshot**: battery reserve, net balance, and live device state
-- **Input Bus**: AC input and DC input power, voltage, frequency, and current
+- **Input Bus**: Combined AC/DC input plus separate DC1/DC2 power and voltage
 - **Output Bus**: AC/DC output state and present load
 - **Internal Bus**: internal AC/DC electrical channels and split-phase state
 - **Switchboard and Identity**: output toggles, mode flags, firmware, serial, and connection details
@@ -326,7 +326,7 @@ Fields are organized into 5 categories:
 
 | Category | Description | Example Fields |
 |----------|-------------|----------------|
-| **Input** | Power, voltage, frequency, and current entering the system | `dc_input_power`, `ac_input_voltage`, `ac_input_frequency` |
+| **Input** | Power, voltage, frequency, and current entering the system | `dc_input_power`, `dc_input_1_power`, `dc_input_2_power`, `ac_input_voltage`, `ac_input_frequency` |
 | **Output** | Power delivered to loads | `ac_output_power`, `dc_output_on` |
 | **Battery** | Battery state and charge window | `total_battery_percent`, `battery_range_start`, `battery_range_end` |
 | **Modes** | Operating modes and control states | `ups_mode`, `grid_charge_on`, `time_control_on` |

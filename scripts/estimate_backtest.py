@@ -13,8 +13,8 @@ FIELDS = {
     "battery": ["total_battery_percent", "battery_percent", "soc", "charge_level"],
     "ac_input": ["ac_input_power", "grid_charge_power"],
     "dc_input": ["dc_input_power", "pv_input_power", "solar_power"],
-    "pv1": ["pv1_power", "dc_input_power1"],
-    "pv2": ["pv2_power", "dc_input_power2"],
+    "pv1": ["pv1_power", "dc_input_1_power", "dc_input_power1"],
+    "pv2": ["pv2_power", "dc_input_2_power", "dc_input_power2"],
     "ac_output": ["ac_output_power"],
     "dc_output": ["dc_output_power"],
 }

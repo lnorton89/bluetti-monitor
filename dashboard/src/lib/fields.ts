@@ -15,6 +15,10 @@ export type Category = typeof CATEGORIES[number];
 const FIELDS: Record<string, FieldMeta> = {
   // ── INPUT: Solar ────────────────────────────────────────────────────────────
   dc_input_power:        { label: 'DC Input Power',    unit: 'W',  category: 'Input', numeric: true },
+  dc_input_1_power:      { label: 'DC1 Power',         unit: 'W',  category: 'Input', numeric: true },
+  dc_input_2_power:      { label: 'DC2 Power',         unit: 'W',  category: 'Input', numeric: true },
+  dc_input_1_voltage:    { label: 'DC1 Voltage',       unit: 'V',  category: 'Input', numeric: true },
+  dc_input_2_voltage:    { label: 'DC2 Voltage',       unit: 'V',  category: 'Input', numeric: true },
   dc_input_power1:       { label: 'DC Input Power 1',  unit: 'W',  category: 'Input', numeric: true },
   pv1_power:             { label: 'PV1 Power',         unit: 'W',  category: 'Input', numeric: true },
   pv2_power:             { label: 'PV2 Power',         unit: 'W',  category: 'Input', numeric: true },
@@ -56,10 +60,14 @@ const FIELDS: Record<string, FieldMeta> = {
   dc_output_voltage:     { label: 'DC Output Voltage', unit: 'V',  category: 'Output', numeric: true },
   dc_output_current:     { label: 'DC Output Current', unit: 'A',  category: 'Output', numeric: true },
   dc_output_on:          { label: 'DC Output',         unit: '',   category: 'Output', numeric: false },
+  aux_dc_voltage:        { label: 'Aux DC Voltage',    unit: 'V',  category: 'Output', numeric: true },
+  aux_dc_current:        { label: 'Aux DC Current',    unit: 'A',  category: 'Output', numeric: true },
+  aux_dc_power:          { label: 'Aux DC Power',      unit: 'W',  category: 'Output', numeric: true },
 
   // ── BATTERY: Main ───────────────────────────────────────────────────────────
   total_battery_percent: { label: 'Battery Level',     unit: '%',  category: 'Battery', numeric: true },
   total_battery_voltage: { label: 'Battery Voltage',   unit: 'V',  category: 'Battery', numeric: true },
+  total_battery_current: { label: 'Battery Current',   unit: 'A',  category: 'Battery', numeric: true },
   battery_percent:       { label: 'Battery Level',     unit: '%',  category: 'Battery', numeric: true },
   battery_range_to_empty:{ label: 'Time to Empty',     unit: 'min',category: 'Battery', numeric: true },
   battery_range_to_full: { label: 'Time to Full',      unit: 'min',category: 'Battery', numeric: true },
