@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  buildNtfyStatusPublishRequest,
   buildStatusNotification,
   buildNtfyUrl,
   getCurrentInputWatts,
@@ -63,5 +64,33 @@ describe('battery full notifications', () => {
 
     expect(payload?.title).toBe('AC500-test power status');
     expect(payload?.body).toBe('Input 412 W - Output 211 W - SOC 67%');
+  });
+
+  test('builds ntfy status publish headers that update one notification per device', () => {
+    const payload = buildStatusNotification('AC500-test', {
+      dc_input_power: { value: '412', ts: '2026-04-14T01:00:00.000Z' },
+      ac_output_power: { value: '211', ts: '2026-04-14T01:00:00.000Z' },
+      total_battery_percent: { value: '67.4', ts: '2026-04-14T01:00:00.000Z' },
+    });
+
+    expect(payload).not.toBeNull();
+
+    const request = buildNtfyStatusPublishRequest(
+      payload!,
+      'https://ntfy.sh/',
+      '/bluetti/',
+    );
+
+    expect(request).toEqual({
+      url: 'https://ntfy.sh/bluetti',
+      body: 'Input 412 W - Output 211 W - SOC 67%',
+      headers: {
+        Title: 'AC500-test power status',
+        Message: 'Input 412 W - Output 211 W - SOC 67%',
+        Priority: 'default',
+        Tags: 'battery,plug',
+        'X-Sequence-ID': 'bluetti-monitor-status-AC500-test',
+      },
+    });
   });
 });

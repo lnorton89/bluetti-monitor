@@ -34,6 +34,12 @@ type StatusNotificationPayload = {
   title: string;
 };
 
+type NtfyPublishRequest = {
+  body: string;
+  headers: Record<string, string>;
+  url: string;
+};
+
 function parseNumericValue(raw: string | undefined) {
   if (raw === undefined) {
     return null;
@@ -195,27 +201,46 @@ export function buildStatusNotification(deviceId: string, state: DeviceState): S
   };
 }
 
+export function buildNtfyStatusPublishRequest(
+  payload: StatusNotificationPayload,
+  server: string,
+  topic: string,
+): NtfyPublishRequest | null {
+  const url = buildNtfyUrl(server, topic);
+
+  if (!url) {
+    return null;
+  }
+
+  return {
+    url,
+    body: payload.body,
+    headers: {
+      Title: payload.title,
+      Message: payload.body,
+      Priority: 'default',
+      Tags: 'battery,plug',
+      'X-Sequence-ID': `bluetti-monitor-status-${payload.deviceId}`,
+    },
+  };
+}
+
 async function sendNtfyStatusNotification(
   payload: StatusNotificationPayload,
   server: string,
   topic: string,
 ) {
-  const url = buildNtfyUrl(server, topic);
+  const request = buildNtfyStatusPublishRequest(payload, server, topic);
 
-  if (!url) {
+  if (!request) {
     return false;
   }
 
-  const params = new URLSearchParams({
-    priority: 'default',
-    tags: 'battery,plug',
-    title: payload.title,
-  });
-
   try {
-    const response = await fetch(`${url}?${params.toString()}`, {
+    const response = await fetch(request.url, {
       method: 'POST',
-      body: payload.body,
+      body: request.body,
+      headers: request.headers,
     });
     return response.ok;
   } catch (error) {
