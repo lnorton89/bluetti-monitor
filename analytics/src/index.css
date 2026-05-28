@@ -2117,6 +2117,7 @@ input:focus-visible {
 :root[data-analytics-skin="classic"] .panel-icon {
   border-radius: 0;
   background: transparent;
+  color: #fff;
 }
 
 :root[data-analytics-skin="classic"] .side-stat,
