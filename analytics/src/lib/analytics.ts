@@ -42,6 +42,10 @@ export function buildCustomRange(startIso: string, endIso: string) {
 export const METRIC_ALIASES = {
   solarInput: ['dc_input_power', 'internal_dc_input_power', 'pv_input_power', 'solar_power'],
   solarVoltage: ['internal_dc_input_voltage', 'pv_input_voltage', 'dc_input_voltage', 'solar_voltage'],
+  dcInput1Power: ['dc_input_1_power', 'dc_input_power1', 'pv1_power'],
+  dcInput1Voltage: ['dc_input_1_voltage', 'dc_input_voltage1', 'pv1_voltage'],
+  dcInput2Power: ['dc_input_2_power', 'dc_input_power2', 'pv2_power'],
+  dcInput2Voltage: ['dc_input_2_voltage', 'dc_input_voltage2', 'pv2_voltage'],
   gridInput: ['ac_input_power', 'grid_charge_power'],
   acLoad: ['ac_output_power', 'internal_power_one'],
   dcLoad: ['dc_output_power'],
@@ -58,6 +62,10 @@ export interface TimelinePoint {
   ts: number;
   solarInput: number | null;
   solarVoltage: number | null;
+  dcInput1Power: number | null;
+  dcInput1Voltage: number | null;
+  dcInput2Power: number | null;
+  dcInput2Voltage: number | null;
   gridInput: number | null;
   totalInput: number | null;
   acLoad: number | null;
@@ -122,6 +130,10 @@ export function buildTimeline(
   return timestamps.map((ts) => {
     const solarInput = metricBuckets.solarInput.get(ts) ?? null;
     const solarVoltage = metricBuckets.solarVoltage.get(ts) ?? null;
+    const dcInput1Power = metricBuckets.dcInput1Power.get(ts) ?? null;
+    const dcInput1Voltage = metricBuckets.dcInput1Voltage.get(ts) ?? null;
+    const dcInput2Power = metricBuckets.dcInput2Power.get(ts) ?? null;
+    const dcInput2Voltage = metricBuckets.dcInput2Voltage.get(ts) ?? null;
     const gridInput = metricBuckets.gridInput.get(ts) ?? null;
     const acLoad = metricBuckets.acLoad.get(ts) ?? null;
     const dcLoad = metricBuckets.dcLoad.get(ts) ?? null;
@@ -132,6 +144,10 @@ export function buildTimeline(
       ts,
       solarInput,
       solarVoltage,
+      dcInput1Power,
+      dcInput1Voltage,
+      dcInput2Power,
+      dcInput2Voltage,
       gridInput,
       totalInput,
       acLoad,

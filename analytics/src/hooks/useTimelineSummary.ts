@@ -5,6 +5,10 @@ export interface TimelineSummary {
   batterySummary: ReturnType<typeof summarize>;
   chargeShare: number | null;
   coverage: number | null;
+  dcInput1PowerSummary: ReturnType<typeof summarize>;
+  dcInput1VoltageSummary: ReturnType<typeof summarize>;
+  dcInput2PowerSummary: ReturnType<typeof summarize>;
+  dcInput2VoltageSummary: ReturnType<typeof summarize>;
   energyDelta: number | null;
   inputSummary: ReturnType<typeof summarize>;
   netSummary: ReturnType<typeof summarize>;
@@ -32,6 +36,10 @@ export function useTimelineSummary(timeline: TimelinePoint[]): TimelineSummary {
       netSummary: net,
       solarSummary: solar,
       solarVoltageSummary: summarize(timeline, 'solarVoltage'),
+      dcInput1PowerSummary: summarize(timeline, 'dcInput1Power'),
+      dcInput1VoltageSummary: summarize(timeline, 'dcInput1Voltage'),
+      dcInput2PowerSummary: summarize(timeline, 'dcInput2Power'),
+      dcInput2VoltageSummary: summarize(timeline, 'dcInput2Voltage'),
       batterySummary: summarize(timeline, 'batteryPercent'),
       voltageSummary: summarize(timeline, 'batteryVoltage'),
       energyDelta: getEnergyDelta(timeline),

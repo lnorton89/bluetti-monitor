@@ -163,9 +163,11 @@ export default function App() {
     { label: 'Net power', color: rainbow.blue, values: timeline.map((row) => row.netPower), unit: 'W', digits: 0 },
   ], [rainbow.blue, rainbow.green, rainbow.red, timeline]);
   const solarInputSeries = useMemo<DenseSeries[]>(() => [
-    { label: 'Solar wattage', color: rainbow.yellow, values: timeline.map((row) => row.solarInput), unit: 'W', digits: 0 },
-    { label: 'Solar voltage', color: rainbow.cyan, values: timeline.map((row) => row.solarVoltage), unit: 'V', digits: 1 },
-  ], [rainbow.cyan, rainbow.yellow, timeline]);
+    { label: 'DC1 wattage', color: rainbow.yellow, values: timeline.map((row) => row.dcInput1Power), unit: 'W', digits: 0 },
+    { label: 'DC1 voltage', color: rainbow.orange, values: timeline.map((row) => row.dcInput1Voltage), unit: 'V', digits: 1 },
+    { label: 'DC2 wattage', color: rainbow.cyan, values: timeline.map((row) => row.dcInput2Power), unit: 'W', digits: 0 },
+    { label: 'DC2 voltage', color: rainbow.blue, values: timeline.map((row) => row.dcInput2Voltage), unit: 'V', digits: 1 },
+  ], [rainbow.blue, rainbow.cyan, rainbow.orange, rainbow.yellow, timeline]);
   const batteryPostureSeries = useMemo<DenseSeries[]>(() => [
     { label: 'SOC trend', color: rainbow.green, values: timeline.map((row) => row.batteryPercent), unit: '%', digits: 1 },
   ], [rainbow.green, timeline]);
@@ -275,13 +277,16 @@ export default function App() {
                 <PanelHeader icon={Sun} title="Solar Input" subtitle="Voltage and wattage history" loading={historyQuery.isFetching} />
                 <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} />
                 <div className="legend-strip compact">
-                  <span><i style={{ background: rainbow.yellow }} />Solar wattage</span>
-                  <span><i style={{ background: rainbow.cyan }} />Solar voltage</span>
+                  <span><i style={{ background: rainbow.yellow }} />DC1 wattage</span>
+                  <span><i style={{ background: rainbow.orange }} />DC1 voltage</span>
+                  <span><i style={{ background: rainbow.cyan }} />DC2 wattage</span>
+                  <span><i style={{ background: rainbow.blue }} />DC2 voltage</span>
                 </div>
                 <div className="side-stats">
-                  <SideStat label="Solar range" value={`${formatMetric(summary.solarSummary?.min, 'W')} to ${formatMetric(summary.solarSummary?.max, 'W')}`} />
-                  <SideStat label="Solar wattage avg" value={formatMetric(summary.solarSummary?.avg, 'W')} />
-                  <SideStat label="Solar voltage avg" value={formatMetric(summary.solarVoltageSummary?.avg, 'V', 1)} />
+                  <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} />
+                  <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} />
+                  <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} />
+                  <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} />
                 </div>
               </article>
 
