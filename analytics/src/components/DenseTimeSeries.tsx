@@ -45,8 +45,12 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
     const x = timestamps.map((ts) => ts / 1000);
     return [x, ...series.map((item) => item.values.map((value) => value ?? null))] as uPlot.AlignedData;
   }, [series, timestamps]);
-  const seriesConfigKey = useMemo(
-    () => series.map((item) => `${item.label}:${item.color}:${item.unit ?? ''}:${item.digits ?? ''}`).join('|'),
+  const seriesStructureKey = useMemo(
+    () => series.map((item) => `${item.label}:${item.unit ?? ''}:${item.digits ?? ''}`).join('|'),
+    [series],
+  );
+  const seriesColorsKey = useMemo(
+    () => series.map((item) => item.color).join('|'),
     [series],
   );
 
@@ -153,7 +157,35 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
       plotRef.current = null;
       plottedDataRef.current = null;
     };
-  }, [deferMs, hasData, seriesConfigKey, themeMode]);
+  }, [deferMs, hasData, seriesStructureKey]);
+
+  useEffect(() => {
+    const plot = plotRef.current;
+    if (!plot) {
+      return;
+    }
+
+    const theme = CHART_THEME[themeMode];
+    for (const axis of plot.axes ?? []) {
+      axis.stroke = () => theme.axis;
+      if (axis.grid) {
+        axis.grid.stroke = () => theme.grid;
+      }
+      if (axis.ticks) {
+        axis.ticks.stroke = () => theme.tick;
+      }
+    }
+
+    for (let i = 0; i < series.length; i++) {
+      const uSeries = plot.series[i + 1];
+      if (uSeries) {
+        const color = series[i].color;
+        uSeries.stroke = () => color;
+      }
+    }
+
+    plot.redraw();
+  }, [themeMode, seriesColorsKey]);
 
   useEffect(() => {
     if (!plotRef.current || !hasData || plottedDataRef.current === data) {

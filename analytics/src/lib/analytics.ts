@@ -9,7 +9,35 @@ export const RANGE_PRESETS = [
   { id: '7d', label: '7D', minutes: 10_080, limit: 84_000, bucketMs: 2 * 60 * 60_000 },
 ] as const;
 
-export type RangeId = typeof RANGE_PRESETS[number]['id'];
+export type PresetId = typeof RANGE_PRESETS[number]['id'];
+export type RangeId = PresetId | 'custom';
+export const CUSTOM_RANGE_ID = 'custom' as const;
+
+export function buildCustomRange(startIso: string, endIso: string) {
+  const start = new Date(startIso).getTime();
+  const end = new Date(endIso).getTime();
+  const diffMs = Math.max(60_000, end - start);
+  const minutes = diffMs / 60_000;
+
+  let bucketMs: number;
+  if (minutes <= 180) {
+    bucketMs = 60_000;
+  } else if (minutes <= 720) {
+    bucketMs = 5 * 60_000;
+  } else if (minutes <= 4_320) {
+    bucketMs = 15 * 60_000;
+  } else if (minutes <= 10_080) {
+    bucketMs = 60 * 60_000;
+  } else if (minutes <= 43_200) {
+    bucketMs = 2 * 60 * 60_000;
+  } else {
+    bucketMs = 6 * 60 * 60_000;
+  }
+
+  const limit = Math.ceil(minutes * 60_000 / bucketMs * 1.2);
+
+  return { minutes, limit, bucketMs } as const;
+}
 
 export const METRIC_ALIASES = {
   solarInput: ['dc_input_power', 'internal_dc_input_power', 'pv_input_power', 'solar_power'],

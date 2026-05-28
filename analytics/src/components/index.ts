@@ -1,4 +1,5 @@
 export { ControlsBand } from './ControlsBand';
+export { CustomDateRange } from './CustomDateRange';
 export { DenseTimeSeries } from './DenseTimeSeries';
 export type { DenseSeries } from './DenseTimeSeries';
 export { FieldChipList } from './FieldChipList';

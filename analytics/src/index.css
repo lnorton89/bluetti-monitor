@@ -491,12 +491,14 @@ input:focus-visible {
   color: var(--text);
   font-size: 1.32rem;
   line-height: 1.05;
+  font-family: var(--font-numeric);
 }
 
 .kpi small {
   color: var(--soft);
   font-size: 0.78rem;
   line-height: 1.2;
+  font-family: var(--font-numeric);
 }
 
 .grid-layout {
@@ -639,6 +641,13 @@ input:focus-visible {
   display: block;
   margin-top: 4px;
   color: var(--text);
+  font-family: var(--font-numeric);
+}
+
+.dense-tooltip-row strong {
+  color: var(--text);
+  white-space: nowrap;
+  font-family: var(--font-numeric);
 }
 
 .field-list {
@@ -1061,6 +1070,98 @@ input:focus-visible {
 
 .empty-state code {
   color: var(--accent);
+}
+
+.controls-band-anchor {
+  position: relative;
+}
+
+.date-picker-flyout-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.date-picker-flyout {
+  position: absolute;
+  z-index: 21;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 310px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+}
+
+.date-picker-flyout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.date-picker-flyout-header h2 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.date-picker-flyout-body {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.date-picker-flyout-field {
+  display: grid;
+  gap: 4px;
+}
+
+.date-picker-flyout-field span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.date-picker-flyout-field input {
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: var(--font-numeric);
+  color-scheme: dark;
+}
+
+.date-picker-flyout-apply {
+  min-height: 34px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--bg-deep);
+  font-weight: 800;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+:root[data-analytics-density="compact"] .date-picker-flyout-body {
+  gap: 6px;
+  padding: 10px;
+}
+
+:root[data-analytics-density="compact"] .date-picker-flyout-field input,
+:root[data-analytics-density="compact"] .date-picker-flyout-apply {
+  min-height: 28px;
+  font-size: 0.74rem;
 }
 
 .settings-modal-backdrop {

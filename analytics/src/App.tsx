@@ -9,7 +9,9 @@ import {
   fetchStatus,
 } from './lib/api';
 import {
+  CUSTOM_RANGE_ID,
   RANGE_PRESETS,
+  buildCustomRange,
   fieldsForResolved,
   getNumericFields,
   resolveFields,
@@ -38,6 +40,7 @@ import { useStableStringArray } from './hooks/useStableStringArray';
 import { useTimelineSummary } from './hooks/useTimelineSummary';
 import {
   ControlsBand,
+  CustomDateRange,
   DenseTimeSeries,
   FieldComparisonPanel,
   Kpi,
@@ -56,6 +59,13 @@ export default function App() {
   const [themeMode, setThemeMode] = useState<AnalyticsTheme>(getStoredAnalyticsTheme);
   const [densityMode, setDensityMode] = useState<AnalyticsDensity>(getStoredAnalyticsDensity);
   const [comparisonDefaultFields, setComparisonDefaultFields] = useState<string[]>(getStoredComparisonDefaultFields);
+  const [customStart, setCustomStart] = useState(() => {
+    const d = new Date(Date.now() - 7 * 24 * 60 * 60_000);
+    return d.toISOString().slice(0, 16);
+  });
+  const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().slice(0, 16));
+  const [customApplied, setCustomApplied] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const chartColors = themeMode === 'light' ? LIGHT_CHART_COLORS : DARK_CHART_COLORS;
   const rainbow = useMemo(() => buildRainbow(chartColors), [chartColors]);
   const live = useLiveTelemetry();
@@ -92,15 +102,28 @@ export default function App() {
   }, [devices, selectedDevice]);
 
   const liveState = mergedState[selectedDevice] ?? {};
-  const range = RANGE_PRESETS.find((item) => item.id === rangeId) ?? RANGE_PRESETS[2];
+  const range = useMemo(() => {
+    if (rangeId === CUSTOM_RANGE_ID && customApplied && customStart && customEnd) {
+      const endDate = new Date(customEnd);
+      if (endDate.getTime() > new Date(customStart).getTime()) {
+        return { id: CUSTOM_RANGE_ID, label: 'Custom', ...buildCustomRange(customStart, customEnd) };
+      }
+    }
+    return RANGE_PRESETS.find((item) => item.id === rangeId) ?? RANGE_PRESETS[2];
+  }, [rangeId, customApplied, customStart, customEnd]);
   const rangeAnchorMs = useMemo(
     () => IS_STATIC_ANALYTICS && staticMetadataQuery.data?.generatedAt
       ? Date.parse(staticMetadataQuery.data.generatedAt) : Date.now(),
     [staticMetadataQuery.data?.generatedAt],
   );
   const sinceIso = useMemo(
-    () => new Date(rangeAnchorMs - range.minutes * 60_000).toISOString(),
-    [range.minutes, rangeAnchorMs],
+    () => {
+      if (range.id === CUSTOM_RANGE_ID && customApplied && customStart) {
+        return new Date(customStart).toISOString();
+      }
+      return new Date(rangeAnchorMs - range.minutes * 60_000).toISOString();
+    },
+    [range.id, range.minutes, rangeAnchorMs, customApplied, customStart],
   );
 
   const fieldsQuery = useQuery({
@@ -164,20 +187,46 @@ export default function App() {
           </div>
         </header>
 
-        <ControlsBand
-          densityMode={densityMode}
-          devices={devices}
-          historyQueryRefetch={() => void historyQuery.refetch()}
-          liveConnected={live.connected}
-          rangeId={range.id}
-          selectedDevice={selectedDevice}
-          themeMode={themeMode}
-          onDensityChange={setDensityMode}
-          onDeviceChange={setSelectedDevice}
-          onRangeChange={setRangeId}
-          onSettingsOpen={() => setSettingsOpen(true)}
-          onThemeChange={setThemeMode}
-        />
+        <div className="controls-band-anchor">
+          <ControlsBand
+            datePickerOpen={datePickerOpen}
+            densityMode={densityMode}
+            devices={devices}
+            historyQueryRefetch={() => void historyQuery.refetch()}
+            liveConnected={live.connected}
+            rangeId={rangeId}
+            selectedDevice={selectedDevice}
+            themeMode={themeMode}
+            onDensityChange={setDensityMode}
+            onDeviceChange={setSelectedDevice}
+            onRangeChange={(id) => {
+              if (id === CUSTOM_RANGE_ID) {
+                setDatePickerOpen((open) => !open);
+              } else {
+                setDatePickerOpen(false);
+                setRangeId(id);
+                setCustomApplied(false);
+              }
+            }}
+            onSettingsOpen={() => setSettingsOpen(true)}
+            onThemeChange={setThemeMode}
+          />
+
+          {datePickerOpen ? (
+            <CustomDateRange
+              endIso={customEnd}
+              startIso={customStart}
+              onApply={() => {
+                setRangeId(CUSTOM_RANGE_ID);
+                setCustomApplied(true);
+                setDatePickerOpen(false);
+              }}
+              onClose={() => setDatePickerOpen(false)}
+              onEndChange={setCustomEnd}
+              onStartChange={setCustomStart}
+            />
+          ) : null}
+        </div>
 
         {devices.length === 0 ? (
           <section className="empty-state">

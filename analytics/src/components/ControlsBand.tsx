@@ -1,10 +1,11 @@
 import { startTransition } from 'react';
 import { Maximize2, Minimize2, Moon, RefreshCw, Settings, Sun } from 'lucide-react';
 import { IS_STATIC_ANALYTICS } from '../lib/api';
-import { RANGE_PRESETS, type RangeId } from '../lib/analytics';
+import { CUSTOM_RANGE_ID, RANGE_PRESETS, type RangeId } from '../lib/analytics';
 import { type AnalyticsDensity, type AnalyticsTheme } from '../lib/constants';
 
 export function ControlsBand({
+  datePickerOpen,
   densityMode,
   devices,
   historyQueryRefetch,
@@ -18,6 +19,7 @@ export function ControlsBand({
   onSettingsOpen,
   onThemeChange,
 }: {
+  datePickerOpen: boolean;
   densityMode: AnalyticsDensity;
   devices: string[];
   historyQueryRefetch: () => void;
@@ -55,6 +57,13 @@ export function ControlsBand({
             {item.label}
           </button>
         ))}
+        <button
+          type="button"
+          className={rangeId === CUSTOM_RANGE_ID || datePickerOpen ? 'active' : ''}
+          onClick={() => startTransition(() => onRangeChange(CUSTOM_RANGE_ID))}
+        >
+          Custom
+        </button>
       </div>
       <button
         className="icon-button"
