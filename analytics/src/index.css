@@ -2112,8 +2112,6 @@ input:focus-visible {
 
 :root[data-analytics-skin="classic"] .kpi-icon {
   border-radius: 0;
-  border: 2px inset var(--border);
-  background: var(--bg-deep);
 }
 
 :root[data-analytics-skin="classic"] .side-stat,
