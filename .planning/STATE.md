@@ -5,7 +5,7 @@ milestone_name: Estimation Accuracy
 status: phase_complete
 stopped_at: phase 15 implemented and ready for UAT
 last_updated: "2026-05-18T00:00:00.000Z"
-last_activity: 2026-05-18
+last_activity: 2026-05-29
 progress:
   total_phases: 1
   completed_phases: 1
@@ -114,6 +114,7 @@ Decisions are logged in PROJECT.md.
 | 20260528 | Add inline analytics light/dark switch between refresh and settings | 2026-05-28 | working tree | [20260528-inline-analytics-theme-switch](./quick/20260528-inline-analytics-theme-switch/) |
 | 20260528 | Reduce analytics chart rebuilds during load | 2026-05-28 | working tree | [20260528-analytics-load-render-warning](./quick/20260528-analytics-load-render-warning/) |
 | 20260528 | Add settings for Field Comparison default fields | 2026-05-28 | working tree | [20260528-field-comparison-default-settings](./quick/20260528-field-comparison-default-settings/) |
+| 260529-ith | Add analytics/test-results/ to .gitignore | 2026-05-29 | working tree | [260529-ith-add-analytics-test-results-to-gitignore](./quick/260529-ith-add-analytics-test-results-to-gitignore/) |
 
 ## Session Continuity
 
