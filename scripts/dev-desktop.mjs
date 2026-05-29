@@ -107,22 +107,27 @@ function spawnManaged(command, args, label) {
 }
 
 function spawnRestartingDesktop(command, args, label) {
-  const watchTargets = [
-    resolve(workspaceRoot, "src", "bun"),
-    resolve(workspaceRoot, "src", "mainview"),
-    resolve(workspaceRoot, "assets", "icons", "icon.ico"),
-    resolve(workspaceRoot, "assets", "icons", "icon.png"),
-    resolve(workspaceRoot, "electrobun.config.ts"),
-    resolve(workspaceRoot, "scripts", "electrobun-prebuild-clean.mjs"),
-    resolve(workspaceRoot, "scripts", "electrobun-postbuild-icons.mjs"),
-  ].filter((target) => existsSync(target));
+  const rawTargets = [
+    { path: resolve(workspaceRoot, "src", "bun") },
+    { path: resolve(workspaceRoot, "src", "mainview") },
+    { path: resolve(workspaceRoot, "assets", "icons", "icon.ico") },
+    { path: resolve(workspaceRoot, "assets", "icons", "icon.png") },
+    { path: resolve(workspaceRoot, "electrobun.config.ts") },
+  ];
 
-  const watchers = watchTargets.map((target) => watch(target, { recursive: isWatchDirectory(target) }, (_event, filename) => {
+  const watchTargets = rawTargets
+    .filter((entry) => existsSync(entry.path))
+    .map((entry) => ({
+      path: entry.path,
+      isDir: statSync(entry.path).isDirectory(),
+    }));
+
+  const watchers = watchTargets.map(({ path: target, isDir }) => watch(target, { recursive: isDir }, (_event, filename) => {
     if (shuttingDown) {
       return;
     }
 
-    const changedPath = filename && isWatchDirectory(target)
+    const changedPath = filename && isDir
       ? resolve(target, String(filename))
       : target;
 
@@ -289,14 +294,6 @@ function terminateChildTree(child) {
   }
 
   child.kill("SIGTERM");
-}
-
-function isWatchDirectory(target) {
-  try {
-    return statSync(target).isDirectory();
-  } catch {
-    return false;
-  }
 }
 
 function pipeChildOutput(stream, label, streamName) {

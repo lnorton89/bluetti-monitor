@@ -33,8 +33,36 @@ updated: 2026-05-29
 ## Eliminated
 - Desktop app log writes under `.dev-data/logs/desktop.log` are unlikely to be the direct trigger because Electrobun watched `assets`, `src\bun`, and `src\mainview` during the repro, not `.dev-data`.
 
-## Resolution
+## Resolution (Round 1)
 - root_cause: Electrobun's built-in `dev --watch` watches the entire `assets` directory because two copied icon files live there, so unrelated/spurious events for derived icon sizes such as `assets/icon-16.png` trigger full desktop rebuilds and relaunches.
 - fix: Replaced delegation to `electrobun dev --watch` with a precise watcher in `scripts/dev-desktop.mjs` that runs plain `electrobun dev` and restarts only for `src/bun`, `src/mainview`, `assets/icon.ico`, `assets/icon.png`, Electrobun config, and Electrobun hook scripts. Kept generated-output watch ignores in config as defensive hardening.
 - verification: `node --check scripts/dev-desktop.mjs`; `.\node_modules\.bin\tsc.exe --noEmit`; short `node scripts/dev-desktop.mjs --watch-electrobun` launch with `.dev-data/logs/desktop-dev.log` tail inspected.
 - files_changed: scripts/dev-desktop.mjs, electrobun.config.ts, .planning/debug/electrobun-dev-relaunches.md
+
+## Round 2 — Cascade restart loop from build scripts in watch targets
+
+### Symptoms
+- User reported app "randomly restarted again" even after precise watcher was deployed.
+- `.dev-data/logs/desktop-dev.log` showed 4 electrobun spawns in 5 seconds (21:52:33–21:52:38).
+
+### Evidence
+- 2026-05-29 21:52:32.828: `src/mainview/index.css` changed → legitimate restart.
+- 2026-05-29 21:52:33.655: `scripts/electrobun-prebuild-clean.mjs` watch event → cascade restart.
+- 2026-05-29 21:52:35.335: `src/bun/bluetooth.ts` watch event → cascade restart (possible side effect of build).
+- 2026-05-29 21:52:35.841: `assets/icons/icon.ico` watch event → cascade restart (postbuild script reads this file).
+
+### Root Cause
+The precise watcher included `scripts/electrobun-prebuild-clean.mjs` and `scripts/electrobun-postbuild-icons.mjs` in its watch targets. These scripts are defined in `electrobun.config.ts` as `preBuild` and `postBuild` hooks, meaning they are **executed by electrobun during every build**. `fs.watch` on Windows fires events when these scripts are read/executed, causing a cascade restart loop:
+1. Legitimate source change → electrobun rebuild starts
+2. Rebuild runs prebuild script → watcher catches it → kill child → new rebuild starts
+3. New rebuild runs prebuild again, postbuild reads icons → more watcher events
+4. Multiple spawn/kill cycles until events settle
+
+### Fix
+- Removed `scripts/electrobun-prebuild-clean.mjs` and `scripts/electrobun-postbuild-icons.mjs` from watch targets — these are **consumed by the build**, not sources that should trigger rebuilds.
+- Refactored watch target setup to cache `isDirectory()` result at setup time (instead of calling `statSync` again in the callback), eliminating a potential race condition.
+
+### Verification
+- `node --check scripts/dev-desktop.mjs` — syntax clean.
+- `scripts/dev-desktop.mjs` now watches: `src/bun`, `src/mainview`, `assets/icons/icon.ico`, `assets/icons/icon.png`, `electrobun.config.ts`.
+- files_changed: scripts/dev-desktop.mjs, .planning/debug/electrobun-dev-relaunches.md
