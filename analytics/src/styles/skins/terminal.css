@@ -1,0 +1,127 @@
+:root[data-analytics-skin="terminal"] {
+  font-family: "Space Grotesk Variable", "Space Grotesk", "Consolas", "Cascadia Mono", monospace;
+  --font-numeric: "Consolas", "Cascadia Mono", "Courier New", monospace;
+  text-rendering: geometricPrecision;
+}
+
+:root[data-analytics-skin="terminal"][data-analytics-theme="dark"] {
+  color-scheme: dark;
+  background: #020704;
+  --bg: #06130c;
+  --bg-deep: #020704;
+  --surface: rgba(5, 27, 16, 0.94);
+  --surface-strong: rgba(8, 38, 23, 0.98);
+  --surface-soft: rgba(2, 15, 9, 0.72);
+  --border: rgba(57, 255, 136, 0.24);
+  --border-strong: rgba(57, 255, 136, 0.44);
+  --text: #d7ffe5;
+  --muted: #79b98f;
+  --soft: #a9f5bf;
+  --accent: #39ff88;
+  --accent-2: #ffb000;
+  --accent-3: #00f5ff;
+  --rainbow-red: #ff6b6b;
+  --rainbow-orange: #ffb000;
+  --rainbow-yellow: #f7ff58;
+  --rainbow-green: #39ff88;
+  --rainbow-cyan: #00f5ff;
+  --rainbow-blue: #62a8ff;
+  --rainbow-violet: #d16dff;
+  --warn: #ffb000;
+  --sun: #f7ff58;
+  --cat-input: #ffb000;
+  --cat-output: #00f5ff;
+  --cat-battery: #39ff88;
+  --cat-modes: #62a8ff;
+  --cat-system: #d16dff;
+  --cat-raw: #79b98f;
+  --chart-axis: #79b98f;
+  --chart-grid: rgba(57, 255, 136, 0.16);
+  --chip-idle-bg: #031009;
+  --chip-idle-border: rgba(57, 255, 136, 0.24);
+  --control-hover-bg: rgba(57, 255, 136, 0.12);
+  --field-focus-border: #39ff88;
+  --icon-highlight-bg: rgba(57, 255, 136, 0.14);
+  --inset-highlight: rgba(57, 255, 136, 0.28);
+  --item-hover-bg: rgba(57, 255, 136, 0.09);
+  --item-hover-border: rgba(57, 255, 136, 0.3);
+  --page-start: #0b2013;
+  --tooltip-bg: #020704;
+  --tooltip-shadow: 0 0 32px rgba(57, 255, 136, 0.14);
+  --device-bar-bg: rgba(5, 27, 16, 0.9);
+}
+
+:root[data-analytics-skin="terminal"][data-analytics-theme="light"] {
+  color-scheme: light;
+  background: #edf6dd;
+  --bg: #edf6dd;
+  --bg-deep: #dae8c7;
+  --surface: #f8ffe9;
+  --surface-strong: #fbfff0;
+  --surface-soft: #dfeecb;
+  --border: #87a46f;
+  --border-strong: #587a45;
+  --text: #17351d;
+  --muted: #587052;
+  --soft: #244a28;
+  --accent: #00753a;
+  --accent-2: #8f5200;
+  --accent-3: #007582;
+  --rainbow-red: #9b1d1d;
+  --rainbow-orange: #8f5200;
+  --rainbow-yellow: #6c6900;
+  --rainbow-green: #00753a;
+  --rainbow-cyan: #007582;
+  --rainbow-blue: #1d4e9b;
+  --rainbow-violet: #74329b;
+  --warn: #8f5200;
+  --sun: #6c6900;
+  --cat-input: #8f5200;
+  --cat-output: #007582;
+  --cat-battery: #00753a;
+  --cat-modes: #1d4e9b;
+  --cat-system: #74329b;
+  --cat-raw: #587052;
+  --chart-axis: #587052;
+  --chart-grid: rgba(88, 122, 69, 0.18);
+  --chip-idle-bg: #e5f0d1;
+  --chip-idle-border: #9ab084;
+  --control-hover-bg: rgba(0, 117, 58, 0.1);
+  --field-focus-border: #00753a;
+  --icon-highlight-bg: rgba(0, 117, 58, 0.1);
+  --inset-highlight: rgba(0, 117, 58, 0.25);
+  --item-hover-bg: rgba(0, 117, 58, 0.08);
+  --item-hover-border: rgba(0, 117, 58, 0.24);
+  --page-start: #f8ffe9;
+  --tooltip-bg: #fbfff0;
+  --tooltip-shadow: 0 14px 28px rgba(47, 79, 36, 0.18);
+  --device-bar-bg: #f8ffe9;
+}
+
+:root[data-analytics-skin="terminal"] body {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in srgb, var(--accent) 4%, transparent) 2px 3px),
+    linear-gradient(180deg, var(--page-start) 0%, var(--bg) 22rem, var(--bg-deep) 100%);
+}
+
+:root[data-analytics-skin="terminal"] .kpi,
+:root[data-analytics-skin="terminal"] .panel,
+:root[data-analytics-skin="terminal"] .controls-band,
+:root[data-analytics-skin="terminal"] .settings-modal,
+:root[data-analytics-skin="terminal"] .date-picker-flyout {
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+:root[data-analytics-skin="terminal"] .topbar h1,
+:root[data-analytics-skin="terminal"] .eyebrow,
+:root[data-analytics-skin="terminal"] .kpi-topline span {
+  letter-spacing: 0.04em;
+}
+
+:root[data-analytics-skin="terminal"] .panel-header h2::before {
+  content: "> ";
+  color: var(--accent);
+}

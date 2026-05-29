@@ -1,0 +1,129 @@
+:root[data-analytics-skin="clay"] {
+  font-family:
+    "Google Sans Variable", "Google Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-numeric: "Space Grotesk Variable", "Space Grotesk", "Google Sans Variable", "Google Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root[data-analytics-skin="clay"][data-analytics-theme="dark"] {
+  color-scheme: dark;
+  background: #171721;
+  --bg: #1e1d2a;
+  --bg-deep: #14141d;
+  --surface: #272636;
+  --surface-strong: #302f42;
+  --surface-soft: #1a1926;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #fff7f2;
+  --muted: #b9adb9;
+  --soft: #eadde8;
+  --accent: #8bdbe8;
+  --accent-2: #ff8f8f;
+  --accent-3: #8ee6a8;
+  --rainbow-red: #ff8f8f;
+  --rainbow-orange: #f7b267;
+  --rainbow-yellow: #ffe08a;
+  --rainbow-green: #8ee6a8;
+  --rainbow-cyan: #8bdbe8;
+  --rainbow-blue: #9eb7ff;
+  --rainbow-violet: #d9a6ff;
+  --warn: #f7b267;
+  --sun: #ffe08a;
+  --cat-input: #ff8f8f;
+  --cat-output: #f7b267;
+  --cat-battery: #8ee6a8;
+  --cat-modes: #9eb7ff;
+  --cat-system: #d9a6ff;
+  --cat-raw: #b9adb9;
+  --chart-axis: #b9adb9;
+  --chart-grid: rgba(255, 255, 255, 0.1);
+  --chip-idle-bg: #201f2d;
+  --chip-idle-border: rgba(255, 255, 255, 0.08);
+  --control-hover-bg: rgba(139, 219, 232, 0.12);
+  --field-focus-border: rgba(139, 219, 232, 0.58);
+  --icon-highlight-bg: rgba(139, 219, 232, 0.12);
+  --inset-highlight: rgba(255, 143, 143, 0.2);
+  --item-hover-bg: #302f42;
+  --item-hover-border: rgba(139, 219, 232, 0.2);
+  --page-start: #2c273c;
+  --tooltip-bg: #201f2d;
+  --tooltip-shadow: 0 24px 48px rgba(0, 0, 0, 0.32);
+  --device-bar-bg: #272636;
+}
+
+:root[data-analytics-skin="clay"][data-analytics-theme="light"] {
+  color-scheme: light;
+  background: #f7efe9;
+  --bg: #f7efe9;
+  --bg-deep: #e7ddd8;
+  --surface: #fff8f3;
+  --surface-strong: #fffdf9;
+  --surface-soft: #eadfd8;
+  --border: rgba(117, 88, 101, 0.12);
+  --border-strong: rgba(117, 88, 101, 0.2);
+  --text: #352b33;
+  --muted: #7b6a74;
+  --soft: #51424c;
+  --accent: #2b8493;
+  --accent-2: #c44b6a;
+  --accent-3: #3e8f5b;
+  --rainbow-red: #c44b6a;
+  --rainbow-orange: #b76725;
+  --rainbow-yellow: #9c7c09;
+  --rainbow-green: #3e8f5b;
+  --rainbow-cyan: #2b8493;
+  --rainbow-blue: #556fc1;
+  --rainbow-violet: #9360ae;
+  --warn: #b76725;
+  --sun: #9c7c09;
+  --cat-input: #c44b6a;
+  --cat-output: #b76725;
+  --cat-battery: #3e8f5b;
+  --cat-modes: #556fc1;
+  --cat-system: #9360ae;
+  --cat-raw: #7b6a74;
+  --chart-axis: #7b6a74;
+  --chart-grid: rgba(117, 88, 101, 0.1);
+  --chip-idle-bg: #efe5de;
+  --chip-idle-border: rgba(117, 88, 101, 0.16);
+  --control-hover-bg: rgba(43, 132, 147, 0.1);
+  --field-focus-border: rgba(43, 132, 147, 0.52);
+  --icon-highlight-bg: rgba(43, 132, 147, 0.1);
+  --inset-highlight: rgba(196, 75, 106, 0.18);
+  --item-hover-bg: #f3e7df;
+  --item-hover-border: rgba(43, 132, 147, 0.18);
+  --page-start: #fff8f3;
+  --tooltip-bg: #fffdf9;
+  --tooltip-shadow: 0 22px 42px rgba(117, 88, 101, 0.16);
+  --device-bar-bg: #fff8f3;
+}
+
+:root[data-analytics-skin="clay"] .kpi,
+:root[data-analytics-skin="clay"] .panel,
+:root[data-analytics-skin="clay"] .controls-band,
+:root[data-analytics-skin="clay"] .settings-modal,
+:root[data-analytics-skin="clay"] .date-picker-flyout {
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  box-shadow:
+    12px 12px 26px color-mix(in srgb, var(--bg-deep) 72%, transparent),
+    -10px -10px 24px color-mix(in srgb, var(--surface-strong) 65%, transparent);
+}
+
+:root[data-analytics-skin="clay"] .kpi-icon,
+:root[data-analytics-skin="clay"] .panel-icon,
+:root[data-analytics-skin="clay"] .icon-button,
+:root[data-analytics-skin="clay"] .theme-switch,
+:root[data-analytics-skin="clay"] .segmented {
+  box-shadow:
+    inset 2px 2px 5px color-mix(in srgb, var(--bg-deep) 45%, transparent),
+    inset -2px -2px 5px color-mix(in srgb, var(--surface-strong) 70%, transparent);
+}
+
+:root[data-analytics-skin="clay"] .theme-switch button.active,
+:root[data-analytics-skin="clay"] .segmented button.active {
+  box-shadow:
+    0 8px 18px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}

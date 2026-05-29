@@ -2,12 +2,12 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Save, Search, X } from 'lucide-react';
 import {
-  DARK_CHART_COLORS,
   EMPTY_TIMELINE,
-  LIGHT_CHART_COLORS,
   MAX_COMPARISON_FIELDS,
-  normalizeComparisonFields,
   areSameFields,
+  getChartColors,
+  normalizeComparisonFields,
+  type AnalyticsSkin,
   type AnalyticsTheme,
 } from '../lib/constants';
 import { getFieldMeta } from '../lib/fields';
@@ -23,6 +23,7 @@ export const FieldComparisonPanel = memo(function FieldComparisonPanel({
   limit,
   onSaveDefaultFields,
   sinceIso,
+  skin,
   themeMode,
 }: {
   availableFields: string[];
@@ -32,6 +33,7 @@ export const FieldComparisonPanel = memo(function FieldComparisonPanel({
   limit: number;
   onSaveDefaultFields: (fields: string[]) => void;
   sinceIso: string;
+  skin: AnalyticsSkin;
   themeMode: AnalyticsTheme;
 }) {
   const [comparisonFields, setComparisonFields] = useState<string[]>(() => normalizeComparisonFields(defaultFields, availableFields));
@@ -39,7 +41,7 @@ export const FieldComparisonPanel = memo(function FieldComparisonPanel({
   const [fieldSearchOpen, setFieldSearchOpen] = useState(false);
   const fieldSearchInputRef = useRef<HTMLInputElement>(null);
   const fieldSearchContainerRef = useRef<HTMLDivElement>(null);
-  const chartColors = themeMode === 'light' ? LIGHT_CHART_COLORS : DARK_CHART_COLORS;
+  const chartColors = useMemo(() => getChartColors(skin, themeMode), [skin, themeMode]);
   const defaultFieldsKey = defaultFields.join('|');
   const previousDefaultFieldsKey = useRef(defaultFieldsKey);
 

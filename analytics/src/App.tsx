@@ -25,10 +25,9 @@ import {
   ANALYTICS_SKIN_KEY,
   ANALYTICS_THEME_KEY,
   COMPARISON_DEFAULT_FIELDS_KEY,
-  DARK_CHART_COLORS,
   EMPTY_TIMELINE,
-  LIGHT_CHART_COLORS,
   buildRainbow,
+  getChartColors,
   getStoredAnalyticsDensity,
   getStoredAnalyticsSkin,
   getStoredAnalyticsTheme,
@@ -70,7 +69,7 @@ export default function App() {
   const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().slice(0, 16));
   const [customApplied, setCustomApplied] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const chartColors = themeMode === 'light' ? LIGHT_CHART_COLORS : DARK_CHART_COLORS;
+  const chartColors = useMemo(() => getChartColors(skin, themeMode), [skin, themeMode]);
   const rainbow = useMemo(() => buildRainbow(chartColors), [chartColors]);
   const live = useLiveTelemetry();
 
@@ -310,6 +309,7 @@ export default function App() {
                 limit={range.limit}
                 onSaveDefaultFields={setComparisonDefaultFields}
                 sinceIso={sinceIso}
+                skin={skin}
                 themeMode={themeMode}
               />
             </section>

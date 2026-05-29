@@ -122,7 +122,7 @@ function spawnRestartingDesktop(command, args, label) {
       return;
     }
 
-    const changedPath = filename
+    const changedPath = filename && isWatchDirectory(target)
       ? resolve(target, String(filename))
       : target;
 

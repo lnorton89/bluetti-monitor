@@ -1,0 +1,286 @@
+:root[data-analytics-skin="winaero"] {
+  font-family: "Segoe UI", "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-numeric: "Segoe UI", "Inter Variable", "Inter", "Cascadia Code", "Consolas", monospace;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-analytics-skin="winaero"][data-analytics-theme="dark"] {
+  color-scheme: dark;
+  background: #1b1b1b;
+  --bg: #1e1e1e;
+  --bg-deep: #141414;
+  --surface: rgba(30, 30, 30, 0.82);
+  --surface-strong: rgba(38, 38, 38, 0.92);
+  --surface-soft: rgba(20, 20, 20, 0.7);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text: #f0f0f0;
+  --muted: #999999;
+  --soft: #cccccc;
+  --accent: #2c6ca8;
+  --accent-2: #00bcf2;
+  --accent-3: #7ed321;
+  --accent-close: #e81123;
+  --glass-tint: rgba(44, 108, 168, 0.18);
+  --glass-edge: rgba(255, 255, 255, 0.08);
+  --rainbow-red: #f44d4d;
+  --rainbow-orange: #f7a84d;
+  --rainbow-yellow: #ffdd44;
+  --rainbow-green: #7ed321;
+  --rainbow-cyan: #00bcf2;
+  --rainbow-blue: #0078d4;
+  --rainbow-violet: #b774d4;
+  --warn: #f7a84d;
+  --sun: #ffdd44;
+  --cat-input: #f44d4d;
+  --cat-output: #f7a84d;
+  --cat-battery: #7ed321;
+  --cat-modes: #0078d4;
+  --cat-system: #b774d4;
+  --cat-raw: #999999;
+  --chart-axis: #888888;
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chip-idle-bg: rgba(25, 25, 25, 0.8);
+  --chip-idle-border: rgba(255, 255, 255, 0.1);
+  --control-hover-bg: rgba(0, 120, 212, 0.15);
+  --field-focus-border: #0078d4;
+  --icon-highlight-bg: rgba(255, 255, 255, 0.06);
+  --inset-highlight: rgba(0, 120, 212, 0.25);
+  --item-hover-bg: rgba(255, 255, 255, 0.06);
+  --item-hover-border: rgba(255, 255, 255, 0.12);
+  --page-start: #262626;
+  --tooltip-bg: rgba(20, 20, 20, 0.96);
+  --tooltip-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --device-bar-bg: rgba(30, 30, 30, 0.8);
+}
+
+:root[data-analytics-skin="winaero"][data-analytics-theme="light"] {
+  color-scheme: light;
+  background: #f0f0f0;
+  --bg: #f0f0f0;
+  --bg-deep: #e0e0e0;
+  --surface: rgba(248, 248, 248, 0.82);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --surface-soft: rgba(230, 230, 230, 0.7);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #1a1a1a;
+  --muted: #666666;
+  --soft: #333333;
+  --accent: #2c6ca8;
+  --accent-2: #00bcf2;
+  --accent-3: #389e0d;
+  --accent-close: #e81123;
+  --glass-tint: rgba(44, 108, 168, 0.06);
+  --glass-edge: rgba(255, 255, 255, 0.20);
+  --rainbow-red: #e81123;
+  --rainbow-orange: #d9530f;
+  --rainbow-yellow: #a08000;
+  --rainbow-green: #389e0d;
+  --rainbow-cyan: #00bcf2;
+  --rainbow-blue: #0078d4;
+  --rainbow-violet: #881798;
+  --warn: #d9530f;
+  --sun: #d4a800;
+  --cat-input: #e81123;
+  --cat-output: #d9530f;
+  --cat-battery: #389e0d;
+  --cat-modes: #0078d4;
+  --cat-system: #881798;
+  --cat-raw: #666666;
+  --chart-axis: #555555;
+  --chart-grid: rgba(0, 0, 0, 0.08);
+  --chip-idle-bg: rgba(240, 240, 240, 0.9);
+  --chip-idle-border: rgba(0, 0, 0, 0.12);
+  --control-hover-bg: rgba(0, 120, 212, 0.1);
+  --field-focus-border: #0078d4;
+  --icon-highlight-bg: rgba(0, 120, 212, 0.08);
+  --inset-highlight: rgba(0, 120, 212, 0.2);
+  --item-hover-bg: rgba(0, 120, 212, 0.06);
+  --item-hover-border: rgba(0, 120, 212, 0.15);
+  --page-start: #fafafa;
+  --tooltip-bg: rgba(255, 255, 255, 0.98);
+  --tooltip-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --device-bar-bg: rgba(248, 248, 248, 0.85);
+}
+
+:root[data-analytics-skin="winaero"] .kpi,
+:root[data-analytics-skin="winaero"] .panel,
+:root[data-analytics-skin="winaero"] .controls-band,
+:root[data-analytics-skin="winaero"] .settings-modal,
+:root[data-analytics-skin="winaero"] .date-picker-flyout {
+  background: color-mix(in srgb, var(--glass-tint) 100%, var(--surface));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+
+:root[data-analytics-skin="winaero"] .kpi {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 8%, transparent);
+}
+
+:root[data-analytics-skin="winaero"] .panel-header {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 40%, transparent 60%),
+    linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, black) 100%);
+  border-bottom: 1px solid var(--glass-edge);
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 0;
+}
+
+:root[data-analytics-skin="winaero"] .panel-header h2 {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}
+
+:root[data-analytics-skin="winaero"] .panel-icon,
+:root[data-analytics-skin="winaero"] .kpi-icon {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+:root[data-analytics-skin="winaero"] .icon-button {
+  border-radius: 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 70%, transparent) 0%, color-mix(in srgb, var(--bg-deep) 60%, transparent) 100%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--glass-edge);
+}
+
+:root[data-analytics-skin="winaero"] .icon-button:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+:root[data-analytics-skin="winaero"] .segmented {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--glass-tint) 50%, var(--bg-deep));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--glass-edge);
+}
+
+:root[data-analytics-skin="winaero"] .segmented button {
+  border-radius: 2px;
+}
+
+:root[data-analytics-skin="winaero"] .segmented button.active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, transparent) 0%, color-mix(in srgb, var(--accent) 50%, transparent) 100%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="winaero"] .segmented button.active.is-live {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-2) 80%, transparent) 0%, color-mix(in srgb, var(--accent-2) 50%, transparent) 100%);
+  animation: none;
+}
+
+:root[data-analytics-skin="winaero"] .segmented button.active.is-live::after,
+:root[data-analytics-skin="winaero"] .segmented button.active.is-live::before {
+  display: none;
+}
+
+:root[data-analytics-skin="winaero"] .theme-switch {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--glass-tint) 50%, var(--bg-deep));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--glass-edge);
+}
+
+:root[data-analytics-skin="winaero"] .theme-switch button {
+  border-radius: 2px;
+}
+
+:root[data-analytics-skin="winaero"] .theme-switch button.active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, transparent) 0%, color-mix(in srgb, var(--accent) 50%, transparent) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="winaero"] .settings-modal {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-analytics-skin="winaero"] .settings-modal-backdrop {
+  background: color-mix(in srgb, var(--bg-deep) 50%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+:root[data-analytics-skin="winaero"] .settings-modal-header {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 40%, transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 70%, transparent) 0%, color-mix(in srgb, var(--accent) 30%, transparent) 100%);
+  border-bottom: 1px solid var(--glass-edge);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-analytics-skin="winaero"] .settings-modal-header h2 {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}
+
+:root[data-analytics-skin="winaero"] .date-picker-flyout {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-analytics-skin="winaero"] .date-picker-flyout-header {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 40%, transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 70%, transparent) 0%, color-mix(in srgb, var(--accent) 30%, transparent) 100%);
+  border-bottom: 1px solid var(--glass-edge);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-analytics-skin="winaero"] .date-picker-flyout-header h2 {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+}
+
+:root[data-analytics-skin="winaero"] .date-picker-flyout-apply {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 85%, transparent) 0%, color-mix(in srgb, var(--accent) 55%, transparent) 100%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:root[data-analytics-skin="winaero"] .dense-tooltip {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--tooltip-bg) 85%, var(--glass-tint));
+}
+
+:root[data-analytics-skin="winaero"] .chip {
+  border-radius: 3px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+:root[data-analytics-skin="winaero"] select {
+  border-radius: 3px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background-color: color-mix(in srgb, var(--glass-tint) 60%, var(--bg-deep));
+  border: 1px solid var(--glass-edge);
+}
+
+:root[data-analytics-skin="winaero"] .search-box {
+  border-radius: 3px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+:root[data-analytics-skin="winaero"] .search-box input {
+  border-radius: 2px;
+}

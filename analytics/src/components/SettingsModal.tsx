@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Maximize2, Minimize2, Moon, Search, Sun, X } from 'lucide-react';
 import {
   MAX_COMPARISON_FIELDS,
+  SKIN_OPTIONS,
   normalizeComparisonFields,
   type AnalyticsDensity,
   type AnalyticsSkin,
@@ -79,25 +80,19 @@ export function SettingsModal({
             <span>Skin</span>
             <p>Choose the visual style for the analytics workspace.</p>
           </div>
-          <div className="theme-switch" role="radiogroup" aria-label="Analytics skin">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={skin === 'modern'}
-              className={skin === 'modern' ? 'active' : ''}
-              onClick={() => onSkinChange('modern')}
-            >
-              Modern
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={skin === 'classic'}
-              className={skin === 'classic' ? 'active' : ''}
-              onClick={() => onSkinChange('classic')}
-            >
-              Classic
-            </button>
+          <div className="theme-switch skin-switch" role="radiogroup" aria-label="Analytics skin">
+            {SKIN_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={skin === option.id}
+                className={skin === option.id ? 'active' : ''}
+                onClick={() => onSkinChange(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </div>
         <div className="settings-row">

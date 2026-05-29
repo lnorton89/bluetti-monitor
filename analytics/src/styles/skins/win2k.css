@@ -1,0 +1,327 @@
+:root[data-analytics-skin="win2k"] {
+  font-family: "Microsoft Sans Serif", "MS Sans Serif", "Chicago", "Segoe UI", sans-serif;
+  --font-numeric: "Courier New", "Courier", monospace;
+  text-rendering: auto;
+}
+
+:root[data-analytics-skin="win2k"][data-analytics-theme="dark"] {
+  color-scheme: dark;
+  background: #3a6ea5;
+  --bg: #3a6ea5;
+  --bg-deep: #2d5a8c;
+  --surface: #d4d0c8;
+  --surface-strong: #e0dcd4;
+  --surface-soft: #b8b4ac;
+  --border: #808080;
+  --border-strong: #404040;
+  --text: #000000;
+  --muted: #555555;
+  --soft: #303030;
+  --accent: #0a246a;
+  --accent-2: #0a246a;
+  --accent-3: #008000;
+  --rainbow-red: #800000;
+  --rainbow-orange: #804000;
+  --rainbow-yellow: #555500;
+  --rainbow-green: #005500;
+  --rainbow-cyan: #005555;
+  --rainbow-blue: #000080;
+  --rainbow-violet: #550055;
+  --warn: #555500;
+  --sun: #555500;
+  --cat-input: #550055;
+  --cat-output: #804000;
+  --cat-battery: #005500;
+  --cat-modes: #000080;
+  --cat-system: #550055;
+  --cat-raw: #555555;
+  --chart-axis: #e0e0e0;
+  --chart-grid: #c8c8c8;
+  --chip-idle-bg: #b8b4ac;
+  --chip-idle-border: #808080;
+  --control-hover-bg: #e0dcd4;
+  --field-focus-border: #0a246a;
+  --icon-highlight-bg: #e0dcd4;
+  --inset-highlight: #0a246a;
+  --item-hover-bg: #e0dcd4;
+  --item-hover-border: #808080;
+  --page-start: #3a6ea5;
+  --tooltip-bg: #ffffe1;
+  --tooltip-shadow: none;
+  --device-bar-bg: #c0b8ac;
+}
+
+:root[data-analytics-skin="win2k"][data-analytics-theme="dark"] .eyebrow {
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"][data-analytics-theme="light"] {
+  color-scheme: light;
+  background: #d4d0c8;
+  --bg: #d4d0c8;
+  --bg-deep: #c0b8ac;
+  --surface: #e0dcd4;
+  --surface-strong: #ece8e0;
+  --surface-soft: #b8b4ac;
+  --border: #808080;
+  --border-strong: #404040;
+  --text: #000000;
+  --muted: #555555;
+  --soft: #202020;
+  --accent: #0a246a;
+  --accent-2: #0a246a;
+  --accent-3: #008000;
+  --warn: #555500;
+  --sun: #555500;
+  --rainbow-red: #800000;
+  --rainbow-orange: #804000;
+  --rainbow-yellow: #555500;
+  --rainbow-green: #005500;
+  --rainbow-cyan: #005555;
+  --rainbow-blue: #000080;
+  --rainbow-violet: #550055;
+  --cat-input: #800080;
+  --cat-output: #804000;
+  --cat-battery: #005500;
+  --cat-modes: #000080;
+  --cat-system: #800080;
+  --cat-raw: #555555;
+  --chart-axis: #555555;
+  --chart-grid: #a0a0a0;
+  --chip-idle-bg: #d0ccc4;
+  --chip-idle-border: #808080;
+  --control-hover-bg: #d0ccc4;
+  --field-focus-border: #0a246a;
+  --icon-highlight-bg: #d0ccc4;
+  --inset-highlight: #0a246a;
+  --item-hover-bg: #d0ccc4;
+  --item-hover-border: #808080;
+  --page-start: #d4d0c8;
+  --tooltip-bg: #ffffe1;
+  --tooltip-shadow: none;
+  --device-bar-bg: #d4d0c8;
+}
+
+:root[data-analytics-skin="win2k"] .analytics-shell {
+  border: 2px outset var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .controls-band {
+  border: 2px inset var(--border);
+  background: var(--surface-soft);
+  border-radius: 0;
+}
+
+:root[data-analytics-skin="win2k"] .segmented {
+  border: 2px outset var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+
+:root[data-analytics-skin="win2k"] .segmented button {
+  border-radius: 0;
+  font-weight: 400;
+}
+
+:root[data-analytics-skin="win2k"] .segmented button.active {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+:root[data-analytics-skin="win2k"] .segmented button.active.is-live {
+  color: #ffffff;
+  background: var(--accent);
+  animation: none;
+}
+
+:root[data-analytics-skin="win2k"] .segmented button.active.is-live::after,
+:root[data-analytics-skin="win2k"] .segmented button.active.is-live::before {
+  display: none;
+}
+
+:root[data-analytics-skin="win2k"] .segmented button:hover {
+  background: var(--control-hover-bg);
+}
+
+:root[data-analytics-skin="win2k"] .icon-button {
+  border-radius: 0;
+  border: 2px outset var(--border);
+  background: var(--surface);
+}
+
+:root[data-analytics-skin="win2k"] .icon-button:hover {
+  background: var(--control-hover-bg);
+}
+
+:root[data-analytics-skin="win2k"] .icon-button:active {
+  border-style: inset;
+}
+
+:root[data-analytics-skin="win2k"] select {
+  border-radius: 0;
+  border: 2px inset var(--border);
+  background: var(--bg);
+}
+
+:root[data-analytics-skin="win2k"] .panel {
+  border-radius: 0;
+  border: 2px outset var(--border);
+  background: var(--surface);
+}
+
+:root[data-analytics-skin="win2k"] .panel-header {
+  background-color: #0a246a;
+  background-image:
+    linear-gradient(180deg, #0a246a 0%, #6b9ad0 40%, #a6caf0 100%);
+  border-bottom: 2px groove var(--border);
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"] .panel-header h2 {
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"] .panel-header p {
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+:root[data-analytics-skin="win2k"] .kpi {
+  border-radius: 0;
+  border: 2px outset var(--border);
+  background: var(--surface);
+}
+
+:root[data-analytics-skin="win2k"] .kpi-icon {
+  border-radius: 0;
+}
+
+:root[data-analytics-skin="win2k"] .panel-icon {
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"] .side-stat,
+:root[data-analytics-skin="win2k"] .snapshot-cell {
+  border-radius: 0;
+  border: 2px inset var(--border);
+  background: var(--surface-soft);
+}
+
+:root[data-analytics-skin="win2k"] .snapshot-grid {
+  border: 2px inset var(--border);
+  padding: 4px;
+  background: var(--bg-deep);
+}
+
+:root[data-analytics-skin="win2k"] .dense-chart {
+  border: 2px inset var(--border);
+  background: var(--bg);
+}
+
+:root[data-analytics-skin="win2k"] .dense-tooltip {
+  border: 2px outset var(--border);
+  border-radius: 0;
+  background: var(--tooltip-bg);
+}
+
+:root[data-analytics-skin="win2k"] .settings-modal {
+  border-radius: 0;
+  border: 2px outset var(--border);
+  background: var(--surface);
+}
+
+:root[data-analytics-skin="win2k"] .settings-modal-header {
+  background-color: #0a246a;
+  background-image:
+    linear-gradient(180deg, #0a246a 0%, #6b9ad0 40%, #a6caf0 100%);
+  color: #ffffff;
+  border-bottom: 2px groove var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .settings-modal-header h2,
+:root[data-analytics-skin="win2k"] .settings-modal-header .eyebrow {
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"] .theme-switch button {
+  border-radius: 0;
+  border: 2px outset var(--border);
+  background: var(--surface);
+}
+
+:root[data-analytics-skin="win2k"] .theme-switch button.active {
+  border-style: inset;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"] .chip {
+  border-radius: 0;
+  border: 2px outset var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .search-box {
+  border-radius: 0;
+  border: 2px inset var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .search-box input {
+  border-radius: 0;
+}
+
+:root[data-analytics-skin="win2k"] .panel-header .field-search-trigger {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+:root[data-analytics-skin="win2k"] .field-search-trigger::before {
+  display: none;
+}
+
+:root[data-analytics-skin="win2k"] .status-pill {
+  border-radius: 0;
+  border: 2px outset var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .field-comparison-panel .field-picker {
+  border-bottom: 2px groove var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .empty-chart {
+  border: 2px dashed var(--border);
+  border-radius: 0;
+}
+
+:root[data-analytics-skin="win2k"] .date-picker-flyout {
+  border-radius: 0;
+  border: 2px outset var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .date-picker-flyout-header {
+  background-color: #0a246a;
+  background-image:
+    linear-gradient(180deg, #0a246a 0%, #6b9ad0 40%, #a6caf0 100%);
+  color: #ffffff;
+  border-bottom: 2px groove var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .date-picker-flyout-header h2 {
+  color: #ffffff;
+}
+
+:root[data-analytics-skin="win2k"] .date-picker-flyout-field input {
+  border-radius: 0;
+  border: 2px inset var(--border);
+}
+
+:root[data-analytics-skin="win2k"] .date-picker-flyout-apply {
+  border-radius: 0;
+  border: 2px outset var(--border);
+  background: var(--accent);
+  color: #ffffff;
+}

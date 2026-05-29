@@ -1,0 +1,129 @@
+:root[data-analytics-skin="aurora"] {
+  font-family:
+    "Google Sans Variable", "Google Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-numeric: "Space Grotesk Variable", "Space Grotesk", "Google Sans Variable", "Google Sans", ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-analytics-skin="aurora"][data-analytics-theme="dark"] {
+  color-scheme: dark;
+  background: #070812;
+  --bg: #0a0b18;
+  --bg-deep: #050611;
+  --surface: rgba(18, 22, 42, 0.68);
+  --surface-strong: rgba(22, 28, 54, 0.78);
+  --surface-soft: rgba(9, 14, 31, 0.58);
+  --border: rgba(179, 238, 255, 0.18);
+  --border-strong: rgba(198, 155, 255, 0.32);
+  --text: #f7fbff;
+  --muted: #9fb3d8;
+  --soft: #d7e4ff;
+  --accent: #55f7ff;
+  --accent-2: #ff5ea8;
+  --accent-3: #72f2a6;
+  --rainbow-red: #ff5ea8;
+  --rainbow-orange: #ffb86b;
+  --rainbow-yellow: #ffe66d;
+  --rainbow-green: #72f2a6;
+  --rainbow-cyan: #55f7ff;
+  --rainbow-blue: #7c9cff;
+  --rainbow-violet: #c084ff;
+  --warn: #ffb86b;
+  --sun: #ffe66d;
+  --cat-input: #ff5ea8;
+  --cat-output: #ffb86b;
+  --cat-battery: #72f2a6;
+  --cat-modes: #7c9cff;
+  --cat-system: #c084ff;
+  --cat-raw: #9fb3d8;
+  --chart-axis: #9fb3d8;
+  --chart-grid: rgba(179, 238, 255, 0.16);
+  --chip-idle-bg: rgba(7, 8, 18, 0.78);
+  --chip-idle-border: rgba(179, 238, 255, 0.18);
+  --control-hover-bg: rgba(85, 247, 255, 0.12);
+  --field-focus-border: rgba(85, 247, 255, 0.72);
+  --icon-highlight-bg: rgba(85, 247, 255, 0.13);
+  --inset-highlight: rgba(255, 94, 168, 0.26);
+  --item-hover-bg: rgba(85, 247, 255, 0.09);
+  --item-hover-border: rgba(85, 247, 255, 0.28);
+  --page-start: #161138;
+  --tooltip-bg: rgba(5, 6, 17, 0.94);
+  --tooltip-shadow: 0 24px 60px rgba(0, 0, 0, 0.46);
+  --device-bar-bg: rgba(18, 22, 42, 0.62);
+}
+
+:root[data-analytics-skin="aurora"][data-analytics-theme="light"] {
+  color-scheme: light;
+  background: #f5fbff;
+  --bg: #f5fbff;
+  --bg-deep: #e7efff;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.9);
+  --surface-soft: rgba(226, 240, 255, 0.7);
+  --border: rgba(55, 97, 142, 0.16);
+  --border-strong: rgba(88, 62, 155, 0.28);
+  --text: #182033;
+  --muted: #61718f;
+  --soft: #33415d;
+  --accent: #008c9c;
+  --accent-2: #b01563;
+  --accent-3: #138a54;
+  --rainbow-red: #b01563;
+  --rainbow-orange: #b45309;
+  --rainbow-yellow: #8a6d00;
+  --rainbow-green: #138a54;
+  --rainbow-cyan: #008c9c;
+  --rainbow-blue: #3150b7;
+  --rainbow-violet: #7c3bb2;
+  --warn: #b45309;
+  --sun: #8a6d00;
+  --cat-input: #b01563;
+  --cat-output: #b45309;
+  --cat-battery: #138a54;
+  --cat-modes: #3150b7;
+  --cat-system: #7c3bb2;
+  --cat-raw: #61718f;
+  --chart-axis: #61718f;
+  --chart-grid: rgba(55, 97, 142, 0.1);
+  --chip-idle-bg: rgba(232, 241, 255, 0.9);
+  --chip-idle-border: rgba(55, 97, 142, 0.18);
+  --control-hover-bg: rgba(0, 140, 156, 0.11);
+  --field-focus-border: rgba(0, 140, 156, 0.58);
+  --icon-highlight-bg: rgba(0, 140, 156, 0.1);
+  --inset-highlight: rgba(176, 21, 99, 0.2);
+  --item-hover-bg: rgba(0, 140, 156, 0.08);
+  --item-hover-border: rgba(0, 140, 156, 0.2);
+  --page-start: #fef7ff;
+  --tooltip-bg: rgba(255, 255, 255, 0.96);
+  --tooltip-shadow: 0 22px 48px rgba(43, 63, 104, 0.18);
+  --device-bar-bg: rgba(255, 255, 255, 0.72);
+}
+
+:root[data-analytics-skin="aurora"] body {
+  background:
+    radial-gradient(circle at 14% 10%, color-mix(in srgb, var(--accent-2) 30%, transparent), transparent 28rem),
+    radial-gradient(circle at 82% 0%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 30rem),
+    linear-gradient(180deg, var(--page-start) 0%, var(--bg) 24rem, var(--bg-deep) 100%);
+}
+
+:root[data-analytics-skin="aurora"] .kpi,
+:root[data-analytics-skin="aurora"] .panel,
+:root[data-analytics-skin="aurora"] .controls-band,
+:root[data-analytics-skin="aurora"] .settings-modal,
+:root[data-analytics-skin="aurora"] .date-picker-flyout {
+  backdrop-filter: blur(22px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 22px 58px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+:root[data-analytics-skin="aurora"] .panel-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+:root[data-analytics-skin="aurora"] .kpi-icon,
+:root[data-analytics-skin="aurora"] .panel-icon {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent-2) 16%, transparent));
+}
