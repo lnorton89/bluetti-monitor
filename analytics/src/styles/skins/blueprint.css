@@ -7,19 +7,19 @@
 
 :root[data-analytics-skin="blueprint"][data-analytics-theme="dark"] {
   color-scheme: dark;
-  background: #081325;
-  --bg: #0b1a31;
-  --bg-deep: #06101f;
-  --surface: rgba(12, 35, 66, 0.9);
-  --surface-strong: rgba(15, 45, 82, 0.96);
-  --surface-soft: rgba(8, 25, 48, 0.72);
-  --border: rgba(137, 202, 255, 0.18);
-  --border-strong: rgba(137, 202, 255, 0.34);
-  --text: #eef8ff;
-  --muted: #9eb9d8;
-  --soft: #d1e8ff;
-  --accent: #65e9ff;
-  --accent-2: #83a7ff;
+  background: #0f131a;
+  --bg: #141a24;
+  --bg-deep: #0a0e14;
+  --surface: rgba(30, 36, 48, 0.9);
+  --surface-strong: rgba(36, 42, 56, 0.96);
+  --surface-soft: rgba(22, 28, 38, 0.72);
+  --border: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.34);
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --soft: #cbd5e1;
+  --accent: #7a8ba8;
+  --accent-2: #6a7da0;
   --accent-3: #7ee7a6;
   --rainbow-red: #ff8a9a;
   --rainbow-orange: #ffbd6e;
@@ -30,26 +30,26 @@
   --rainbow-violet: #b996ff;
   --warn: #ffbd6e;
   --sun: #f6e27a;
-  --cat-input: #83a7ff;
+  --cat-input: #6a7da0;
   --cat-output: #ffbd6e;
   --cat-battery: #7ee7a6;
-  --cat-modes: #65e9ff;
+  --cat-modes: #7a8ba8;
   --cat-system: #b996ff;
-  --cat-raw: #9eb9d8;
-  --chart-axis: #9eb9d8;
-  --chart-grid: rgba(137, 202, 255, 0.18);
-  --chip-idle-bg: rgba(8, 25, 48, 0.9);
-  --chip-idle-border: rgba(137, 202, 255, 0.2);
-  --control-hover-bg: rgba(101, 233, 255, 0.11);
-  --field-focus-border: rgba(101, 233, 255, 0.66);
-  --icon-highlight-bg: rgba(101, 233, 255, 0.12);
-  --inset-highlight: rgba(101, 233, 255, 0.28);
-  --item-hover-bg: rgba(101, 233, 255, 0.08);
-  --item-hover-border: rgba(101, 233, 255, 0.28);
-  --page-start: #102b52;
-  --tooltip-bg: rgba(6, 16, 31, 0.98);
+  --cat-raw: #94a3b8;
+  --chart-axis: #94a3b8;
+  --chart-grid: rgba(148, 163, 184, 0.18);
+  --chip-idle-bg: rgba(22, 28, 38, 0.9);
+  --chip-idle-border: rgba(148, 163, 184, 0.2);
+  --control-hover-bg: rgba(122, 139, 168, 0.11);
+  --field-focus-border: rgba(122, 139, 168, 0.66);
+  --icon-highlight-bg: rgba(122, 139, 168, 0.12);
+  --inset-highlight: rgba(122, 139, 168, 0.28);
+  --item-hover-bg: rgba(122, 139, 168, 0.08);
+  --item-hover-border: rgba(122, 139, 168, 0.28);
+  --page-start: #18202e;
+  --tooltip-bg: rgba(10, 14, 20, 0.98);
   --tooltip-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-  --device-bar-bg: rgba(12, 35, 66, 0.86);
+  --device-bar-bg: rgba(30, 36, 48, 0.86);
 }
 
 :root[data-analytics-skin="blueprint"][data-analytics-theme="light"] {
