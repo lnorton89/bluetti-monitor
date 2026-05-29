@@ -5,8 +5,8 @@ import { spawnSync } from "node:child_process";
 const isWindows = process.platform === "win32";
 const buildDir = process.env.ELECTROBUN_BUILD_DIR;
 const appName = process.env.ELECTROBUN_APP_NAME;
-const iconPath = resolve("assets", "icon.ico");
-const pngIconPath = resolve("assets", "icon.png");
+const iconPath = resolve("assets", "icons", "icon.ico");
+const pngIconPath = resolve("assets", "icons", "icon.png");
 
 if (isWindows && buildDir && appName && existsSync(iconPath)) {
   const rceditPath = findRcedit();

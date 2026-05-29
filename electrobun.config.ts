@@ -15,9 +15,19 @@ export default {
     copy: {
       "src/mainview/index.html": "views/mainview/index.html",
       "src/mainview/index.css": "views/mainview/index.css",
-      "assets/icon.ico": "assets/icon.ico",
-      "assets/icon.png": "assets/icon.png",
+      "assets/icons/icon.ico": "assets/icon.ico",
+      "assets/icons/icon.png": "assets/icon.png",
     },
+    watchIgnore: [
+      ".dev-data/**",
+      "api/.venv/**",
+      "api/__pycache__/**",
+      "dashboard/dev-dist/**",
+      "dashboard/dist/**",
+      "dashboard/node_modules/.vite/**",
+      "lib/bluetti-mqtt-node/artifacts/**",
+      "lib/bluetti-mqtt-node/dist/**",
+    ],
     mac: {
       bundleCEF: false,
     },

@@ -1143,6 +1143,7 @@ function findWorkspaceRoot(): string {
 
 function resolveAppAsset(fileName: string): string {
   const candidates = [
+    resolve(appRoot, "assets", "icons", fileName),
     resolve(appRoot, "assets", fileName),
     resolve(import.meta.dir, "..", "assets", fileName),
     resolve(process.cwd(), "..", "Resources", "app", "assets", fileName),
