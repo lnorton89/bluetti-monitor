@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 implemented; ready for human UAT
-Last activity: 2026-05-23 - Resolved Windows CEF CPU issue by returning to native renderer
+Last activity: 2026-05-29 - Completed quick task 260529-lql: Blueprint dark theme — greyish-blue tone
 
 ## Accumulated Context
 
@@ -115,6 +115,7 @@ Decisions are logged in PROJECT.md.
 | 20260528 | Reduce analytics chart rebuilds during load | 2026-05-28 | working tree | [20260528-analytics-load-render-warning](./quick/20260528-analytics-load-render-warning/) |
 | 20260528 | Add settings for Field Comparison default fields | 2026-05-28 | working tree | [20260528-field-comparison-default-settings](./quick/20260528-field-comparison-default-settings/) |
 | 260529-ith | Add analytics/test-results/ to .gitignore | 2026-05-29 | working tree | [260529-ith-add-analytics-test-results-to-gitignore](./quick/260529-ith-add-analytics-test-results-to-gitignore/) |
+| 260529-lql | Blueprint dark theme — greyish-blue tone | 2026-05-29 | b00ed12 | [260529-lql-blueprint-skin-greyish-blue-dark-theme](./quick/260529-lql-blueprint-skin-greyish-blue-dark-theme/) |
 
 ## Session Continuity
 
