@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 implemented; ready for human UAT
-Last activity: 2026-05-30 - Completed quick task 260529-p8q: Implement time-period comparison for analytics charts
+Last activity: 2026-05-29 - Completed quick task 260529-WfU: Plan analytics improvements roadmap from tmp/improvements.md
 
 ## Accumulated Context
 
@@ -118,6 +118,7 @@ Decisions are logged in PROJECT.md.
 | 260529-lql | Blueprint dark theme — greyish-blue tone | 2026-05-29 | b00ed12 | [260529-lql-blueprint-skin-greyish-blue-dark-theme](./quick/260529-lql-blueprint-skin-greyish-blue-dark-theme/) |
 | 260529-m8c | Analytics feature planning: time-period comparison, chart annotations, export reports | 2026-05-29 | working tree | [260529-m8c-analytics-feature-planning-time-period-c](./quick/260529-m8c-analytics-feature-planning-time-period-c/) |
 | 260529-p8q | Implement time-period comparison for analytics charts | 2026-05-30 | working tree | [260529-p8q-implement-time-period-comparison-for-ana](./quick/260529-p8q-implement-time-period-comparison-for-ana/) |
+| 260529-WfU | Plan analytics improvements roadmap from tmp/improvements.md | 2026-05-29 | working tree | [260529-WfU-plan-analytics-improvements-roadmap](./quick/260529-WfU-plan-analytics-improvements-roadmap/) |
 
 ## Session Continuity
 
