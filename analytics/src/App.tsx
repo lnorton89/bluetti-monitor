@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, Battery, CheckCircle2, Gauge, LineChart, PlugZap, Sun, WifiOff, Zap } from 'lucide-react';
 import {
@@ -69,10 +69,11 @@ export default function App() {
   const [rangeId, setRangeId] = useState<RangeId>('24h');
   const [selectedDevice, setSelectedDevice] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [themeMode, setThemeMode] = useState<AnalyticsTheme>(getStoredAnalyticsTheme);
-  const [densityMode, setDensityMode] = useState<AnalyticsDensity>(getStoredAnalyticsDensity);
-  const [skin, setSkin] = useState<AnalyticsSkin>(getStoredAnalyticsSkin);
-  const [accentOverride, setAccentOverride] = useState<string | null>(() => getStoredAccentOverride(getStoredAnalyticsSkin));
+  const [themeMode, setThemeMode] = useState<AnalyticsTheme>(() => getStoredAnalyticsTheme());
+  const [densityMode, setDensityMode] = useState<AnalyticsDensity>(() => getStoredAnalyticsDensity());
+  const [skin, setSkin] = useState<AnalyticsSkin>(() => getStoredAnalyticsSkin());
+  const [accentOverride, setAccentOverride] = useState<string | null>(() => getStoredAccentOverride(getStoredAnalyticsSkin()));
+  const [solarViewMode, setSolarViewMode] = useState<'power' | 'voltage'>('power');
   const [comparisonDefaultFields, setComparisonDefaultFields] = useState<string[]>(getStoredComparisonDefaultFields);
   const [comparisonOption, setComparisonOption] = useState<ComparisonOption>(getStoredComparisonOption);
   const { addAnnotation, annotations, removeAnnotation, annotationsInRange } = useAnnotations(selectedDevice || '_');
@@ -204,12 +205,18 @@ export default function App() {
     { label: 'Total output', color: rainbow.green, values: timeline.map((row) => row.totalOutput), unit: 'W', digits: 0 },
     { label: 'Net power', color: rainbow.blue, values: timeline.map((row) => row.netPower), unit: 'W', digits: 0 },
   ], [rainbow.blue, rainbow.green, rainbow.red, timeline]);
-  const solarInputSeries = useMemo<DenseSeries[]>(() => [
-    { label: 'DC1 wattage', color: rainbow.yellow, values: timeline.map((row) => row.dcInput1Power), unit: 'W', digits: 0 },
-    { label: 'DC1 voltage', color: rainbow.orange, values: timeline.map((row) => row.dcInput1Voltage), unit: 'V', digits: 1 },
-    { label: 'DC2 wattage', color: rainbow.cyan, values: timeline.map((row) => row.dcInput2Power), unit: 'W', digits: 0 },
-    { label: 'DC2 voltage', color: rainbow.blue, values: timeline.map((row) => row.dcInput2Voltage), unit: 'V', digits: 1 },
-  ], [rainbow.blue, rainbow.cyan, rainbow.orange, rainbow.yellow, timeline]);
+  const solarInputSeries = useMemo<DenseSeries[]>(() => {
+    if (solarViewMode === 'power') {
+      return [
+        { label: 'DC1 wattage', color: rainbow.yellow, values: timeline.map((row) => row.dcInput1Power), unit: 'W', digits: 0 },
+        { label: 'DC2 wattage', color: rainbow.cyan, values: timeline.map((row) => row.dcInput2Power), unit: 'W', digits: 0 },
+      ];
+    }
+    return [
+      { label: 'DC1 voltage', color: rainbow.orange, values: timeline.map((row) => row.dcInput1Voltage), unit: 'V', digits: 1 },
+      { label: 'DC2 voltage', color: rainbow.blue, values: timeline.map((row) => row.dcInput2Voltage), unit: 'V', digits: 1 },
+    ];
+  }, [rainbow.blue, rainbow.cyan, rainbow.orange, rainbow.yellow, timeline, solarViewMode]);
   const batteryPostureSeries = useMemo<DenseSeries[]>(() => [
     { label: 'SOC trend', color: rainbow.green, values: timeline.map((row) => row.batteryPercent), unit: '%', digits: 1 },
   ], [rainbow.green, timeline]);
@@ -227,13 +234,17 @@ export default function App() {
   const solarInputComparison = useMemo<ComparisonSeriesGroup[]>(() => {
     if (!comparisonRange || comparisonTimeline.length === 0) return [];
     const shiftTs = (ts: number) => ts + comparisonOffsetMs;
+    if (solarViewMode === 'power') {
+      return [
+        { label: `DC1 wattage (${comparisonLabel})`, color: rainbow.yellow, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput1Power), unit: 'W', digits: 0 },
+        { label: `DC2 wattage (${comparisonLabel})`, color: rainbow.cyan, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput2Power), unit: 'W', digits: 0 },
+      ];
+    }
     return [
-      { label: `DC1 wattage (${comparisonLabel})`, color: rainbow.yellow, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput1Power), unit: 'W', digits: 0 },
       { label: `DC1 voltage (${comparisonLabel})`, color: rainbow.orange, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput1Voltage), unit: 'V', digits: 1 },
-      { label: `DC2 wattage (${comparisonLabel})`, color: rainbow.cyan, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput2Power), unit: 'W', digits: 0 },
       { label: `DC2 voltage (${comparisonLabel})`, color: rainbow.blue, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput2Voltage), unit: 'V', digits: 1 },
     ];
-  }, [comparisonRange, comparisonTimeline, comparisonOffsetMs, rainbow, comparisonLabel]);
+  }, [comparisonRange, comparisonTimeline, comparisonOffsetMs, rainbow, comparisonLabel, solarViewMode]);
   const batteryPostureComparison = useMemo<ComparisonSeriesGroup[]>(() => {
     if (!comparisonRange || comparisonTimeline.length === 0) return [];
     const shiftTs = (ts: number) => ts + comparisonOffsetMs;
@@ -322,6 +333,35 @@ export default function App() {
           </section>
         ) : (
           <>
+            <section className="system-summary">
+              {(() => {
+                const lines: string[] = [];
+                const bat = summary.batterySummary;
+                const net = summary.netSummary;
+                const peak = summary.peakLoad;
+                const peakSolar = summary.peakSolar;
+                const solarShare = summary.solarShare;
+                if (bat?.current != null && net?.avg != null && net.avg > 0) {
+                  const estHours = (bat.current / (net.avg / 100)).toFixed(1);
+                  lines.push(`Battery can sustain current load for ~${estHours}h`);
+                }
+                if (solarShare != null) {
+                  lines.push(`Solar offset today: ${formatMetric(solarShare, '%')}`);
+                }
+                if (peak) {
+                  lines.push(`Peak load occurred at ${formatShortTime(peak.ts)}`);
+                }
+                if (peakSolar) {
+                  lines.push(`Peak solar at ${formatShortTime(peakSolar.ts)}`);
+                }
+                if (lines.length === 0) lines.push('Collecting telemetry...');
+                return (
+                  <div className="system-summary-body">
+                    {lines.map((line, i) => <span key={i}>{line}</span>)}
+                  </div>
+                );
+              })()}
+            </section>
             <section className="kpi-grid">
               <Kpi accent={rainbow.red} icon={Gauge} label="Net Power" value={formatMetric(summary.netSummary?.current, 'W')} detail={`Average ${formatMetric(summary.netSummary?.avg, 'W')}`} tone={summary.netSummary?.current && summary.netSummary.current >= 0 ? 'good' : 'warn'} />
               <Kpi accent={rainbow.orange} icon={PlugZap} label="Average Load" value={formatMetric(summary.outputSummary?.avg, 'W')} detail={summary.peakLoad ? `Peak ${formatMetric(summary.peakLoad.totalOutput, 'W')} at ${formatShortTime(summary.peakLoad.ts)}` : 'No load history'} />
@@ -333,7 +373,7 @@ export default function App() {
 
             <section className="grid-layout">
               <article className="panel panel-large">
-                <PanelHeader icon={LineChart} title="Power Balance" subtitle={`${range.label} window, ${timeline.length} buckets`} loading={chartsLoading} />
+                <PanelHeader icon={LineChart} title="Power Balance" subtitle={`${range.label} — ${timeline.length} data points`} tooltip={`Total input, total output, and net power over ${range.label}`} loading={chartsLoading} />
                 <div className="chart-frame">
                   <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} comparisonSeries={powerBalanceComparison} loading={chartsLoading} annotations={annotations} onClickPoint={(ts, rect) => setPendingAnnotationTs({ ts, rect })} />
                 </div>
@@ -349,24 +389,42 @@ export default function App() {
               </article>
 
               <article className="panel solar-input-panel">
-                <PanelHeader icon={Sun} title="Solar Input" subtitle="Voltage and wattage history" loading={chartsLoading} />
+                <PanelHeader icon={Sun} title="Solar Input" subtitle={solarViewMode === 'power' ? 'DC wattage' : 'DC voltage'} tooltip={solarViewMode === 'power' ? 'DC1 and DC2 solar input wattage over time' : 'DC1 and DC2 solar input voltage over time'} loading={chartsLoading} />
+                <div className="solar-toggle-group">
+                  <button type="button" className={solarViewMode === 'power' ? 'active' : ''} onClick={() => setSolarViewMode('power')}>Power</button>
+                  <button type="button" className={solarViewMode === 'voltage' ? 'active' : ''} onClick={() => setSolarViewMode('voltage')}>Voltage</button>
+                </div>
                 <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} comparisonSeries={solarInputComparison} loading={chartsLoading} annotations={annotations} onClickPoint={(ts, rect) => setPendingAnnotationTs({ ts, rect })} />
                 <div className="legend-strip compact">
-                  <span><i style={{ background: rainbow.yellow }} />DC1 wattage</span>
-                  <span><i style={{ background: rainbow.orange }} />DC1 voltage</span>
-                  <span><i style={{ background: rainbow.cyan }} />DC2 wattage</span>
-                  <span><i style={{ background: rainbow.blue }} />DC2 voltage</span>
+                  {solarViewMode === 'power' ? (
+                    <>
+                      <span><i style={{ background: rainbow.yellow }} />DC1 wattage</span>
+                      <span><i style={{ background: rainbow.cyan }} />DC2 wattage</span>
+                    </>
+                  ) : (
+                    <>
+                      <span><i style={{ background: rainbow.orange }} />DC1 voltage</span>
+                      <span><i style={{ background: rainbow.blue }} />DC2 voltage</span>
+                    </>
+                  )}
                 </div>
                 <div className="side-stats">
-                  <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} sub={summary.dcInput1PowerSummary ? `Peak ${formatMetric(summary.dcInput1PowerSummary.max, 'W')}` : undefined} />
-                  <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput1VoltageSummary ? `Peak ${formatMetric(summary.dcInput1VoltageSummary.max, 'V', 1)}` : undefined} />
-                  <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} sub={summary.dcInput2PowerSummary ? `Peak ${formatMetric(summary.dcInput2PowerSummary.max, 'W')}` : undefined} />
-                  <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput2VoltageSummary ? `Peak ${formatMetric(summary.dcInput2VoltageSummary.max, 'V', 1)}` : undefined} />
+                  {solarViewMode === 'power' ? (
+                    <>
+                      <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} sub={summary.dcInput1PowerSummary ? `Peak ${formatMetric(summary.dcInput1PowerSummary.max, 'W')}` : undefined} />
+                      <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} sub={summary.dcInput2PowerSummary ? `Peak ${formatMetric(summary.dcInput2PowerSummary.max, 'W')}` : undefined} />
+                    </>
+                  ) : (
+                    <>
+                      <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput1VoltageSummary ? `Peak ${formatMetric(summary.dcInput1VoltageSummary.max, 'V', 1)}` : undefined} />
+                      <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput2VoltageSummary ? `Peak ${formatMetric(summary.dcInput2VoltageSummary.max, 'V', 1)}` : undefined} />
+                    </>
+                  )}
                 </div>
               </article>
 
               <article className="panel battery-posture-panel">
-                <PanelHeader icon={Battery} title="Battery Posture" subtitle={resolved.batteryPercent ? `SOC trend from ${resolved.batteryPercent}` : 'No SOC field'} loading={chartsLoading} />
+                <PanelHeader icon={Battery} title="Battery Posture" subtitle={resolved.batteryPercent ? `State of Charge trend from ${resolved.batteryPercent}` : 'No battery level data'} tooltip="Battery state of charge percentage trend over the selected window" loading={chartsLoading} />
                 <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} comparisonSeries={batteryPostureComparison} loading={chartsLoading} annotations={annotations} onClickPoint={(ts, rect) => setPendingAnnotationTs({ ts, rect })} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.green }} />SOC trend</span>

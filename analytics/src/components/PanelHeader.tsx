@@ -6,12 +6,14 @@ export function PanelHeader({
   icon: Icon,
   title,
   subtitle,
+  tooltip,
   loading = false,
 }: {
   actions?: ReactNode;
   icon: typeof LineChart;
   title: string;
   subtitle: string;
+  tooltip?: string;
   loading?: boolean;
 }) {
   return (
@@ -21,7 +23,7 @@ export function PanelHeader({
         <h2>{title}</h2>
       </div>
       <div className="panel-header-side">
-        <p>{loading ? 'Refreshing...' : subtitle}</p>
+        <p title={tooltip}>{loading ? 'Refreshing...' : subtitle}</p>
         {actions}
       </div>
     </header>

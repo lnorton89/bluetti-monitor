@@ -55,6 +55,8 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
   const seriesMetaRef = useRef<Array<{ unit: string; digits: number }>>([]);
   const annotationsRef = useRef(annotations);
   const onClickPointRef = useRef(onClickPoint);
+  const mouseDownPosRef = useRef({ x: 0, y: 0 });
+  const mouseCleanupRef = useRef<(() => void) | null>(null);
   const hasData = timestamps.length > 0 && series.length > 0;
   const ANNOTATION_DOT_RADIUS = 5;
   const ANNOTATION_DOT_Y_OFFSET = 10;
@@ -187,7 +189,7 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
                   const val = chart.data[si]?.[idx];
                   if (s.show === false) continue;
                   const label = typeof s.label === 'string' ? s.label : `Series ${si}`;
-                  const stroke = typeof s.stroke === 'function' ? s.stroke() : (s.stroke ?? '#888');
+                  const stroke = typeof s.stroke === 'function' ? (s.stroke as unknown as () => string)() : (s.stroke ?? '#888');
                   const m = meta[si - 1];
                   const formatted = typeof val === 'number' && Number.isFinite(val)
                     ? formatTooltipValue(val, m?.unit, m?.digits)
@@ -254,25 +256,27 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
       plotRef.current = plot;
       plottedDataRef.current = currentData;
 
-      let mouseDownX = 0;
-      let mouseDownY = 0;
-      const onMouseDown = (e: MouseEvent) => {
-        mouseDownX = e.clientX;
-        mouseDownY = e.clientY;
+      const handleMouseDown = (e: MouseEvent) => {
+        mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
       };
-      const onMouseUp = (e: MouseEvent) => {
-        const dx = Math.abs(e.clientX - mouseDownX);
-        const dy = Math.abs(e.clientY - mouseDownY);
+const handleMouseUp = (e: MouseEvent) => {
+        const start = mouseDownPosRef.current;
+        const dx = Math.abs(e.clientX - start.x);
+        const dy = Math.abs(e.clientY - start.y);
         if (dx < 5 && dy < 5) {
           const cb = onClickPointRef.current;
           if (cb) {
-            const ts = plot.posToVal(e.offsetX, 'x') * 1000;
-            cb(ts, host.getBoundingClientRect());
+            const ts2 = plot.posToVal(e.offsetX, 'x') * 1000;
+            cb(ts2, host.getBoundingClientRect());
           }
         }
       };
-      host.addEventListener('mousedown', onMouseDown);
-      host.addEventListener('mouseup', onMouseUp);
+      host.addEventListener('mousedown', handleMouseDown);
+      host.addEventListener('mouseup', handleMouseUp);
+      mouseCleanupRef.current = () => {
+        host.removeEventListener('mousedown', handleMouseDown);
+        host.removeEventListener('mouseup', handleMouseUp);
+      };
 
       const resizeObserver = new ResizeObserver(([entry]) => {
         plot.setSize({ width: Math.max(260, entry.contentRect.width), height: 260 });
@@ -286,11 +290,7 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
       if (mountTimer !== null) {
         window.clearTimeout(mountTimer);
       }
-      const host = hostRef.current;
-      if (host) {
-        host.removeEventListener('mousedown', onMouseDown);
-        host.removeEventListener('mouseup', onMouseUp);
-      }
+      mouseCleanupRef.current?.();
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
       plotRef.current?.destroy();

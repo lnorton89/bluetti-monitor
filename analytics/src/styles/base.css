@@ -291,6 +291,40 @@ input:focus-visible {
   color: var(--accent-2);
 }
 
+.system-summary {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+}
+
+.system-summary-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-numeric);
+}
+
+.system-summary-body span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.system-summary-body span::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  flex: 0 0 auto;
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -543,6 +577,7 @@ input:focus-visible {
   margin-top: 4px;
   color: var(--text);
   font-family: var(--font-numeric);
+  font-size: 1.12rem;
 }
 
 .side-stat-sub {
@@ -551,6 +586,37 @@ input:focus-visible {
   font-size: 0.78em;
   color: var(--muted);
   font-family: var(--font-numeric);
+}
+
+.solar-toggle-group {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.solar-toggle-group button {
+  min-height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-deep);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.solar-toggle-group button.active {
+  color: var(--bg-deep);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+}
+
+@media (hover: hover) {
+  .solar-toggle-group button:not(.active):hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
 }
 
 .dense-tooltip-row strong {
@@ -1661,6 +1727,16 @@ input:focus-visible {
   font-size: 0.78rem;
 }
 
+:root[data-analytics-density="compact"] .system-summary {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+}
+
+:root[data-analytics-density="compact"] .system-summary-body {
+  font-size: 0.82rem;
+  gap: 6px 16px;
+}
+
 :root[data-analytics-density="compact"] .kpi-grid,
 :root[data-analytics-density="compact"] .grid-layout,
 :root[data-analytics-density="compact"] .side-stats,
@@ -1884,6 +1960,15 @@ input:focus-visible {
   .shell {
     width: 100%;
     padding: 12px 10px 32px;
+  }
+
+  .system-summary {
+    padding: 10px 12px;
+  }
+
+  .system-summary-body {
+    font-size: 0.9rem;
+    gap: 8px 14px;
   }
 
   .topbar,
