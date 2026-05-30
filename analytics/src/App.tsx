@@ -13,6 +13,7 @@ import {
   RANGE_PRESETS,
   buildCustomRange,
   computeComparisonRange,
+  exportTimelineToCsv,
   fieldsForResolved,
   getNumericFields,
   resolveFields,
@@ -264,6 +265,7 @@ export default function App() {
             onComparisonChange={setComparisonOption}
             onDensityChange={setDensityMode}
             onDeviceChange={setSelectedDevice}
+            onExportCsv={() => { if (timeline.length > 0) exportTimelineToCsv(timeline, range.label); }}
             onRangeChange={(id) => {
               if (id === CUSTOM_RANGE_ID) {
                 setDatePickerOpen((open) => !open);

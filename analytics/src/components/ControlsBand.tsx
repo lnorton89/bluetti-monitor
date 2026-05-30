@@ -1,5 +1,5 @@
 import { startTransition } from 'react';
-import { Eye, Maximize2, Minimize2, Moon, RefreshCw, Settings, Sun } from 'lucide-react';
+import { Download, Eye, Maximize2, Minimize2, Moon, RefreshCw, Settings, Sun } from 'lucide-react';
 import { IS_STATIC_ANALYTICS } from '../lib/api';
 import { CUSTOM_RANGE_ID, RANGE_PRESETS, type RangeId } from '../lib/analytics';
 import { COMPARISON_OPTIONS, type AnalyticsDensity, type AnalyticsTheme, type ComparisonOption } from '../lib/constants';
@@ -17,6 +17,7 @@ export function ControlsBand({
   onComparisonChange,
   onDensityChange,
   onDeviceChange,
+  onExportCsv,
   onRangeChange,
   onSettingsOpen,
   onThemeChange,
@@ -33,6 +34,7 @@ export function ControlsBand({
   onComparisonChange: (option: ComparisonOption) => void;
   onDensityChange: (density: AnalyticsDensity) => void;
   onDeviceChange: (device: string) => void;
+  onExportCsv: () => void;
   onRangeChange: (rangeId: RangeId) => void;
   onSettingsOpen: () => void;
   onThemeChange: (theme: AnalyticsTheme) => void;
@@ -97,6 +99,15 @@ export function ControlsBand({
         onClick={() => onThemeChange(themeMode === 'dark' ? 'light' : 'dark')}
       >
         {themeMode === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+      </button>
+      <button
+        className="icon-button"
+        type="button"
+        aria-label="Export CSV"
+        title="Export CSV"
+        onClick={onExportCsv}
+      >
+        <Download size={18} />
       </button>
       <button
         className="icon-button compact-toggle-button"

@@ -14,6 +14,46 @@ export type PresetId = typeof RANGE_PRESETS[number]['id'];
 export type RangeId = PresetId | 'custom';
 export const CUSTOM_RANGE_ID = 'custom' as const;
 
+const CSV_EXPORT_FIELDS: Array<{ key: keyof TimelinePoint; label: string }> = [
+  { key: 'ts', label: 'Timestamp (UTC)' },
+  { key: 'totalInput', label: 'Total Input (W)' },
+  { key: 'totalOutput', label: 'Total Output (W)' },
+  { key: 'netPower', label: 'Net Power (W)' },
+  { key: 'solarInput', label: 'Solar Input (W)' },
+  { key: 'solarVoltage', label: 'Solar Voltage (V)' },
+  { key: 'dcInput1Power', label: 'DC1 Power (W)' },
+  { key: 'dcInput1Voltage', label: 'DC1 Voltage (V)' },
+  { key: 'dcInput2Power', label: 'DC2 Power (W)' },
+  { key: 'dcInput2Voltage', label: 'DC2 Voltage (V)' },
+  { key: 'gridInput', label: 'Grid Input (W)' },
+  { key: 'acLoad', label: 'AC Load (W)' },
+  { key: 'dcLoad', label: 'DC Load (W)' },
+  { key: 'batteryPercent', label: 'Battery SOC (%)' },
+  { key: 'batteryVoltage', label: 'Battery Voltage (V)' },
+  { key: 'generatedEnergy', label: 'Generated Energy (kWh)' },
+];
+
+export function exportTimelineToCsv(timeline: TimelinePoint[], rangeLabel: string): void {
+  const header = CSV_EXPORT_FIELDS.map((f) => f.label).join(',');
+  const rows = timeline.map((point) =>
+    CSV_EXPORT_FIELDS.map((f) => {
+      const val = point[f.key];
+      if (val === null || val === undefined) return '';
+      if (f.key === 'ts') return new Date(val).toISOString();
+      return (val as number).toFixed(2);
+    }).join(','),
+  );
+  const csv = `${header}\n${rows.join('\n')}\n`;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bluetti-analytics-${rangeLabel.replace(/\s+/g, '-').toLowerCase()}-${dateStr}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function buildCustomRange(startIso: string, endIso: string) {
   const start = new Date(startIso).getTime();
   const end = new Date(endIso).getTime();
