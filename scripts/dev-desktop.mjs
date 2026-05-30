@@ -138,6 +138,8 @@ function spawnRestartingDesktop(command, args, label) {
   let restartTimer = null;
   let restarting = false;
   let resolveExitCode;
+  let restartCooldownUntil = 0;
+  const restartCooldownMs = 3_000;
   const exitCode = new Promise((resolvePromise) => {
     resolveExitCode = resolvePromise;
   });
@@ -151,6 +153,9 @@ function spawnRestartingDesktop(command, args, label) {
   };
 
   function startDesktopChild() {
+    restartCooldownUntil = Date.now() + restartCooldownMs;
+    logDevEvent(`${label} restart cooldown until`, { until: new Date(restartCooldownUntil).toISOString() });
+
     const child = spawn(command, args, {
       cwd: workspaceRoot,
       stdio: ["inherit", "pipe", "pipe"],
@@ -196,6 +201,11 @@ function spawnRestartingDesktop(command, args, label) {
   }
 
   function scheduleDesktopRestart(changedPath) {
+    if (Date.now() < restartCooldownUntil) {
+      logDevEvent(`${label} restart suppressed by cooldown`, { changedPath });
+      return;
+    }
+
     if (restartTimer) {
       clearTimeout(restartTimer);
     }

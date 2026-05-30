@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Maximize2, Minimize2, Moon, Search, Sun, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Maximize2, Minimize2, Moon, Palette, Search, Sun, X } from 'lucide-react';
 import {
   MAX_COMPARISON_FIELDS,
   SKIN_OPTIONS,
@@ -11,28 +11,33 @@ import {
 import { getFieldMeta } from '../lib/fields';
 
 export function SettingsModal({
+  accentOverride,
   availableComparisonFields,
   comparisonDefaultFields,
   densityMode,
   skin,
   themeMode,
+  onAccentChange,
   onComparisonDefaultFieldsChange,
   onClose,
   onDensityChange,
   onSkinChange,
   onThemeChange,
 }: {
+  accentOverride: string | null;
   availableComparisonFields: string[];
   comparisonDefaultFields: string[];
   densityMode: AnalyticsDensity;
   skin: AnalyticsSkin;
   themeMode: AnalyticsTheme;
+  onAccentChange: (color: string | null) => void;
   onComparisonDefaultFieldsChange: (fields: string[]) => void;
   onClose: () => void;
   onDensityChange: (density: AnalyticsDensity) => void;
   onSkinChange: (skin: AnalyticsSkin) => void;
   onThemeChange: (theme: AnalyticsTheme) => void;
 }) {
+  const accentColorInputRef = useRef<HTMLInputElement | null>(null);
   const [fieldSearch, setFieldSearch] = useState('');
   const selectedDefaultFields = useMemo(
     () => normalizeComparisonFields(comparisonDefaultFields, availableComparisonFields),
@@ -121,6 +126,48 @@ export function SettingsModal({
               <Sun size={15} />
               Light
             </button>
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy">
+            <span>Accent color</span>
+            <p>Override the primary accent color for the current skin. Right-click the palette icon (or use this picker) to reset to default.</p>
+          </div>
+          <div className="settings-accent-row">
+            <span className="color-picker-anchor">
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Pick accent color"
+                title={accentOverride ? `Accent: ${accentOverride}` : 'Customize accent color'}
+                onClick={() => accentColorInputRef.current?.click()}
+              >
+                <Palette size={18} />
+              </button>
+              <input
+                ref={accentColorInputRef}
+                type="color"
+                value={accentOverride ?? '#7a8ba8'}
+                onChange={(e) => onAccentChange(e.target.value)}
+                className="color-picker-input"
+              />
+            </span>
+            <span
+              className="color-swatch"
+              style={{ background: accentOverride ?? 'var(--accent)' }}
+              onClick={() => accentColorInputRef.current?.click()}
+            />
+            {accentOverride ? (
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Reset accent to default"
+                title="Reset to default"
+                onClick={() => onAccentChange(null)}
+              >
+                <X size={14} />
+              </button>
+            ) : null}
           </div>
         </div>
         <div className="settings-row">

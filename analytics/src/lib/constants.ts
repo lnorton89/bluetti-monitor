@@ -80,6 +80,34 @@ export type ComparisonOption = (typeof COMPARISON_OPTIONS)[number]['id'];
 
 export const ANALYTICS_COMPARE_KEY = 'bluetti-analytics:compare';
 
+export function getStoredAccentOverride(skin: AnalyticsSkin): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(ANALYTICS_ACCENT_OVERRIDE_KEY);
+    if (!raw) return null;
+    const map: Record<string, string> = JSON.parse(raw);
+    return map[skin] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredAccentOverride(skin: AnalyticsSkin, color: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = window.localStorage.getItem(ANALYTICS_ACCENT_OVERRIDE_KEY);
+    const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+    if (color) {
+      map[skin] = color;
+    } else {
+      delete map[skin];
+    }
+    window.localStorage.setItem(ANALYTICS_ACCENT_OVERRIDE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
 export function getStoredComparisonOption(): ComparisonOption {
   if (typeof window === 'undefined') return 'none';
   const stored = window.localStorage.getItem(ANALYTICS_COMPARE_KEY);
@@ -114,6 +142,7 @@ export const EXCLUDED_COMPARISON_FIELDS = new Set([
 export const ANALYTICS_SKIN_KEY = 'bluetti-analytics:skin';
 export const ANALYTICS_THEME_KEY = 'bluetti-analytics:theme';
 export const ANALYTICS_DENSITY_KEY = 'bluetti-analytics:density';
+export const ANALYTICS_ACCENT_OVERRIDE_KEY = 'bluetti-analytics:accent-override';
 export const COMPARISON_DEFAULT_FIELDS_KEY = 'bluetti-analytics:comparison-default-fields';
 export const MAX_COMPARISON_FIELDS = 6;
 export const EMPTY_TIMELINE: [] = [];

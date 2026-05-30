@@ -1,10 +1,12 @@
 import { startTransition } from 'react';
-import { Download, Eye, Maximize2, Minimize2, Moon, RefreshCw, Settings, Sun } from 'lucide-react';
+import { useRef } from 'react';
+import { Download, Eye, Maximize2, Minimize2, Moon, Palette, RefreshCw, Settings, Sun } from 'lucide-react';
 import { IS_STATIC_ANALYTICS } from '../lib/api';
 import { CUSTOM_RANGE_ID, RANGE_PRESETS, type RangeId } from '../lib/analytics';
 import { COMPARISON_OPTIONS, type AnalyticsDensity, type AnalyticsTheme, type ComparisonOption } from '../lib/constants';
 
 export function ControlsBand({
+  accentOverride,
   datePickerOpen,
   comparisonOption,
   densityMode,
@@ -14,6 +16,7 @@ export function ControlsBand({
   rangeId,
   selectedDevice,
   themeMode,
+  onAccentChange,
   onComparisonChange,
   onDensityChange,
   onDeviceChange,
@@ -22,6 +25,7 @@ export function ControlsBand({
   onSettingsOpen,
   onThemeChange,
 }: {
+  accentOverride: string | null;
   datePickerOpen: boolean;
   comparisonOption: ComparisonOption;
   densityMode: AnalyticsDensity;
@@ -31,6 +35,7 @@ export function ControlsBand({
   rangeId: RangeId;
   selectedDevice: string;
   themeMode: AnalyticsTheme;
+  onAccentChange: (color: string | null) => void;
   onComparisonChange: (option: ComparisonOption) => void;
   onDensityChange: (density: AnalyticsDensity) => void;
   onDeviceChange: (device: string) => void;
@@ -39,6 +44,7 @@ export function ControlsBand({
   onSettingsOpen: () => void;
   onThemeChange: (theme: AnalyticsTheme) => void;
 }) {
+  const colorInputRef = useRef<HTMLInputElement | null>(null);
   return (
     <section className="controls-band">
       <label className="control-field">
@@ -91,6 +97,26 @@ export function ControlsBand({
       >
         <RefreshCw size={18} />
       </button>
+      <span className="color-picker-anchor">
+        <button
+          className="icon-button"
+          type="button"
+          aria-label="Change primary accent color"
+          title={accentOverride ? `Accent: ${accentOverride}` : 'Customize accent color'}
+          onClick={() => colorInputRef.current?.click()}
+          onContextMenu={(e) => { e.preventDefault(); onAccentChange(null); }}
+        >
+          <Palette size={18} />
+        </button>
+        <input
+          ref={colorInputRef}
+          type="color"
+          value={accentOverride ?? '#7a8ba8'}
+          onChange={(e) => onAccentChange(e.target.value)}
+          className="color-picker-input"
+          aria-label="Accent color picker"
+        />
+      </span>
       <button
         className="icon-button theme-toggle-button"
         type="button"

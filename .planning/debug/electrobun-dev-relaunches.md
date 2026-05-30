@@ -1,5 +1,5 @@
 ---
-status: investigating
+status: resolved
 trigger: "the electrobun dev script seems to trigger relaunches excessively. can you find out why and fix it? if you cant find out why implement logging to catch it"
 created: 2026-05-29
 updated: 2026-05-29
@@ -65,4 +65,31 @@ The precise watcher included `scripts/electrobun-prebuild-clean.mjs` and `script
 ### Verification
 - `node --check scripts/dev-desktop.mjs` — syntax clean.
 - `scripts/dev-desktop.mjs` now watches: `src/bun`, `src/mainview`, `assets/icons/icon.ico`, `assets/icons/icon.png`, `electrobun.config.ts`.
+- files_changed: scripts/dev-desktop.mjs, .planning/debug/electrobun-dev-relaunches.md
+
+## Round 3 — Cascade still fires through legitimate watch targets
+
+### Symptoms
+- User reports app "just restarted" despite the Round 2 fix, and did not edit any source file.
+- Log shows `src/mainview/index.css` triggering a restart (user did not edit it).
+
+### Evidence
+- 2026-05-30 01:12:33–36: Cascade restart from the new Electrobun child still fires through legitimate watched paths (bluetooth.ts → electrobun.config.ts → index.ts → icon.ico).
+- 2026-05-30 01:13:21: `src/mainview/index.css` fires a restart ~45s after the cascade settles — user did not touch it.
+- Electrobun's build process reads `src/mainview/index.css` during copy step (`electrobun.config.ts` copies `src/mainview/index.css` → `views/mainview/index.css`).
+- On Windows, `fs.watch` (backed by `ReadDirectoryChangesW`) fires `FILE_ACTION_MODIFIED` when the build reads source files (last-access-time or metadata change), not just write events.
+
+### Root Cause
+The 300ms debounce in `scheduleDesktopRestart` is too short to cover an Electrobun build cycle:
+1. Legitimate change (or spurious Windows event) triggers restart
+2. New Electrobun child starts and reads `electrobun.config.ts`, `index.ts`, `icon.ico`, `index.css` during its build
+3. `fs.watch` fires events for these reads 1–3 seconds after spawning
+4. Each new event triggers another restart 300ms later
+5. Cascade continues until events happen to settle
+
+### Fix
+Added a 3-second restart cooldown (`restartCooldownMs = 3_000`) that starts when a new child is spawned. Events arriving during the cooldown are logged and silently dropped. This gives the Electrobun build cycle enough time to finish reading source files without triggering a cascade.
+
+### Verification
+- `node --check scripts/dev-desktop.mjs` — syntax clean.
 - files_changed: scripts/dev-desktop.mjs, .planning/debug/electrobun-dev-relaunches.md

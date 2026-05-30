@@ -35,8 +35,10 @@ import {
   getStoredAnalyticsSkin,
   getStoredAnalyticsTheme,
   getStoredComparisonDefaultFields,
+  getStoredAccentOverride,
   getStoredComparisonOption,
   isComparableField,
+  setStoredAccentOverride,
   type AnalyticsDensity,
   type AnalyticsSkin,
   type AnalyticsTheme,
@@ -67,6 +69,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState<AnalyticsTheme>(getStoredAnalyticsTheme);
   const [densityMode, setDensityMode] = useState<AnalyticsDensity>(getStoredAnalyticsDensity);
   const [skin, setSkin] = useState<AnalyticsSkin>(getStoredAnalyticsSkin);
+  const [accentOverride, setAccentOverride] = useState<string | null>(() => getStoredAccentOverride(getStoredAnalyticsSkin));
   const [comparisonDefaultFields, setComparisonDefaultFields] = useState<string[]>(getStoredComparisonDefaultFields);
   const [comparisonOption, setComparisonOption] = useState<ComparisonOption>(getStoredComparisonOption);
   const [customStart, setCustomStart] = useState(() => {
@@ -88,7 +91,16 @@ export default function App() {
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-analytics-skin', skin);
     window.localStorage.setItem(ANALYTICS_SKIN_KEY, skin);
+    setAccentOverride(getStoredAccentOverride(skin));
   }, [skin]);
+
+  useLayoutEffect(() => {
+    if (accentOverride) {
+      document.documentElement.style.setProperty('--accent', accentOverride);
+    } else {
+      document.documentElement.style.removeProperty('--accent');
+    }
+  }, [accentOverride, skin]);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-analytics-density', densityMode);
@@ -261,7 +273,9 @@ export default function App() {
             liveConnected={live.connected}
             rangeId={rangeId}
             selectedDevice={selectedDevice}
+            accentOverride={accentOverride}
             themeMode={themeMode}
+            onAccentChange={(color) => { setAccentOverride(color); setStoredAccentOverride(skin, color); }}
             onComparisonChange={setComparisonOption}
             onDensityChange={setDensityMode}
             onDeviceChange={setSelectedDevice}
@@ -339,10 +353,10 @@ export default function App() {
                   <span><i style={{ background: rainbow.blue }} />DC2 voltage</span>
                 </div>
                 <div className="side-stats">
-                  <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} sub={summary.dcInput1PowerSummary ? `${formatMetric(summary.dcInput1PowerSummary.min, 'W')} – ${formatMetric(summary.dcInput1PowerSummary.max, 'W')}` : undefined} />
-                  <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput1VoltageSummary ? `${formatMetric(summary.dcInput1VoltageSummary.min, 'V', 1)} – ${formatMetric(summary.dcInput1VoltageSummary.max, 'V', 1)}` : undefined} />
-                  <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} sub={summary.dcInput2PowerSummary ? `${formatMetric(summary.dcInput2PowerSummary.min, 'W')} – ${formatMetric(summary.dcInput2PowerSummary.max, 'W')}` : undefined} />
-                  <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput2VoltageSummary ? `${formatMetric(summary.dcInput2VoltageSummary.min, 'V', 1)} – ${formatMetric(summary.dcInput2VoltageSummary.max, 'V', 1)}` : undefined} />
+                  <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} sub={summary.dcInput1PowerSummary ? `Peak ${formatMetric(summary.dcInput1PowerSummary.max, 'W')}` : undefined} />
+                  <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput1VoltageSummary ? `Peak ${formatMetric(summary.dcInput1VoltageSummary.max, 'V', 1)}` : undefined} />
+                  <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} sub={summary.dcInput2PowerSummary ? `Peak ${formatMetric(summary.dcInput2PowerSummary.max, 'W')}` : undefined} />
+                  <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput2VoltageSummary ? `Peak ${formatMetric(summary.dcInput2VoltageSummary.max, 'V', 1)}` : undefined} />
                 </div>
               </article>
 
@@ -377,11 +391,13 @@ export default function App() {
       </section>
       {settingsOpen ? (
         <SettingsModal
+          accentOverride={accentOverride}
           availableComparisonFields={comparableFields}
           comparisonDefaultFields={comparisonDefaultFields}
           densityMode={densityMode}
           skin={skin}
           themeMode={themeMode}
+          onAccentChange={(color) => { setAccentOverride(color); setStoredAccentOverride(skin, color); }}
           onComparisonDefaultFieldsChange={setComparisonDefaultFields}
           onClose={() => setSettingsOpen(false)}
           onDensityChange={setDensityMode}
