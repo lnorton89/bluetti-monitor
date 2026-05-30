@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
+import type { Annotation } from '../lib/annotations';
 
 export interface DenseSeries {
   label: string;
@@ -28,6 +29,8 @@ interface DenseTimeSeriesProps {
   comparisonSeries?: ComparisonSeriesGroup[];
   themeMode?: 'dark' | 'light';
   loading?: boolean;
+  annotations?: Annotation[];
+  onClickPoint?: (ts: number, rect: DOMRect) => void;
 }
 
 function getChartTheme() {
@@ -39,7 +42,7 @@ function getChartTheme() {
   };
 }
 
-function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonSeries, themeMode = 'dark', loading = false }: DenseTimeSeriesProps) {
+function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonSeries, themeMode = 'dark', loading = false, annotations, onClickPoint }: DenseTimeSeriesProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
@@ -50,7 +53,11 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
   const seriesRef = useRef(series);
   const comparisonSeriesRef = useRef(comparisonSeries);
   const seriesMetaRef = useRef<Array<{ unit: string; digits: number }>>([]);
+  const annotationsRef = useRef(annotations);
+  const onClickPointRef = useRef(onClickPoint);
   const hasData = timestamps.length > 0 && series.length > 0;
+  const ANNOTATION_DOT_RADIUS = 5;
+  const ANNOTATION_DOT_Y_OFFSET = 10;
 
   const mergedTimestamps = useMemo(() => {
     if (!comparisonSeries) return timestamps;
@@ -117,7 +124,9 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
     comparisonSeriesRef.current = comparisonSeries;
     seriesMetaRef.current = seriesMeta;
     dataRef.current = data;
-  }, [data, series, timestamps, comparisonSeries, seriesMeta]);
+    annotationsRef.current = annotations;
+    onClickPointRef.current = onClickPoint;
+  }, [data, series, timestamps, comparisonSeries, seriesMeta, annotations, onClickPoint]);
 
   useEffect(() => {
     if (!hasData) {
@@ -199,6 +208,27 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
                 tooltip.style.transform = `translate(${Math.max(8, cursorLeft + xOffset)}px, ${Math.max(8, cursorTop + yOffset)}px)`;
               },
             ],
+            draw: [
+              (chart) => {
+                const anns = annotationsRef.current;
+                if (!anns || anns.length === 0) return;
+                const ctx = chart.ctx;
+                ctx.save();
+                for (const ann of anns) {
+                  const cx = chart.valToPos(ann.ts / 1000, 'x');
+                  if (cx < chart.bbox.left || cx > chart.bbox.left + chart.bbox.width) continue;
+                  const cy = chart.bbox.top + ANNOTATION_DOT_Y_OFFSET;
+                  ctx.beginPath();
+                  ctx.arc(cx, cy, ANNOTATION_DOT_RADIUS, 0, Math.PI * 2);
+                  ctx.fillStyle = ann.color ?? '#fbbf24';
+                  ctx.fill();
+                  ctx.strokeStyle = '#fff';
+                  ctx.lineWidth = 1.5;
+                  ctx.stroke();
+                }
+                ctx.restore();
+              },
+            ],
           },
           series: [
             {},
@@ -224,6 +254,26 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
       plotRef.current = plot;
       plottedDataRef.current = currentData;
 
+      let mouseDownX = 0;
+      let mouseDownY = 0;
+      const onMouseDown = (e: MouseEvent) => {
+        mouseDownX = e.clientX;
+        mouseDownY = e.clientY;
+      };
+      const onMouseUp = (e: MouseEvent) => {
+        const dx = Math.abs(e.clientX - mouseDownX);
+        const dy = Math.abs(e.clientY - mouseDownY);
+        if (dx < 5 && dy < 5) {
+          const cb = onClickPointRef.current;
+          if (cb) {
+            const ts = plot.posToVal(e.offsetX, 'x') * 1000;
+            cb(ts, host.getBoundingClientRect());
+          }
+        }
+      };
+      host.addEventListener('mousedown', onMouseDown);
+      host.addEventListener('mouseup', onMouseUp);
+
       const resizeObserver = new ResizeObserver(([entry]) => {
         plot.setSize({ width: Math.max(260, entry.contentRect.width), height: 260 });
       });
@@ -235,6 +285,11 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
       cancelled = true;
       if (mountTimer !== null) {
         window.clearTimeout(mountTimer);
+      }
+      const host = hostRef.current;
+      if (host) {
+        host.removeEventListener('mousedown', onMouseDown);
+        host.removeEventListener('mouseup', onMouseUp);
       }
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;

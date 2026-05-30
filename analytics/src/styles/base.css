@@ -872,6 +872,162 @@ input:focus-visible {
   animation: chart-spin 0.7s linear infinite;
 }
 
+.annotation-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.annotation-popover {
+  z-index: 1001;
+  min-width: 280px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.annotation-popover-time {
+  font-size: 0.75rem;
+  color: var(--muted, var(--accent-3));
+  font-weight: 600;
+}
+
+.annotation-popover-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 0.82rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.annotation-popover-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.annotation-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.annotation-popover-cancel,
+.annotation-popover-delete,
+.annotation-popover-save {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.annotation-popover-save {
+  background: var(--accent);
+  color: var(--bg-deep);
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
+.annotation-popover-delete {
+  color: #e55;
+  border-color: #e55;
+}
+
+.notes-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 0;
+}
+
+.notes-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-deep);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+
+.notes-panel-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.notes-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.notes-panel-empty {
+  font-size: 0.78rem;
+  color: var(--accent-3);
+  font-style: italic;
+}
+
+.notes-panel-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+}
+
+.notes-panel-jump {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.notes-panel-jump:hover {
+  text-decoration: underline;
+}
+
+.notes-panel-text {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin: 0;
+}
+
+.notes-panel-delete {
+  background: none;
+  border: none;
+  color: var(--accent-3);
+  cursor: pointer;
+  padding: 2px;
+  flex: 0 0 auto;
+}
+
+.notes-panel-delete:hover {
+  color: #e55;
+}
+
 @keyframes chart-spin {
   to {
     transform: rotate(360deg);
