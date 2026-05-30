@@ -185,6 +185,19 @@ export default function App() {
   const timelineTimestamps = useMemo(() => timeline.map((row) => row.ts), [timeline]);
   const summary = useTimelineSummary(timeline);
 
+  useLayoutEffect(() => {
+    const bat = summary.batterySummary;
+    const solar = summary.solarShare;
+    const batLevel = bat?.current;
+    if (batLevel != null && batLevel < 20) {
+      document.documentElement.setAttribute('data-analytics-state', 'critical');
+    } else if (solar != null && solar >= 100) {
+      document.documentElement.setAttribute('data-analytics-state', 'surplus');
+    } else {
+      document.documentElement.removeAttribute('data-analytics-state');
+    }
+  }, [summary.batterySummary, summary.solarShare]);
+
   const comparisonRange = useMemo(
     () => computeComparisonRange(sinceIso, range.minutes, comparisonOption),
     [sinceIso, range.minutes, comparisonOption],

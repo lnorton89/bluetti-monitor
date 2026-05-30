@@ -2165,6 +2165,16 @@ input:focus-visible {
   }
 }
 
+:root[data-analytics-state="critical"] .panel {
+  border-color: color-mix(in srgb, #e55 24%, var(--border));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22), inset 0 0 0 1px color-mix(in srgb, #e55 10%, transparent);
+}
+
+:root[data-analytics-state="surplus"] .panel {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22), inset 0 0 0 1px color-mix(in srgb, var(--accent-3) 8%, transparent);
+}
+
 @media (max-width: 420px) {
   .topbar h1 {
     font-size: 2.15rem;
