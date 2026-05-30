@@ -178,6 +178,7 @@ export default function App() {
   });
 
   const comparisonTimeline = comparisonHistoryQuery.data ?? EMPTY_TIMELINE;
+  const chartsLoading = historyQuery.isFetching || comparisonHistoryQuery.isFetching;
   const comparisonOffsetMs = comparisonRange ? Date.parse(sinceIso) - Date.parse(comparisonRange.since) : 0;
 
   const powerBalanceSeries = useMemo<DenseSeries[]>(() => [
@@ -311,9 +312,9 @@ export default function App() {
 
             <section className="grid-layout">
               <article className="panel panel-large">
-                <PanelHeader icon={LineChart} title="Power Balance" subtitle={`${range.label} window, ${timeline.length} buckets`} loading={historyQuery.isFetching} />
+                <PanelHeader icon={LineChart} title="Power Balance" subtitle={`${range.label} window, ${timeline.length} buckets`} loading={chartsLoading} />
                 <div className="chart-frame">
-                  <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} comparisonSeries={powerBalanceComparison} />
+                  <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} comparisonSeries={powerBalanceComparison} loading={chartsLoading} />
                 </div>
                 <div className="legend-strip">
                   <span><i style={{ background: rainbow.red }} />Total input</span>
@@ -327,8 +328,8 @@ export default function App() {
               </article>
 
               <article className="panel solar-input-panel">
-                <PanelHeader icon={Sun} title="Solar Input" subtitle="Voltage and wattage history" loading={historyQuery.isFetching} />
-                <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} comparisonSeries={solarInputComparison} />
+                <PanelHeader icon={Sun} title="Solar Input" subtitle="Voltage and wattage history" loading={chartsLoading} />
+                <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} comparisonSeries={solarInputComparison} loading={chartsLoading} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.yellow }} />DC1 wattage</span>
                   <span><i style={{ background: rainbow.orange }} />DC1 voltage</span>
@@ -344,8 +345,8 @@ export default function App() {
               </article>
 
               <article className="panel battery-posture-panel">
-                <PanelHeader icon={Battery} title="Battery Posture" subtitle={resolved.batteryPercent ? `SOC trend from ${resolved.batteryPercent}` : 'No SOC field'} />
-                <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} comparisonSeries={batteryPostureComparison} />
+                <PanelHeader icon={Battery} title="Battery Posture" subtitle={resolved.batteryPercent ? `SOC trend from ${resolved.batteryPercent}` : 'No SOC field'} loading={chartsLoading} />
+                <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} comparisonSeries={batteryPostureComparison} loading={chartsLoading} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.green }} />SOC trend</span>
                 </div>

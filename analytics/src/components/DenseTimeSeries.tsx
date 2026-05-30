@@ -27,6 +27,7 @@ interface DenseTimeSeriesProps {
   series: DenseSeries[];
   comparisonSeries?: ComparisonSeriesGroup[];
   themeMode?: 'dark' | 'light';
+  loading?: boolean;
 }
 
 function getChartTheme() {
@@ -38,7 +39,7 @@ function getChartTheme() {
   };
 }
 
-function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonSeries, themeMode = 'dark' }: DenseTimeSeriesProps) {
+function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonSeries, themeMode = 'dark', loading = false }: DenseTimeSeriesProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
@@ -294,6 +295,7 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonS
     <div className="dense-chart-shell">
       <div className="dense-chart" ref={hostRef} />
       <div className="dense-tooltip" ref={tooltipRef} hidden />
+      {loading ? <div className="chart-loading-overlay"><div className="chart-loading-spinner" /></div> : null}
     </div>
   );
 }

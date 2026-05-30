@@ -849,6 +849,34 @@ input:focus-visible {
   position: relative;
 }
 
+.chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-deep) 70%, transparent);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  border-radius: 6px;
+  transition: opacity 0.2s ease;
+}
+
+.chart-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: chart-spin 0.7s linear infinite;
+}
+
+@keyframes chart-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .dense-chart {
   width: 100%;
   min-height: 260px;
