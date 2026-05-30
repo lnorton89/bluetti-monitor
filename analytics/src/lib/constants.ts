@@ -69,6 +69,23 @@ export const buildRainbow = (colors: string[]) => ({
   violet: colors[6],
 });
 
+export const COMPARISON_OPTIONS = [
+  { id: 'none', label: 'None' },
+  { id: 'yesterday', label: 'Yesterday' },
+  { id: 'same_day_last_week', label: 'Same day last week' },
+  { id: 'same_range_last_week', label: 'Same range last week' },
+] as const;
+
+export type ComparisonOption = (typeof COMPARISON_OPTIONS)[number]['id'];
+
+export const ANALYTICS_COMPARE_KEY = 'bluetti-analytics:compare';
+
+export function getStoredComparisonOption(): ComparisonOption {
+  if (typeof window === 'undefined') return 'none';
+  const stored = window.localStorage.getItem(ANALYTICS_COMPARE_KEY);
+  return COMPARISON_OPTIONS.some((opt) => opt.id === stored) ? (stored as ComparisonOption) : 'none';
+}
+
 export const DEFAULT_COMPARISON_FIELDS = [
   'ac_input_power',
   'ac_output_power',

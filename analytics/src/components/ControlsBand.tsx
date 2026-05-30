@@ -1,11 +1,12 @@
-import { startTransition } from 'react';
-import { Maximize2, Minimize2, Moon, RefreshCw, Settings, Sun } from 'lucide-react';
+import { startTransition, useId } from 'react';
+import { Eye, Maximize2, Minimize2, Moon, RefreshCw, Settings, Sun } from 'lucide-react';
 import { IS_STATIC_ANALYTICS } from '../lib/api';
 import { CUSTOM_RANGE_ID, RANGE_PRESETS, type RangeId } from '../lib/analytics';
-import { type AnalyticsDensity, type AnalyticsTheme } from '../lib/constants';
+import { COMPARISON_OPTIONS, type AnalyticsDensity, type AnalyticsTheme, type ComparisonOption } from '../lib/constants';
 
 export function ControlsBand({
   datePickerOpen,
+  comparisonOption,
   densityMode,
   devices,
   historyQueryRefetch,
@@ -13,6 +14,7 @@ export function ControlsBand({
   rangeId,
   selectedDevice,
   themeMode,
+  onComparisonChange,
   onDensityChange,
   onDeviceChange,
   onRangeChange,
@@ -20,6 +22,7 @@ export function ControlsBand({
   onThemeChange,
 }: {
   datePickerOpen: boolean;
+  comparisonOption: ComparisonOption;
   densityMode: AnalyticsDensity;
   devices: string[];
   historyQueryRefetch: () => void;
@@ -27,12 +30,15 @@ export function ControlsBand({
   rangeId: RangeId;
   selectedDevice: string;
   themeMode: AnalyticsTheme;
+  onComparisonChange: (option: ComparisonOption) => void;
   onDensityChange: (density: AnalyticsDensity) => void;
   onDeviceChange: (device: string) => void;
   onRangeChange: (rangeId: RangeId) => void;
   onSettingsOpen: () => void;
   onThemeChange: (theme: AnalyticsTheme) => void;
 }) {
+  const compareSelectId = useId();
+  const isComparing = comparisonOption !== 'none';
   return (
     <section className="controls-band">
       <label className="control-field">
@@ -65,6 +71,20 @@ export function ControlsBand({
           Custom
         </button>
       </div>
+      <label className="control-field compare-select">
+        <span className="sr-only">Compare with</span>
+        <Eye size={14} className="compare-icon" />
+        <select
+          id={compareSelectId}
+          value={comparisonOption}
+          onChange={(event) => onComparisonChange(event.target.value as ComparisonOption)}
+        >
+          {COMPARISON_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>{opt.label}</option>
+          ))}
+        </select>
+        {isComparing ? <span className="compare-badge">Comparing</span> : null}
+      </label>
       <button
         className="icon-button"
         type="button"

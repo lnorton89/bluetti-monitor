@@ -8,12 +8,24 @@ export interface DenseSeries {
   values: Array<number | null>;
   unit?: string;
   digits?: number;
+  dashed?: boolean;
+}
+
+export interface ComparisonSeriesGroup {
+  label: string;
+  color: string;
+  timestamps: number[];
+  values: Array<number | null>;
+  unit?: string;
+  digits?: number;
+  isComparison?: boolean;
 }
 
 interface DenseTimeSeriesProps {
   deferMs?: number;
   timestamps: number[];
   series: DenseSeries[];
+  comparisonSeries?: ComparisonSeriesGroup[];
   themeMode?: 'dark' | 'light';
 }
 
@@ -26,7 +38,7 @@ function getChartTheme() {
   };
 }
 
-function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode = 'dark' }: DenseTimeSeriesProps) {
+function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, comparisonSeries, themeMode = 'dark' }: DenseTimeSeriesProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const plotRef = useRef<uPlot | null>(null);
@@ -35,26 +47,76 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
   const plottedDataRef = useRef<uPlot.AlignedData | null>(null);
   const timestampsRef = useRef(timestamps);
   const seriesRef = useRef(series);
+  const comparisonSeriesRef = useRef(comparisonSeries);
+  const seriesMetaRef = useRef<Array<{ unit: string; digits: number }>>([]);
   const hasData = timestamps.length > 0 && series.length > 0;
 
+  const mergedTimestamps = useMemo(() => {
+    if (!comparisonSeries) return timestamps;
+    const allTss = new Set(timestamps);
+    for (const cs of comparisonSeries) {
+      for (const ts of cs.timestamps) {
+        allTss.add(ts);
+      }
+    }
+    return Array.from(allTss).sort((a, b) => a - b);
+  }, [timestamps, comparisonSeries]);
+
+  const allSeries = useMemo(() => {
+    const primary = series.map((s) => ({ ...s, dashed: false }));
+    if (!comparisonSeries) return primary;
+    const comp = comparisonSeries.map((cs) => ({
+      label: cs.label,
+      color: cs.color,
+      values: cs.values,
+      unit: cs.unit,
+      digits: cs.digits,
+      dashed: true,
+    }));
+    return [...primary, ...comp];
+  }, [series, comparisonSeries]);
+
+  const seriesMeta = useMemo(
+    () => allSeries.map((s) => ({ unit: s.unit ?? '', digits: s.digits ?? 1 })),
+    [allSeries],
+  );
+
   const data = useMemo(() => {
-    const x = timestamps.map((ts) => ts / 1000);
-    return [x, ...series.map((item) => item.values.map((value) => value ?? null))] as uPlot.AlignedData;
-  }, [series, timestamps]);
+    const x = mergedTimestamps.map((ts) => ts / 1000);
+    const tsMap = new Map(timestamps.map((ts, i) => [ts, i]));
+    const primaryRows = series.map((s) =>
+      mergedTimestamps.map((ts) => {
+        const idx = tsMap.get(ts);
+        return idx !== undefined ? (s.values[idx] ?? null) : null;
+      }),
+    );
+    const compRows = comparisonSeries
+      ? comparisonSeries.map((cs) => {
+          const csMap = new Map(cs.timestamps.map((ts, i) => [ts, i]));
+          return mergedTimestamps.map((ts) => {
+            const idx = csMap.get(ts);
+            return idx !== undefined ? (cs.values[idx] ?? null) : null;
+          });
+        })
+      : [];
+    return [x, ...primaryRows, ...compRows] as uPlot.AlignedData;
+  }, [mergedTimestamps, timestamps, series, comparisonSeries]);
   const seriesStructureKey = useMemo(
-    () => series.map((item) => `${item.label}:${item.unit ?? ''}:${item.digits ?? ''}`).join('|'),
-    [series],
+    () => allSeries.map((item) => `${item.label}:${item.unit ?? ''}:${item.digits ?? ''}:${item.dashed ?? false}`).join('|'),
+    [allSeries],
   );
   const seriesColorsKey = useMemo(
-    () => series.map((item) => item.color).join('|'),
-    [series],
+    () => allSeries.map((item) => item.color).join('|'),
+    [allSeries],
   );
 
   useEffect(() => {
     timestampsRef.current = timestamps;
     seriesRef.current = series;
+    comparisonSeriesRef.current = comparisonSeries;
+    seriesMetaRef.current = seriesMeta;
     dataRef.current = data;
-  }, [data, series, timestamps]);
+  }, [data, series, timestamps, comparisonSeries, seriesMeta]);
 
   useEffect(() => {
     if (!hasData) {
@@ -96,16 +158,35 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
           hooks: {
             setCursor: [
               (chart) => {
-                const index = chart.cursor.idx;
-                const currentTimestamps = timestampsRef.current;
-                const currentSeries = seriesRef.current;
-                if (index === null || index === undefined || index < 0 || index >= currentTimestamps.length) {
+                const idx = chart.cursor.idx;
+                if (idx === null || idx === undefined || idx < 0) {
                   tooltip.hidden = true;
                   return;
                 }
 
+                const xVal = chart.data[0]?.[idx];
+                if (xVal === undefined) {
+                  tooltip.hidden = true;
+                  return;
+                }
+
+                const rows: string[] = [];
+                const meta = seriesMetaRef.current;
+                for (let si = 1; si < chart.data.length; si++) {
+                  const s = chart.series[si];
+                  const val = chart.data[si]?.[idx];
+                  if (s.show === false) continue;
+                  const label = typeof s.label === 'string' ? s.label : `Series ${si}`;
+                  const stroke = typeof s.stroke === 'function' ? s.stroke() : (s.stroke ?? '#888');
+                  const m = meta[si - 1];
+                  const formatted = typeof val === 'number' && Number.isFinite(val)
+                    ? formatTooltipValue(val, m?.unit, m?.digits)
+                    : '--';
+                  rows.push(`<div class="dense-tooltip-row"><span><i style="background:${stroke}"></i>${escapeHtml(label)}</span><strong>${formatted}</strong></div>`);
+                }
+
                 tooltip.hidden = false;
-                tooltip.innerHTML = buildTooltipHtml(currentTimestamps[index], currentSeries, index);
+                tooltip.innerHTML = `<div class="dense-tooltip-time">${escapeHtml(formatTooltipTime(xVal * 1000))}</div>${rows.join('')}`;
 
                 const cursorLeft = chart.cursor.left ?? 0;
                 const cursorTop = chart.cursor.top ?? 0;
@@ -124,6 +205,13 @@ function DenseTimeSeriesComponent({ deferMs = 0, timestamps, series, themeMode =
               label: item.label,
               stroke: item.color,
               width: 2,
+              points: { show: false },
+            })),
+            ...(comparisonSeries ?? []).map((item) => ({
+              label: item.label,
+              stroke: item.color,
+              width: 1.5,
+              dash: [5, 5],
               points: { show: false },
             })),
           ],

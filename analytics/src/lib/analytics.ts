@@ -1,5 +1,6 @@
 import type { DeviceState, HistoryPoint } from './api';
 import { getFieldMeta, isNumericValue } from './fields';
+import { type ComparisonOption } from './constants';
 
 export const RANGE_PRESETS = [
   { id: '1h', label: '1H', minutes: 60, limit: 900, bucketMs: 60_000 },
@@ -37,6 +38,35 @@ export function buildCustomRange(startIso: string, endIso: string) {
   const limit = Math.ceil(minutes * 60_000 / bucketMs * 1.2);
 
   return { minutes, limit, bucketMs } as const;
+}
+
+export function computeComparisonRange(sinceIso: string, rangeMinutes: number, option: ComparisonOption): { since: string; label: string; offsetMs: number } | null {
+  if (option === 'none') return null;
+
+  const since = Date.parse(sinceIso);
+  if (!Number.isFinite(since)) return null;
+
+  let offsetMs: number;
+  let label: string;
+
+  switch (option) {
+    case 'yesterday':
+      offsetMs = 24 * 60 * 60_000;
+      label = 'Yesterday';
+      break;
+    case 'same_day_last_week':
+      offsetMs = 7 * 24 * 60 * 60_000;
+      label = 'Same day last week';
+      break;
+    case 'same_range_last_week':
+      offsetMs = 7 * 24 * 60 * 60_000;
+      label = 'Same range last week';
+      break;
+    default:
+      return null;
+  }
+
+  return { since: new Date(since - offsetMs).toISOString(), label, offsetMs };
 }
 
 export const METRIC_ALIASES = {

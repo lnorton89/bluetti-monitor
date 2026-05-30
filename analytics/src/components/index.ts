@@ -1,7 +1,7 @@
 export { ControlsBand } from './ControlsBand';
 export { CustomDateRange } from './CustomDateRange';
 export { DenseTimeSeries } from './DenseTimeSeries';
-export type { DenseSeries } from './DenseTimeSeries';
+export type { ComparisonSeriesGroup, DenseSeries } from './DenseTimeSeries';
 export { FieldChipList } from './FieldChipList';
 export { FieldComparisonPanel } from './FieldComparisonPanel';
 export { Kpi } from './Kpi';

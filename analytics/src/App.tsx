@@ -12,6 +12,7 @@ import {
   CUSTOM_RANGE_ID,
   RANGE_PRESETS,
   buildCustomRange,
+  computeComparisonRange,
   fieldsForResolved,
   getNumericFields,
   resolveFields,
@@ -21,6 +22,7 @@ import { fetchCoreTimelineInWorker } from './lib/history-worker-client';
 import { formatMetric } from './lib/fields';
 import { formatFreshness, formatShortTime } from './lib/time';
 import {
+  ANALYTICS_COMPARE_KEY,
   ANALYTICS_DENSITY_KEY,
   ANALYTICS_SKIN_KEY,
   ANALYTICS_THEME_KEY,
@@ -32,10 +34,12 @@ import {
   getStoredAnalyticsSkin,
   getStoredAnalyticsTheme,
   getStoredComparisonDefaultFields,
+  getStoredComparisonOption,
   isComparableField,
   type AnalyticsDensity,
   type AnalyticsSkin,
   type AnalyticsTheme,
+  type ComparisonOption,
 } from './lib/constants';
 import { useLiveTelemetry } from './hooks/useLiveTelemetry';
 import { useStableStringArray } from './hooks/useStableStringArray';
@@ -51,6 +55,7 @@ import {
   SideStat,
   SnapshotPanel,
   StatusPill,
+  type ComparisonSeriesGroup,
   type DenseSeries,
 } from './components';
 
@@ -62,6 +67,7 @@ export default function App() {
   const [densityMode, setDensityMode] = useState<AnalyticsDensity>(getStoredAnalyticsDensity);
   const [skin, setSkin] = useState<AnalyticsSkin>(getStoredAnalyticsSkin);
   const [comparisonDefaultFields, setComparisonDefaultFields] = useState<string[]>(getStoredComparisonDefaultFields);
+  const [comparisonOption, setComparisonOption] = useState<ComparisonOption>(getStoredComparisonOption);
   const [customStart, setCustomStart] = useState(() => {
     const d = new Date(Date.now() - 7 * 24 * 60 * 60_000);
     return d.toISOString().slice(0, 16);
@@ -91,6 +97,10 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(COMPARISON_DEFAULT_FIELDS_KEY, JSON.stringify(comparisonDefaultFields));
   }, [comparisonDefaultFields]);
+
+  useEffect(() => {
+    window.localStorage.setItem(ANALYTICS_COMPARE_KEY, comparisonOption);
+  }, [comparisonOption]);
 
   const statusQuery = useQuery({ queryKey: ['status'], queryFn: fetchStatus });
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices });
@@ -156,6 +166,20 @@ export default function App() {
   const timelineTimestamps = useMemo(() => timeline.map((row) => row.ts), [timeline]);
   const summary = useTimelineSummary(timeline);
 
+  const comparisonRange = useMemo(
+    () => computeComparisonRange(sinceIso, range.minutes, comparisonOption),
+    [sinceIso, range.minutes, comparisonOption],
+  );
+
+  const comparisonHistoryQuery = useQuery({
+    queryKey: ['core-timeline-comparison', selectedDevice, comparisonOption, range.id, sinceIso, historyFields.join('|')],
+    queryFn: () => fetchCoreTimelineInWorker(selectedDevice, historyFields, { limit: range.limit, since: comparisonRange!.since }, resolved, range.bucketMs),
+    enabled: Boolean(selectedDevice) && historyFields.length > 0 && comparisonRange !== null,
+  });
+
+  const comparisonTimeline = comparisonHistoryQuery.data ?? EMPTY_TIMELINE;
+  const comparisonOffsetMs = comparisonRange ? Date.parse(sinceIso) - Date.parse(comparisonRange.since) : 0;
+
   const powerBalanceSeries = useMemo<DenseSeries[]>(() => [
     { label: 'Total input', color: rainbow.red, values: timeline.map((row) => row.totalInput), unit: 'W', digits: 0 },
     { label: 'Total output', color: rainbow.green, values: timeline.map((row) => row.totalOutput), unit: 'W', digits: 0 },
@@ -170,6 +194,34 @@ export default function App() {
   const batteryPostureSeries = useMemo<DenseSeries[]>(() => [
     { label: 'SOC trend', color: rainbow.green, values: timeline.map((row) => row.batteryPercent), unit: '%', digits: 1 },
   ], [rainbow.green, timeline]);
+
+  const comparisonLabel = comparisonRange?.label ?? '';
+  const powerBalanceComparison = useMemo<ComparisonSeriesGroup[]>(() => {
+    if (!comparisonRange || comparisonTimeline.length === 0) return [];
+    const shiftTs = (ts: number) => ts + comparisonOffsetMs;
+    return [
+      { label: `Total input (${comparisonLabel})`, color: rainbow.red, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.totalInput), unit: 'W', digits: 0 },
+      { label: `Total output (${comparisonLabel})`, color: rainbow.green, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.totalOutput), unit: 'W', digits: 0 },
+      { label: `Net power (${comparisonLabel})`, color: rainbow.blue, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.netPower), unit: 'W', digits: 0 },
+    ];
+  }, [comparisonRange, comparisonTimeline, comparisonOffsetMs, rainbow, comparisonLabel]);
+  const solarInputComparison = useMemo<ComparisonSeriesGroup[]>(() => {
+    if (!comparisonRange || comparisonTimeline.length === 0) return [];
+    const shiftTs = (ts: number) => ts + comparisonOffsetMs;
+    return [
+      { label: `DC1 wattage (${comparisonLabel})`, color: rainbow.yellow, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput1Power), unit: 'W', digits: 0 },
+      { label: `DC1 voltage (${comparisonLabel})`, color: rainbow.orange, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput1Voltage), unit: 'V', digits: 1 },
+      { label: `DC2 wattage (${comparisonLabel})`, color: rainbow.cyan, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput2Power), unit: 'W', digits: 0 },
+      { label: `DC2 voltage (${comparisonLabel})`, color: rainbow.blue, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.dcInput2Voltage), unit: 'V', digits: 1 },
+    ];
+  }, [comparisonRange, comparisonTimeline, comparisonOffsetMs, rainbow, comparisonLabel]);
+  const batteryPostureComparison = useMemo<ComparisonSeriesGroup[]>(() => {
+    if (!comparisonRange || comparisonTimeline.length === 0) return [];
+    const shiftTs = (ts: number) => ts + comparisonOffsetMs;
+    return [
+      { label: `SOC trend (${comparisonLabel})`, color: rainbow.green, timestamps: comparisonTimeline.map((r) => shiftTs(r.ts)), values: comparisonTimeline.map((r) => r.batteryPercent), unit: '%', digits: 1 },
+    ];
+  }, [comparisonRange, comparisonTimeline, comparisonOffsetMs, rainbow, comparisonLabel]);
 
   const latestTimestamp = useMemo(() => (
     Object.values(liveState).map((item) => item.ts).sort().at(-1) ?? live.lastUpdate
@@ -199,6 +251,7 @@ export default function App() {
 
         <div className="controls-band-anchor">
           <ControlsBand
+            comparisonOption={comparisonOption}
             datePickerOpen={datePickerOpen}
             densityMode={densityMode}
             devices={devices}
@@ -207,6 +260,7 @@ export default function App() {
             rangeId={rangeId}
             selectedDevice={selectedDevice}
             themeMode={themeMode}
+            onComparisonChange={setComparisonOption}
             onDensityChange={setDensityMode}
             onDeviceChange={setSelectedDevice}
             onRangeChange={(id) => {
@@ -259,7 +313,7 @@ export default function App() {
               <article className="panel panel-large">
                 <PanelHeader icon={LineChart} title="Power Balance" subtitle={`${range.label} window, ${timeline.length} buckets`} loading={historyQuery.isFetching} />
                 <div className="chart-frame">
-                  <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} />
+                  <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} comparisonSeries={powerBalanceComparison} />
                 </div>
                 <div className="legend-strip">
                   <span><i style={{ background: rainbow.red }} />Total input</span>
@@ -274,7 +328,7 @@ export default function App() {
 
               <article className="panel solar-input-panel">
                 <PanelHeader icon={Sun} title="Solar Input" subtitle="Voltage and wattage history" loading={historyQuery.isFetching} />
-                <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} />
+                <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} comparisonSeries={solarInputComparison} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.yellow }} />DC1 wattage</span>
                   <span><i style={{ background: rainbow.orange }} />DC1 voltage</span>
@@ -282,16 +336,16 @@ export default function App() {
                   <span><i style={{ background: rainbow.blue }} />DC2 voltage</span>
                 </div>
                 <div className="side-stats">
-                  <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} />
-                  <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} />
-                  <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} />
-                  <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} />
+                  <SideStat label="DC1 power avg" value={formatMetric(summary.dcInput1PowerSummary?.avg, 'W')} sub={summary.dcInput1PowerSummary ? `${formatMetric(summary.dcInput1PowerSummary.min, 'W')} – ${formatMetric(summary.dcInput1PowerSummary.max, 'W')}` : undefined} />
+                  <SideStat label="DC1 voltage avg" value={formatMetric(summary.dcInput1VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput1VoltageSummary ? `${formatMetric(summary.dcInput1VoltageSummary.min, 'V', 1)} – ${formatMetric(summary.dcInput1VoltageSummary.max, 'V', 1)}` : undefined} />
+                  <SideStat label="DC2 power avg" value={formatMetric(summary.dcInput2PowerSummary?.avg, 'W')} sub={summary.dcInput2PowerSummary ? `${formatMetric(summary.dcInput2PowerSummary.min, 'W')} – ${formatMetric(summary.dcInput2PowerSummary.max, 'W')}` : undefined} />
+                  <SideStat label="DC2 voltage avg" value={formatMetric(summary.dcInput2VoltageSummary?.avg, 'V', 1)} sub={summary.dcInput2VoltageSummary ? `${formatMetric(summary.dcInput2VoltageSummary.min, 'V', 1)} – ${formatMetric(summary.dcInput2VoltageSummary.max, 'V', 1)}` : undefined} />
                 </div>
               </article>
 
               <article className="panel battery-posture-panel">
                 <PanelHeader icon={Battery} title="Battery Posture" subtitle={resolved.batteryPercent ? `SOC trend from ${resolved.batteryPercent}` : 'No SOC field'} />
-                <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} />
+                <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} comparisonSeries={batteryPostureComparison} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.green }} />SOC trend</span>
                 </div>
