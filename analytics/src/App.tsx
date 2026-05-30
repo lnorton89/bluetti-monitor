@@ -41,9 +41,12 @@ import {
   type AnalyticsTheme,
   type ComparisonOption,
 } from './lib/constants';
+import { useAnnotations } from './hooks/useAnnotations';
 import { useLiveTelemetry } from './hooks/useLiveTelemetry';
 import { useStableStringArray } from './hooks/useStableStringArray';
 import { useTimelineSummary } from './hooks/useTimelineSummary';
+import { AnnotationPopover } from './components/AnnotationPopover';
+import { NotesPanel } from './components/NotesPanel';
 import {
   ControlsBand,
   CustomDateRange,
@@ -68,6 +71,8 @@ export default function App() {
   const [skin, setSkin] = useState<AnalyticsSkin>(getStoredAnalyticsSkin);
   const [comparisonDefaultFields, setComparisonDefaultFields] = useState<string[]>(getStoredComparisonDefaultFields);
   const [comparisonOption, setComparisonOption] = useState<ComparisonOption>(getStoredComparisonOption);
+  const { addAnnotation, annotations, removeAnnotation, annotationsInRange } = useAnnotations(selectedDevice || '_');
+  const [pendingAnnotationTs, setPendingAnnotationTs] = useState<{ ts: number; rect: DOMRect } | null>(null);
   const [customStart, setCustomStart] = useState(() => {
     const d = new Date(Date.now() - 7 * 24 * 60 * 60_000);
     return d.toISOString().slice(0, 16);
@@ -314,7 +319,7 @@ export default function App() {
               <article className="panel panel-large">
                 <PanelHeader icon={LineChart} title="Power Balance" subtitle={`${range.label} window, ${timeline.length} buckets`} loading={chartsLoading} />
                 <div className="chart-frame">
-                  <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} comparisonSeries={powerBalanceComparison} loading={chartsLoading} />
+                  <DenseTimeSeries deferMs={0} themeMode={themeMode} timestamps={timelineTimestamps} series={powerBalanceSeries} comparisonSeries={powerBalanceComparison} loading={chartsLoading} annotations={annotations} onClickPoint={(ts, rect) => setPendingAnnotationTs({ ts, rect })} />
                 </div>
                 <div className="legend-strip">
                   <span><i style={{ background: rainbow.red }} />Total input</span>
@@ -329,7 +334,7 @@ export default function App() {
 
               <article className="panel solar-input-panel">
                 <PanelHeader icon={Sun} title="Solar Input" subtitle="Voltage and wattage history" loading={chartsLoading} />
-                <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} comparisonSeries={solarInputComparison} loading={chartsLoading} />
+                <DenseTimeSeries deferMs={90} themeMode={themeMode} timestamps={timelineTimestamps} series={solarInputSeries} comparisonSeries={solarInputComparison} loading={chartsLoading} annotations={annotations} onClickPoint={(ts, rect) => setPendingAnnotationTs({ ts, rect })} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.yellow }} />DC1 wattage</span>
                   <span><i style={{ background: rainbow.orange }} />DC1 voltage</span>
@@ -346,7 +351,7 @@ export default function App() {
 
               <article className="panel battery-posture-panel">
                 <PanelHeader icon={Battery} title="Battery Posture" subtitle={resolved.batteryPercent ? `SOC trend from ${resolved.batteryPercent}` : 'No SOC field'} loading={chartsLoading} />
-                <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} comparisonSeries={batteryPostureComparison} loading={chartsLoading} />
+                <DenseTimeSeries deferMs={180} themeMode={themeMode} timestamps={timelineTimestamps} series={batteryPostureSeries} comparisonSeries={batteryPostureComparison} loading={chartsLoading} annotations={annotations} onClickPoint={(ts, rect) => setPendingAnnotationTs({ ts, rect })} />
                 <div className="legend-strip compact">
                   <span><i style={{ background: rainbow.green }} />SOC trend</span>
                 </div>
@@ -370,9 +375,25 @@ export default function App() {
             </section>
 
             <SnapshotPanel liveState={liveState} />
+
+            <NotesPanel
+              annotations={sinceIso ? annotationsInRange(Date.parse(sinceIso), Date.now()) : annotations}
+              onDelete={removeAnnotation}
+              onJumpTo={() => document.querySelector('.chart-frame')?.scrollIntoView({ behavior: 'smooth' })}
+            />
           </>
         )}
       </section>
+
+      {pendingAnnotationTs ? (
+        <AnnotationPopover
+          timestamp={pendingAnnotationTs.ts}
+          anchorRect={pendingAnnotationTs.rect}
+          onSave={(text) => { addAnnotation(pendingAnnotationTs.ts, text); }}
+          onClose={() => setPendingAnnotationTs(null)}
+        />
+      ) : null}
+
       {settingsOpen ? (
         <SettingsModal
           availableComparisonFields={comparableFields}
