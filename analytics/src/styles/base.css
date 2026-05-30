@@ -129,7 +129,7 @@ input:focus-visible {
 
 .controls-band {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto auto auto auto auto;
+  grid-template-columns: minmax(100px, auto) auto auto auto auto auto auto;
   gap: 12px;
   align-items: end;
   margin-bottom: 18px;
