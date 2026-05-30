@@ -140,47 +140,7 @@ input:focus-visible {
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.1);
 }
 
-.compare-select {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg-deep);
-  padding: 0 4px 0 10px;
-}
 
-.compare-select select {
-  min-width: 100px;
-  min-height: 42px;
-  border: 0;
-  appearance: none;
-  background: transparent;
-  color: var(--text);
-  font-weight: 600;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.compare-icon {
-  flex: 0 0 auto;
-  color: var(--muted);
-}
-
-.compare-badge {
-  position: absolute;
-  right: -6px;
-  top: -6px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--bg-deep);
-  font-size: 0.6rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  pointer-events: none;
-}
 
 .control-field {
   display: flex;
@@ -1258,30 +1218,6 @@ input:focus-visible {
   padding: 3px;
 }
 
-:root[data-analytics-density="compact"] .compare-select {
-  min-height: 24px;
-  height: 24px;
-  padding: 0 2px 0 5px;
-}
-
-:root[data-analytics-density="compact"] .compare-select select {
-  min-height: 22px;
-  min-width: 60px;
-  font-size: 0.64rem;
-}
-
-:root[data-analytics-density="compact"] .compare-icon {
-  width: 12px;
-  height: 12px;
-}
-
-:root[data-analytics-density="compact"] .compare-badge {
-  font-size: 0.48rem;
-  right: -4px;
-  top: -4px;
-  padding: 0 4px;
-}
-
 :root[data-analytics-density="compact"] .control-field select,
 :root[data-analytics-density="compact"] .segmented,
 :root[data-analytics-density="compact"] .icon-button,
@@ -1770,15 +1706,6 @@ input:focus-visible {
     gap: 10px;
     margin-bottom: 12px;
     padding: 10px;
-  }
-
-  .compare-select {
-    width: 100%;
-  }
-
-  .compare-select select {
-    width: 100%;
-    min-width: 0;
   }
 
   .control-field select,
