@@ -888,6 +888,24 @@ input:focus-visible {
   }
 }
 
+.field-chips-grouped {
+  display: grid;
+  gap: 10px;
+}
+
+.field-chip-group {
+  display: grid;
+  gap: 5px;
+}
+
+.field-chip-group-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
 .chip-input {
   --chip-color: var(--cat-input);
 }
@@ -1884,6 +1902,18 @@ input:focus-visible {
 
 :root[data-analytics-density="compact"] .field-search-trigger input {
   width: 100%;
+}
+
+:root[data-analytics-density="compact"] .field-chips-grouped {
+  gap: 6px;
+}
+
+:root[data-analytics-density="compact"] .field-chip-group {
+  gap: 3px;
+}
+
+:root[data-analytics-density="compact"] .field-chip-group-label {
+  font-size: 0.55rem;
 }
 
 :root[data-analytics-density="compact"] .field-chips {
