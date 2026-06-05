@@ -179,6 +179,7 @@ export default function App() {
     queryKey: ['core-timeline', selectedDevice, range.id, sinceIso, historyFields.join('|')],
     queryFn: () => fetchCoreTimelineInWorker(selectedDevice, historyFields, { limit: range.limit, since: sinceIso }, resolved, range.bucketMs),
     enabled: Boolean(selectedDevice) && historyFields.length > 0,
+    refetchInterval: live.connected && !IS_STATIC_ANALYTICS ? 10_000 : false,
   });
 
   const timeline = historyQuery.data ?? EMPTY_TIMELINE;
