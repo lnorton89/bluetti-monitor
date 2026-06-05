@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, watch, writeFileSync } from "node:fs";
+import { dirname, resolve, sep } from "node:path";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, watch, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -121,6 +121,11 @@ function spawnRestartingDesktop(command, args, label) {
       path: entry.path,
       isDir: statSync(entry.path).isDirectory(),
     }));
+  const watchState = new Map();
+
+  for (const { path: target } of watchTargets) {
+    updateWatchSnapshot(target);
+  }
 
   const watchers = watchTargets.map(({ path: target, isDir }) => watch(target, { recursive: isDir }, (_event, filename) => {
     if (shuttingDown) {
@@ -130,6 +135,11 @@ function spawnRestartingDesktop(command, args, label) {
     const changedPath = filename && isDir
       ? resolve(target, String(filename))
       : target;
+
+    if (!recordMaterialChange(changedPath)) {
+      logDevEvent(`${label} restart suppressed by unchanged file metadata`, { changedPath });
+      return;
+    }
 
     scheduleDesktopRestart(changedPath);
   }));
@@ -243,6 +253,44 @@ function spawnRestartingDesktop(command, args, label) {
         // Best effort cleanup.
       }
     }
+  }
+
+  function recordMaterialChange(changedPath) {
+    const previous = getWatchSnapshot(changedPath);
+    const current = capturePathSnapshot(changedPath);
+
+    if (snapshotsEqual(previous, current)) {
+      return false;
+    }
+
+    updateWatchSnapshot(changedPath, current);
+    return true;
+  }
+
+  function updateWatchSnapshot(target, snapshot = capturePathSnapshot(target)) {
+    const targetKey = normalizeWatchKey(target);
+    for (const key of [...watchState.keys()]) {
+      if (key === targetKey || key.startsWith(`${targetKey}${pathSeparatorForKeys()}`)) {
+        watchState.delete(key);
+      }
+    }
+
+    for (const [key, value] of snapshot) {
+      watchState.set(key, value);
+    }
+  }
+
+  function getWatchSnapshot(target) {
+    const targetKey = normalizeWatchKey(target);
+    const snapshot = new Map();
+
+    for (const [key, value] of watchState) {
+      if (key === targetKey || key.startsWith(`${targetKey}${pathSeparatorForKeys()}`)) {
+        snapshot.set(key, value);
+      }
+    }
+
+    return snapshot;
   }
 }
 
@@ -380,6 +428,84 @@ function rotateDevLogIfNeeded() {
     `${new Date().toISOString()} ${JSON.stringify({ message: "[desktop:dev] log rotated" })}\n`,
     "utf8",
   );
+}
+
+function capturePathSnapshot(target, snapshot = new Map()) {
+  const targetKey = normalizeWatchKey(target);
+
+  let stats;
+  try {
+    stats = statSync(target);
+  } catch {
+    snapshot.set(targetKey, null);
+    return snapshot;
+  }
+
+  if (!stats.isDirectory()) {
+    snapshot.set(targetKey, {
+      mtimeMs: stats.mtimeMs,
+      size: stats.size,
+    });
+    return snapshot;
+  }
+
+  let entries;
+  try {
+    entries = readdirSync(target, { withFileTypes: true });
+  } catch {
+    snapshot.set(targetKey, null);
+    return snapshot;
+  }
+
+  for (const entry of entries) {
+    const entryPath = resolve(target, entry.name);
+    if (entry.isDirectory()) {
+      capturePathSnapshot(entryPath, snapshot);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      capturePathSnapshot(entryPath, snapshot);
+    }
+  }
+
+  return snapshot;
+}
+
+function snapshotsEqual(left, right) {
+  if (left.size !== right.size) {
+    return false;
+  }
+
+  for (const [key, leftValue] of left) {
+    const rightValue = right.get(key);
+    if (!fingerprintsEqual(leftValue, rightValue)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function fingerprintsEqual(left, right) {
+  if (left === null || right === null) {
+    return left === right;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.mtimeMs === right.mtimeMs && left.size === right.size;
+}
+
+function normalizeWatchKey(target) {
+  const normalized = resolve(target);
+  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+}
+
+function pathSeparatorForKeys() {
+  return sep;
 }
 
 function stripAnsi(value) {

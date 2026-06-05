@@ -2,7 +2,7 @@
 status: resolved
 trigger: "the electrobun dev script seems to trigger relaunches excessively. can you find out why and fix it? if you cant find out why implement logging to catch it"
 created: 2026-05-29
-updated: 2026-05-29
+updated: 2026-06-05
 ---
 
 # Debug Session: electrobun-dev-relaunches
@@ -92,4 +92,30 @@ Added a 3-second restart cooldown (`restartCooldownMs = 3_000`) that starts when
 
 ### Verification
 - `node --check scripts/dev-desktop.mjs` — syntax clean.
+- files_changed: scripts/dev-desktop.mjs, .planning/debug/electrobun-dev-relaunches.md
+
+## Round 4 - IDE/file-read events still treated as source edits
+
+### Symptoms
+- User reported the Electrobun window still randomly relaunches, generally when opening the IDE.
+- `.dev-data/logs/desktop-dev.log` captured another restart on 2026-06-05.
+
+### Evidence
+- 2026-06-05 23:34:39.772Z: `src/mainview/index.css` produced `[desktop:app] precise watcher restart`.
+- 2026-06-05 23:34:40.480Z to 23:34:43.052Z: rebuild-time reads of `electrobun.config.ts`, `src/bun/index.ts`, `src/bun/titlebar.ts`, `src/bun/bluetooth.ts`, and `src/mainview/index.ts` were suppressed by the 3s cooldown.
+- 2026-06-05 23:34:43.567Z: `assets/icons/icon.ico` produced a second `[desktop:app] precise watcher restart` after the 3s cooldown expired.
+- No evidence in the log indicates a user edit to `src/mainview/index.css`; the reported IDE-open timing matches directory scans/read-side metadata events.
+
+### Root Cause
+The custom watcher still treated every `fs.watch` event outside a short cooldown as a real source edit. On Windows, opening the IDE and Electrobun's own build can produce watch events for files that were merely scanned or read. The 3s cooldown reduced cascades but remained timing-based, so a build read of `assets/icons/icon.ico` after the cooldown still triggered another rebuild.
+
+### Fix
+- Added file fingerprint validation to `scripts/dev-desktop.mjs`.
+- `fs.watch` now acts only as a wake-up signal. Before restarting, the dev script compares the changed path's current file metadata against its last known snapshot.
+- Restarts now require a material file change: path creation/deletion, size change, or `mtimeMs` change.
+- Metadata-only/read-only watch events are logged as `restart suppressed by unchanged file metadata`.
+
+### Verification
+- `node --check scripts/dev-desktop.mjs` - syntax clean.
+- Manual log review confirms the previously failing sequence would now suppress the `src/mainview/index.css` and `assets/icons/icon.ico` events if their size/mtime did not change.
 - files_changed: scripts/dev-desktop.mjs, .planning/debug/electrobun-dev-relaunches.md
