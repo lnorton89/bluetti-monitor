@@ -471,15 +471,17 @@ export default function Settings() {
               </div>
               <div className="settings-input-block">
                 <input
-                  type="number"
-                  min={500}
-                  max={50000}
-                  step={1}
+                  type="text"
+                  inputMode="numeric"
                   value={batteryCapacityWh}
                   onChange={(event) => {
-                    const next = Number.parseInt(event.target.value, 10);
-                    if (!Number.isNaN(next)) {
-                      setBatteryCapacityWh(next);
+                    const raw = event.target.value.replace(/\D/g, '');
+                    const next = Number.parseInt(raw, 10);
+                    if (raw.length > 0 && !Number.isNaN(next)) {
+                      setBatteryCapacityWh(Math.min(50000, Math.max(500, next)));
+                    }
+                    if (raw.length === 0) {
+                      setBatteryCapacityWh(500);
                     }
                   }}
                   className="settings-number-input"
