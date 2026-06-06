@@ -9,7 +9,6 @@ const workspaceRoot = resolve(__dirname, "..");
 const devLogPath = resolve(workspaceRoot, ".dev-data", "logs", "desktop-dev.log");
 const devLogMaxBytes = 2 * 1024 * 1024;
 const devLogRetainBytes = 512 * 1024;
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const electrobunCommand = resolveElectrobunCommand();
 const shouldWatchElectrobun = process.argv.includes("--watch-electrobun");
 let shuttingDown = false;
@@ -20,18 +19,6 @@ try {
     electrobunCommand,
     watchElectrobun: shouldWatchElectrobun,
   });
-
-  await runCommand(
-    npmCommand,
-    ["--prefix", "lib/bluetti-mqtt-node", "run", "build"],
-    "[desktop:lib] initial build",
-  );
-
-  const libraryWatcher = spawnManaged(
-    npmCommand,
-    ["--prefix", "lib/bluetti-mqtt-node", "run", "build", "--", "--watch"],
-    "[desktop:lib] watch",
-  );
 
   const desktopProcess = shouldWatchElectrobun
     ? spawnRestartingDesktop(
@@ -45,10 +32,7 @@ try {
         "[desktop:app]",
       );
 
-  const exitCode = await Promise.race([
-    libraryWatcher.exitCode,
-    desktopProcess.exitCode,
-  ]);
+  const exitCode = await desktopProcess.exitCode;
 
   shutdownChildren();
   process.exit(typeof exitCode === "number" ? exitCode : 0);
@@ -292,35 +276,6 @@ function spawnRestartingDesktop(command, args, label) {
 
     return snapshot;
   }
-}
-
-function runCommand(command, args, label) {
-  return new Promise((resolvePromise, rejectPromise) => {
-    writeConsoleLine(`${label} starting...`);
-    logDevEvent(`${label} starting`, { command, args });
-    const child = spawn(command, args, {
-      cwd: workspaceRoot,
-      stdio: ["inherit", "pipe", "pipe"],
-      shell: shouldUseShell(command),
-    });
-
-    pipeChildOutput(child.stdout, label, "stdout");
-    pipeChildOutput(child.stderr, label, "stderr");
-    child.once("error", (error) => {
-      logDevEvent(`${label} failed to start`, { error: formatError(error) });
-      rejectPromise(error);
-    });
-    child.once("exit", (code, signal) => {
-      logDevEvent(`${label} exited`, { code, signal });
-      if (code === 0) {
-        writeConsoleLine(`${label} complete`);
-        resolvePromise();
-        return;
-      }
-
-      rejectPromise(new Error(`${label} exited with code ${code ?? -1}`));
-    });
-  });
 }
 
 function shutdownChildren() {

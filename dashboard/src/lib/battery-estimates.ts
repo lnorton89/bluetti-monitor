@@ -649,7 +649,6 @@ function buildDistinctHistory(points: Array<{ value: number; ts: number }>): Arr
   for (const point of points) {
     const last = distinct.at(-1);
     if (last && last.value === point.value) {
-      distinct[distinct.length - 1] = point;
       continue;
     }
 

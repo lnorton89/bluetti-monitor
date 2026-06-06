@@ -118,4 +118,40 @@ describe('battery estimate counters', () => {
     expect(Math.round(estimate.minutes ?? 0)).toBe(360);
     expect(estimate.confidence).toBe('medium');
   });
+
+  test('keeps charge trend usable across coarse SOC plateaus', () => {
+    const estimate = buildBatteryEstimate('charge', state({
+      total_battery_percent: '76',
+      battery_range_end: '100',
+      ac_input_power: '1700',
+      ac_output_power: '300',
+    }), {
+      batteryPercent: [
+        { value: '75', ts: '2026-04-27T10:00:00.000Z' },
+        { value: '75', ts: '2026-04-27T10:20:00.000Z' },
+        { value: '76', ts: '2026-04-27T10:21:00.000Z' },
+        { value: '76', ts: '2026-04-27T10:35:00.000Z' },
+      ],
+    });
+
+    expect(estimate.source).toBe('recent-trend');
+    expect(estimate.minutes).not.toBeNull();
+  });
+
+  test('uses charge trend from dense polling history when the window spans enough time', () => {
+    const start = Date.parse('2026-04-27T10:00:00.000Z');
+    const batteryPercent = Array.from({ length: 181 }, (_, index) => {
+      const value = index < 60 ? '75' : index < 120 ? '76' : '77';
+      return { value, ts: new Date(start + index * 60_000).toISOString() };
+    });
+    const estimate = buildBatteryEstimate('charge', state({
+      total_battery_percent: '77',
+      battery_range_end: '100',
+      ac_input_power: '1700',
+      ac_output_power: '300',
+    }), { batteryPercent });
+
+    expect(estimate.source).toBe('recent-trend');
+    expect(estimate.minutes).not.toBeNull();
+  });
 });

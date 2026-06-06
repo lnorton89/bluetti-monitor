@@ -19,6 +19,7 @@ Replace the current brittle Runtime and Time to Full sections with a historicall
 | Dashboard TypeScript and production build | Passed |
 | Python syntax check | Passed |
 | Local SQLite estimate backtest | Passed |
+| Live AC500 UAT | Passed |
 
 ## Requirement Coverage
 
@@ -39,4 +40,4 @@ Replace the current brittle Runtime and Time to Full sections with a historicall
 
 ## Residual Risk
 
-- Human UAT should compare the displayed estimates against a real charge or discharge cycle because calibration quality depends on the local history window and current load stability.
+- Live UAT compared the displayed estimates against a real AC500 charge session. Dense live polling exposed and fixed a shallow-history regression; Time to Full then held a medium-confidence Recent SOC trend across follow-up samples.

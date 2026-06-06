@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Estimation Accuracy
-status: phase_complete
-stopped_at: phase 15 implemented and ready for UAT
-last_updated: "2026-05-18T00:00:00.000Z"
-last_activity: 2026-05-29
+status: verified
+stopped_at: phase 15 UAT complete against live AC500 telemetry
+last_updated: "2026-06-05T17:54:00.0000000-07:00"
+last_activity: 2026-06-05
 progress:
   total_phases: 1
   completed_phases: 1
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
-Status: Phase 15 implemented; ready for human UAT
-Last activity: 2026-05-29 - Completed quick task 260529-WfU: Plan analytics improvements roadmap from tmp/improvements.md
+Status: Phase 15 verified against live AC500 telemetry
+Last activity: 2026-06-05 - Completed Phase 15 UAT and fixed estimate visibility, tooltip click, and dense-history trend stability gaps
 
 ## Accumulated Context
 
@@ -39,11 +39,11 @@ Decisions are logged in PROJECT.md.
 
 ### Pending Todos
 
-- Run `$gsd-verify-work 15` for human validation against live telemetry.
+- Phase 15 UAT is complete; next project action is milestone closeout or a new milestone.
 
 ### Blockers/Concerns
 
-- Runtime and Time to Full have already had a quick stabilization pass, so the next fix should avoid another instantaneous-formula patch and instead validate against stored history.
+- No active blockers after Phase 15 UAT. Dense live telemetry required a deeper estimate history window than the original 80-row bundle.
 
 ### Roadmap Evolution
 
@@ -55,6 +55,7 @@ Decisions are logged in PROJECT.md.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260605-o2a | Decouple Electrobun desktop dev startup from monitor stack orchestration | 2026-06-05 | working tree | [260605-o2a-decouple-electrobun-desktop-dev-startup-](./quick/260605-o2a-decouple-electrobun-desktop-dev-startup-/) |
 | 260421-jjb | Add tooltips to every UI stat showing source datapoints and calculation details, using clear accessible popovers and matching existing dashboard design | 2026-04-21 | working tree | [260421-jjb-add-tooltips-to-every-ui-stat-showing-so](./quick/260421-jjb-add-tooltips-to-every-ui-stat-showing-so/) |
 | 260421-ket | Remove the Why This Layout Changed section from the overview page and fix the switchboard section so it reflects real on/off telemetry correctly | 2026-04-21 | working tree | [260421-ket-remove-the-why-this-layout-changed-secti](./quick/260421-ket-remove-the-why-this-layout-changed-secti/) |
 | 260421-lqq | Improve the input, reserve, and output sections in the overview hero so they read more clearly and feel more intentional on desktop and mobile | 2026-04-21 | working tree | [260421-lqq-improve-the-input-reserve-and-output-sec](./quick/260421-lqq-improve-the-input-reserve-and-output-sec/) |

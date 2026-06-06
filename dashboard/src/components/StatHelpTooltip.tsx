@@ -124,7 +124,7 @@ export function StatHelpTooltip({ label, content }: StatHelpTooltipProps) {
           onBlur={scheduleClose}
           onClick={() => {
             clearCloseTimer();
-            setOpen((current) => !current);
+            setOpen(true);
           }}
         >
           <Info size={12} />

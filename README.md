@@ -17,7 +17,8 @@ Full monitoring stack for the Bluetti AC500 power station with a real-time deskt
 
 | Component | Responsibility | Entry Point |
 |-----------|----------------|-------------|
-| Desktop shell (`src/bun/`) | Stack orchestration, service startup, Bluetooth launch | `npm run desktop:dev` |
+| Desktop shell (`src/bun/`) | Native window, tray/icon behavior, notifications, titlebar telemetry | `npm run desktop:dev` |
+| Monitor supervisor (`scripts/monitor/`) | Docker services, local dev API/dashboard, and host bridge startup | `npm run monitor:start` / `npm run monitor:dev` |
 | Node bridge (`bluetti-mqtt-node`) | BLE device polling, MQTT publishing | `bluetti-mqtt-node --broker mqtt://localhost:1883 <MAC>` |
 | Python API (`api/`) | MQTT subscription, data persistence, REST/WebSocket serving | `uvicorn main:app --reload` |
 | Analytics app (`analytics/`) | Historical telemetry exploration, derived metrics, dense field comparison | `npm run dev` from `analytics/` |
@@ -146,7 +147,7 @@ Successful verification means:
 
 ### Optional Desktop Shell For Local Development
 
-The Electrobun desktop shell is still available, but it is a local development convenience layer rather than the primary app startup path.
+The Electrobun desktop shell is still available, but it is a local development convenience layer rather than the primary app startup path. It no longer starts Docker, the API, the dashboard, or the BLE bridge; it only attaches a native window to an already-running dashboard.
 
 ```powershell
 bun install
@@ -159,7 +160,21 @@ For iterative work with file watching:
 npm run desktop:dev
 ```
 
-In local development mode the desktop shell runs the FastAPI API on `http://127.0.0.1:8000`, starts the Vite dashboard on `http://127.0.0.1:5173`, and loads that local dev UI into the native window. The browser-first monitoring flow for normal use remains `npm run monitor:start` on `http://localhost:8540`.
+Use the monitor dev supervisor when you want the local API, Vite dashboard, and host bridge:
+
+```powershell
+npm run monitor:dev
+```
+
+For the old "start both while developing" convenience flow, run:
+
+```powershell
+npm run dev:all
+```
+
+`dev:all` starts the monitor dev supervisor and launches the desktop with `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5173` unless you already set a different dashboard URL.
+
+By default the desktop shell loads `http://localhost:8540`. Set `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5173` before `npm run desktop:dev` when you want the native window to attach to the Vite dashboard.
 
 ---
 
@@ -353,6 +368,12 @@ docker compose up -d --build dashboard
 # Start the desktop shell
 npm run desktop:start
 
+# Start local API, Vite dashboard, and host bridge for development
+npm run monitor:dev
+
+# Start local monitor dev services and the desktop shell together
+npm run dev:all
+
 # Start the supported browser-first monitor flow
 npm run monitor:start
 
@@ -384,7 +405,8 @@ docker compose down -v
 - Normal monitoring uses `npm run monitor:start`.
 - That command targets the Docker-backed dashboard at `http://localhost:8540`.
 - The host bridge still runs on Windows, but it is launched for you through the linked `bluetti-mqtt-node` CLI instead of a separate manual host-poller step.
-- The desktop shell is optional local tooling and still uses the Vite dev server on `http://127.0.0.1:5173`.
+- Local API/dashboard development uses `npm run monitor:dev`, which starts Mosquitto, the local FastAPI server, the Vite dashboard at `http://127.0.0.1:5173`, and the host bridge.
+- The desktop shell is optional local tooling and attaches to `BLUETTI_DASHBOARD_URL` or `http://localhost:8540` by default.
 
 ### Dashboard
 

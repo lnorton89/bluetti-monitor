@@ -11,21 +11,21 @@
   <body>
     <main class="shell">
       <section class="panel">
-        <p class="eyebrow">Desktop Bootstrap</p>
+        <p class="eyebrow">Desktop Shell</p>
         <h1>Bluetti Monitor</h1>
         <p class="lede">
-          Starting the local dev services and waiting for the monitoring UI to come online.
+          Waiting for the monitoring dashboard to come online.
         </p>
 
         <div class="status-row">
           <span class="status-dot" aria-hidden="true"></span>
-          <span>Connecting to <code>http://127.0.0.1:5173</code></span>
+          <span>Connecting to the configured dashboard URL.</span>
         </div>
 
         <ol class="steps">
-          <li>Bring up <code>mosquitto</code>, the local API, and the local dashboard.</li>
-          <li>Wait for the dashboard dev server to serve the Bluetti Monitor UI.</li>
-          <li>Switch this window into the live monitoring UI automatically.</li>
+          <li>Start <code>npm run monitor:start</code> for daily use, or <code>npm run monitor:dev</code> for local API/dashboard development.</li>
+          <li>Use <code>BLUETTI_DASHBOARD_URL</code> when the desktop should attach to a non-default dashboard.</li>
+          <li>This native window switches into the live monitoring UI once the dashboard responds.</li>
         </ol>
       </section>
     </main>

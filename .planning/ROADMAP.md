@@ -13,11 +13,11 @@ Active milestone: **v1.3 Estimation Accuracy**
 
 Next recommended step:
 
-- `$gsd-verify-work 15`
+- `$gsd-complete-milestone`
 
 ## Phase Details
 
-### Phase 15: Estimation Accuracy Overhaul (Complete 2026-05-18)
+### Phase 15: Estimation Accuracy Overhaul (Verified 2026-06-05)
 
 **Goal:** Replace the current brittle Runtime and Time to Full sections with a historically calibrated estimation model and dashboard presentation that explains source, confidence, and unavailable states.
 

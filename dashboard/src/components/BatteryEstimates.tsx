@@ -32,6 +32,11 @@ const BATTERY_HISTORY_FIELDS = [
 ] as const;
 
 const ESTIMATE_HISTORY_FIELDS = Object.values(ESTIMATE_HISTORY_ALIASES).flat();
+const ESTIMATE_HISTORY_LIMIT = 500;
+
+function formatEstimateSource(estimate: BatteryEstimateResult): string {
+  return `${estimate.sourceLabel} - ${estimate.confidence}`;
+}
 
 function getHistoryPointValue(state: DeviceState, fields: readonly string[]): string {
   for (const field of fields) {
@@ -117,7 +122,7 @@ function mapHistoryBundle(bundle: Record<string, { value: string; ts: string }[]
 
 async function fetchEstimateHistory(deviceId: string): Promise<EstimateHistory> {
   const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-  const bundle = await fetchHistoryBundle(deviceId, ESTIMATE_HISTORY_FIELDS, { limit: 80, since });
+  const bundle = await fetchHistoryBundle(deviceId, ESTIMATE_HISTORY_FIELDS, { limit: ESTIMATE_HISTORY_LIMIT, since });
   return mapHistoryBundle(bundle);
 }
 
@@ -173,12 +178,15 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
           <span className="estimate-label">Runtime</span>
           <StatHelpTooltip label="Runtime" content={buildRuntimeTooltip(state, runtimeEstimate)} />
         </span>
-        <span
-          className="estimate-value"
-          style={{ color: getRuntimeTone() }}
-          title={`${runtimeEstimate.sourceLabel} (${runtimeEstimate.confidence})`}
-        >
-          {runtimeDisplay}
+        <span className="estimate-value-stack">
+          <span
+            className="estimate-value"
+            style={{ color: getRuntimeTone() }}
+            title={`${runtimeEstimate.sourceLabel} (${runtimeEstimate.confidence})`}
+          >
+            {runtimeDisplay}
+          </span>
+          <span className="estimate-source">{formatEstimateSource(runtimeEstimate)}</span>
         </span>
       </div>
       {showChargeEstimate && (
@@ -191,11 +199,14 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
               content={buildChargeTooltip(state, chargeEstimate)}
             />
           </span>
-          <span
-            className="estimate-value"
-            title={`${chargeEstimate.sourceLabel} (${chargeEstimate.confidence})`}
-          >
-            {chargeDisplay}
+          <span className="estimate-value-stack">
+            <span
+              className="estimate-value"
+              title={`${chargeEstimate.sourceLabel} (${chargeEstimate.confidence})`}
+            >
+              {chargeDisplay}
+            </span>
+            <span className="estimate-source">{formatEstimateSource(chargeEstimate)}</span>
           </span>
         </div>
       )}
