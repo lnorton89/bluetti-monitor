@@ -1980,6 +1980,14 @@ input:focus-visible {
   .grid-layout {
     grid-template-columns: 1fr;
   }
+
+  .panel-large,
+  .solar-input-panel,
+  .battery-posture-panel,
+  .field-comparison-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2029,15 +2037,24 @@ input:focus-visible {
     font-size: 0.82rem;
   }
 
-  .controls-band,
   .field-picker {
     grid-template-columns: 1fr;
   }
 
   .controls-band {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 12px;
     padding: 10px;
+  }
+
+  .controls-band > .control-field,
+  .controls-band > .segmented {
+    grid-column: 1 / -1;
+  }
+
+  .controls-band > .color-picker-anchor {
+    display: block;
   }
 
   .control-field select,
@@ -2064,6 +2081,7 @@ input:focus-visible {
   .theme-switch button {
     flex: 1 1 0;
     justify-content: center;
+    min-width: 0;
   }
 
   .segmented {
@@ -2089,6 +2107,14 @@ input:focus-visible {
     margin-bottom: 10px;
   }
 
+  .field-comparison-header {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-header-side {
+    justify-content: space-between;
+  }
+
   .panel-header div {
     min-width: 0;
   }
@@ -2098,8 +2124,14 @@ input:focus-visible {
   }
 
   .kpi-grid,
-  .snapshot-grid {
+  .snapshot-grid,
+  .side-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .side-stats {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
   }
 
   .kpi {
@@ -2163,6 +2195,27 @@ input:focus-visible {
   .side-stat strong {
     overflow-wrap: anywhere;
   }
+
+  .date-picker-flyout {
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+
+  .notes-panel-toggle {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .notes-panel-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+
+  .notes-panel-text {
+    grid-column: 1 / -1;
+  }
 }
 
 :root[data-analytics-state="critical"] .panel {
@@ -2180,9 +2233,7 @@ input:focus-visible {
     font-size: 2.15rem;
   }
 
-  .kpi-grid,
-  .snapshot-grid,
-  .status-row {
+  .snapshot-grid {
     grid-template-columns: 1fr;
   }
 
