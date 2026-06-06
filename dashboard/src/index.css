@@ -1885,6 +1885,38 @@ input:focus-visible,
   color: var(--text-muted);
 }
 
+.settings-input-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-number-input {
+  width: 120px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-align: right;
+}
+
+.settings-number-input:focus {
+  outline: none;
+  border-color: var(--text-dim);
+}
+
+.settings-input-unit {
+  color: var(--text-dim);
+  font-family: var(--font-cond);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
 .settings-toggle-row.is-disabled {
   opacity: 0.7;
 }

@@ -17,6 +17,7 @@ export interface AppSettings {
   dashboard: {
     defaultAnalyticsWindow: '1h' | '6h' | '24h' | '72h';
     showFreshness: boolean;
+    batteryCapacityWh: number;
   };
   desktop: {
     logCaptureEnabled: boolean;
@@ -39,6 +40,7 @@ interface AppSettingsStore extends AppSettings {
   setDesktopLogRetainBytes: (bytes: number) => void;
   setDesktopLogTruncateAtBytes: (bytes: number) => void;
   setShowFreshness: (enabled: boolean) => void;
+  setBatteryCapacityWh: (wh: number) => void;
 }
 
 const STORAGE_KEY = 'bluetti-monitor:settings';
@@ -61,6 +63,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   dashboard: {
     defaultAnalyticsWindow: '24h',
     showFreshness: true,
+    batteryCapacityWh: 3072,
   },
   desktop: {
     logCaptureEnabled: true,
@@ -81,6 +84,12 @@ function sanitizeThemePreference(value: unknown): ThemePreference {
 
 function sanitizeBoolean(value: unknown, fallback: boolean) {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+function sanitizeNumber(value: unknown, min: number, max: number, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
+    ? Math.round(value)
+    : fallback;
 }
 
 function sanitizeAnalyticsWindow(value: unknown): AppSettings['dashboard']['defaultAnalyticsWindow'] {
@@ -118,6 +127,12 @@ function sanitizeSettings(candidate: unknown): AppSettings {
   const alerts = isRecord(candidate.alerts) ? candidate.alerts : {};
   const dashboard = isRecord(candidate.dashboard) ? candidate.dashboard : {};
   const desktop = isRecord(candidate.desktop) ? candidate.desktop : {};
+  const batteryCapacityWh = sanitizeNumber(
+    dashboard.batteryCapacityWh,
+    500,
+    50000,
+    DEFAULT_SETTINGS.dashboard.batteryCapacityWh,
+  );
   const logTruncateAtBytes = sanitizeOptionValue(
     desktop.logTruncateAtBytes,
     LOG_TRUNCATE_BYTES_OPTIONS,
@@ -159,6 +174,7 @@ function sanitizeSettings(candidate: unknown): AppSettings {
         dashboard.showFreshness,
         DEFAULT_SETTINGS.dashboard.showFreshness,
       ),
+      batteryCapacityWh,
     },
     desktop: {
       logCaptureEnabled: sanitizeBoolean(
@@ -399,6 +415,20 @@ export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
         dashboard: {
           ...state.dashboard,
           showFreshness: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setBatteryCapacityWh(wh) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        dashboard: {
+          ...state.dashboard,
+          batteryCapacityWh: sanitizeNumber(wh, 500, 50000, state.dashboard.batteryCapacityWh),
         },
       };
       persistSettings(toPersistedSettings(nextState));

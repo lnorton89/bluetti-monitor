@@ -153,6 +153,7 @@ export default function Settings() {
   const ntfyTopic = useAppSettingsStore((s) => s.alerts.ntfyTopic);
   const defaultAnalyticsWindow = useAppSettingsStore((s) => s.dashboard.defaultAnalyticsWindow);
   const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
+  const batteryCapacityWh = useAppSettingsStore((s) => s.dashboard.batteryCapacityWh);
   const logCaptureEnabled = useAppSettingsStore((s) => s.desktop.logCaptureEnabled);
   const logRetainBytes = useAppSettingsStore((s) => s.desktop.logRetainBytes);
   const logTruncateAtBytes = useAppSettingsStore((s) => s.desktop.logTruncateAtBytes);
@@ -168,6 +169,7 @@ export default function Settings() {
   const setDesktopLogRetainBytes = useAppSettingsStore((s) => s.setDesktopLogRetainBytes);
   const setDesktopLogTruncateAtBytes = useAppSettingsStore((s) => s.setDesktopLogTruncateAtBytes);
   const setShowFreshness = useAppSettingsStore((s) => s.setShowFreshness);
+  const setBatteryCapacityWh = useAppSettingsStore((s) => s.setBatteryCapacityWh);
 
   const {
     browserNotificationPermission,
@@ -455,6 +457,34 @@ export default function Settings() {
                     {preset.label}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div className="settings-control-block">
+              <div className="settings-toggle-top">
+                <div>
+                  <span className="settings-toggle-label">Battery capacity</span>
+                  <p className="settings-toggle-description">
+                    Total Wh capacity of your battery system. Used to estimate runtime and charge time from live power. The AC500 does not report capacity over BLE, so set this to match your pack configuration (e.g. 3072 for a B300, 6144 for dual B300).
+                  </p>
+                </div>
+                <span className="settings-impact-pill">Persists</span>
+              </div>
+              <div className="settings-input-block">
+                <input
+                  type="number"
+                  min={500}
+                  max={50000}
+                  step={1}
+                  value={batteryCapacityWh}
+                  onChange={(event) => {
+                    const next = Number.parseInt(event.target.value, 10);
+                    if (!Number.isNaN(next)) {
+                      setBatteryCapacityWh(next);
+                    }
+                  }}
+                  className="settings-number-input"
+                />
+                <span className="settings-input-unit">Wh</span>
               </div>
             </div>
             <ToggleRow

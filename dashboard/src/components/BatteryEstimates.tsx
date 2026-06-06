@@ -16,6 +16,7 @@ import {
   isSystemIdle,
 } from '../lib/battery-estimates';
 import { StatHelpTooltip, type StatHelpContent } from './ui';
+import { useAppSettingsStore } from '../store/settings';
 
 interface BatteryEstimatesProps {
   deviceId?: string;
@@ -132,6 +133,7 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
   const isEmpty = isBatteryEmpty(state);
   const isIdle = isSystemIdle(state);
   const batteryPercent = getBatteryPercent(state);
+  const configuredCapacityWh = useAppSettingsStore((s) => s.dashboard.batteryCapacityWh);
   const batteryHistoryQuery = useQuery({
     queryKey: ['battery-estimate-history', deviceId],
     enabled: Boolean(deviceId),
@@ -140,8 +142,8 @@ export function BatteryEstimates({ deviceId, state }: BatteryEstimatesProps) {
   });
 
   const history = batteryHistoryQuery.data ?? {};
-  const runtimeEstimate = buildBatteryEstimate('runtime', state, history);
-  const chargeEstimate = buildBatteryEstimate('charge', state, history);
+  const runtimeEstimate = buildBatteryEstimate('runtime', state, history, configuredCapacityWh);
+  const chargeEstimate = buildBatteryEstimate('charge', state, history, configuredCapacityWh);
   const runtimeMinutes = runtimeEstimate.minutes;
   const chargeMinutes = charging || isFull ? chargeEstimate.minutes : null;
 

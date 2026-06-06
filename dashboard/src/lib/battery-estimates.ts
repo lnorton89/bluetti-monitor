@@ -146,10 +146,14 @@ export function getBatteryPercent(state: DeviceState): number | null {
   return getFirstField(state, BATTERY_PERCENT_FIELDS);
 }
 
-export function getBatteryCapacityWh(state: DeviceState): number | null {
+export function getBatteryCapacityWh(state: DeviceState, configuredCapacityWh?: number | null): number | null {
   const directCapacity = getFirstField(state, BATTERY_CAPACITY_FIELDS);
   if (directCapacity !== null && directCapacity > 0) {
     return directCapacity;
+  }
+
+  if (configuredCapacityWh !== undefined && configuredCapacityWh !== null && configuredCapacityWh > 0) {
+    return configuredCapacityWh;
   }
 
   const remainingCapacity = getRemainingCapacityWh(state);
@@ -540,9 +544,12 @@ export function buildBatteryEstimate(
   kind: EstimateKind,
   state: DeviceState,
   history: EstimateHistory = {},
+  configuredCapacityWh?: number | null,
 ): BatteryEstimateResult {
   const calibration = deriveHistoricalCalibration(history, kind);
-  const effectiveCapacityWh = calibration ? calibration.whPerPercent * 100 : null;
+  const effectiveCapacityWh = calibration
+    ? calibration.whPerPercent * 100
+    : (configuredCapacityWh ?? null);
   const directField = kind === 'runtime' ? 'battery_range_to_empty' : 'battery_range_to_full';
   const candidates = [
     directCounterCandidate(state, kind, directField),
@@ -557,13 +564,13 @@ export function buildBatteryEstimate(
   return chooseCandidate(kind, candidates);
 }
 
-export function estimateRuntimeMinutes(state: DeviceState): number | null {
-  const result = buildBatteryEstimate('runtime', state);
+export function estimateRuntimeMinutes(state: DeviceState, configuredCapacityWh?: number | null): number | null {
+  const result = buildBatteryEstimate('runtime', state, {}, configuredCapacityWh);
   return result.minutes;
 }
 
-export function estimateChargeTimeMinutes(state: DeviceState): number | null {
-  const result = buildBatteryEstimate('charge', state);
+export function estimateChargeTimeMinutes(state: DeviceState, configuredCapacityWh?: number | null): number | null {
+  const result = buildBatteryEstimate('charge', state, {}, configuredCapacityWh);
   return result.minutes;
 }
 
