@@ -92,30 +92,6 @@ describe('battery estimate counters', () => {
     expect(estimate.inputs.some((input) => input.includes('net discharge'))).toBe(true);
   });
 
-  test('uses pack_num * 3072 when pack_num is available and battery_capacity is not', () => {
-    const result = buildBatteryEstimate('runtime', state({
-      total_battery_percent: '50',
-      pack_num: '1',
-      ac_output_power: '800',
-      dc_input_power: '200',
-    }));
-
-    expect(result.source).toBe('instant');
-    expect(result.minutes).toBeCloseTo(153.6, 1);
-  });
-
-  test('pack_num derivation beats configured capacity when both exist', () => {
-    const result = buildBatteryEstimate('runtime', state({
-      total_battery_percent: '50',
-      pack_num: '1',
-      ac_output_power: '800',
-      dc_input_power: '200',
-    }), {}, 99999);
-
-    expect(result.source).toBe('instant');
-    expect(result.minutes).toBeCloseTo(153.6, 1);
-  });
-
   test('uses configured capacity fallback when live and historical capacity are missing', () => {
     const estimate = buildBatteryEstimate('runtime', state({
       total_battery_percent: '50',

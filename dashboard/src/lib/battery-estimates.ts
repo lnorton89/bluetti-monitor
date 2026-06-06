@@ -152,11 +152,6 @@ export function getBatteryCapacityWh(state: DeviceState, configuredCapacityWh?: 
     return directCapacity;
   }
 
-  const packNum = getField(state, 'pack_num');
-  if (packNum !== null && packNum >= 1 && packNum <= 8) {
-    return packNum * 3072;
-  }
-
   if (configuredCapacityWh !== undefined && configuredCapacityWh !== null && configuredCapacityWh > 0) {
     return configuredCapacityWh;
   }
