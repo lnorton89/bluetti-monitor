@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BellRing, FileText, LaptopMinimal, Moon, Paintbrush, Settings2, Sun, Waves } from 'lucide-react';
 import { PageHeader, SectionPanel, StatusChip } from '../components/ui';
 import { isDesktopHostAvailable, sendToDesktopHost } from '../lib/desktop-host';
@@ -143,6 +143,7 @@ export default function Settings() {
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
   const desktopHostAvailable = isDesktopHostAvailable();
+  const [capacityText, setCapacityText] = useState(String(useAppSettingsStore.getState().dashboard.batteryCapacityWh));
 
   const themeMode = useAppSettingsStore((s) => s.appearance.themeMode);
   const batteryFullBrowser = useAppSettingsStore((s) => s.alerts.batteryFullBrowser);
@@ -473,15 +474,17 @@ export default function Settings() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={batteryCapacityWh}
-                  onChange={(event) => {
-                    const raw = event.target.value.replace(/\D/g, '');
+                  value={capacityText}
+                  onChange={(e) => setCapacityText(e.target.value)}
+                  onBlur={() => {
+                    const raw = capacityText.replace(/\D/g, '');
                     const next = Number.parseInt(raw, 10);
                     if (raw.length > 0 && !Number.isNaN(next)) {
-                      setBatteryCapacityWh(Math.min(50000, Math.max(500, next)));
-                    }
-                    if (raw.length === 0) {
-                      setBatteryCapacityWh(500);
+                      const clamped = Math.min(50000, Math.max(500, next));
+                      setBatteryCapacityWh(clamped);
+                      setCapacityText(String(clamped));
+                    } else {
+                      setCapacityText(String(useAppSettingsStore.getState().dashboard.batteryCapacityWh));
                     }
                   }}
                   className="settings-number-input"
