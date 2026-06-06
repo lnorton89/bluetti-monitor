@@ -16,7 +16,8 @@ test.describe('Analytics mobile layout', () => {
       const selectors = [
         '.analytics-root',
         '.shell',
-        '.controls-band',
+        '.controls-drawer',
+        '.controls-drawer-toggle',
         '.panel-large',
         '.solar-input-panel',
         '.battery-posture-panel',
@@ -43,15 +44,35 @@ test.describe('Analytics mobile layout', () => {
     }
   });
 
-  test('keeps mobile controls touch-friendly and settings contained', async ({ page }) => {
+  test('keeps mobile controls tucked away with time windows on one line', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /Controls/i })).toBeVisible();
+    await expect(page.locator('.controls-band')).not.toBeVisible();
+
+    await page.getByRole('button', { name: /Controls/i }).click();
+    await expect(page.locator('.controls-band')).toBeVisible();
+
     const controlMetrics = await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll<HTMLElement>('.controls-band button'));
       const controlsBand = document.querySelector<HTMLElement>('.controls-band')!.getBoundingClientRect();
+      const segmented = document.querySelector<HTMLElement>('.segmented')!;
+      const segmentedRect = segmented.getBoundingClientRect();
+      const timeButtons = Array.from(segmented.querySelectorAll<HTMLElement>('button')).map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, height: rect.height };
+      });
       return {
         controlsBand: {
           left: controlsBand.left,
           right: controlsBand.right,
           width: controlsBand.width,
+        },
+        segmented: {
+          height: segmentedRect.height,
+          top: segmentedRect.top,
+          bottom: segmentedRect.bottom,
+          scrollWidth: segmented.scrollWidth,
+          clientWidth: segmented.clientWidth,
+          timeButtons,
         },
         buttons: buttons.map((button) => {
           const rect = button.getBoundingClientRect();
@@ -67,6 +88,11 @@ test.describe('Analytics mobile layout', () => {
     });
 
     expect(controlMetrics.controlsBand.width).toBeGreaterThan(300);
+    expect(controlMetrics.segmented.height).toBeLessThanOrEqual(48);
+    for (const button of controlMetrics.segmented.timeButtons) {
+      expect(Math.abs(button.top - controlMetrics.segmented.top)).toBeLessThanOrEqual(5);
+      expect(Math.abs(button.bottom - controlMetrics.segmented.bottom)).toBeLessThanOrEqual(5);
+    }
     for (const button of controlMetrics.buttons) {
       expect(button.height, `${button.label} height`).toBeGreaterThanOrEqual(38);
       expect(button.left, `${button.label} left edge`).toBeGreaterThanOrEqual(-1);

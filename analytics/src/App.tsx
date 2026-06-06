@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, Battery, CheckCircle2, Gauge, LineChart, PlugZap, Sun, WifiOff, Zap } from 'lucide-react';
+import { Activity, Battery, CheckCircle2, Gauge, LineChart, PlugZap, SlidersHorizontal, Sun, WifiOff, Zap } from 'lucide-react';
 import {
   IS_STATIC_ANALYTICS,
   fetchDevices,
@@ -69,6 +69,7 @@ export default function App() {
   const [rangeId, setRangeId] = useState<RangeId>('24h');
   const [selectedDevice, setSelectedDevice] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [themeMode, setThemeMode] = useState<AnalyticsTheme>(() => getStoredAnalyticsTheme());
   const [densityMode, setDensityMode] = useState<AnalyticsDensity>(() => getStoredAnalyticsDensity());
   const [skin, setSkin] = useState<AnalyticsSkin>(() => getStoredAnalyticsSkin());
@@ -293,50 +294,65 @@ export default function App() {
           </div>
         </header>
 
-        <div className="controls-band-anchor">
-          <ControlsBand
-            comparisonOption={comparisonOption}
-            datePickerOpen={datePickerOpen}
-            densityMode={densityMode}
-            devices={devices}
-            historyQueryRefetch={() => void historyQuery.refetch()}
-            liveConnected={live.connected}
-            rangeId={rangeId}
-            selectedDevice={selectedDevice}
-            accentOverride={accentOverride}
-            themeMode={themeMode}
-            onAccentChange={(color) => { setAccentOverride(color); setStoredAccentOverride(skin, color); }}
-            onComparisonChange={setComparisonOption}
-            onDensityChange={setDensityMode}
-            onDeviceChange={setSelectedDevice}
-            onExportCsv={() => { if (timeline.length > 0) exportTimelineToCsv(timeline, range.label); }}
-            onRangeChange={(id) => {
-              if (id === CUSTOM_RANGE_ID) {
-                setDatePickerOpen((open) => !open);
-              } else {
-                setDatePickerOpen(false);
-                setRangeId(id);
-                setCustomApplied(false);
-              }
-            }}
-            onSettingsOpen={() => setSettingsOpen(true)}
-            onThemeChange={setThemeMode}
-          />
+        <div className={`controls-drawer${controlsOpen ? ' is-open' : ''}`}>
+          <button
+            type="button"
+            className="controls-drawer-toggle"
+            aria-expanded={controlsOpen}
+            aria-controls="analytics-controls"
+            onClick={() => setControlsOpen((open) => !open)}
+          >
+            <SlidersHorizontal size={16} />
+            <span>Controls</span>
+            <strong>{range.label}</strong>
+          </button>
+          <div id="analytics-controls" className="controls-drawer-panel">
+            <div className="controls-band-anchor">
+              <ControlsBand
+                comparisonOption={comparisonOption}
+                datePickerOpen={datePickerOpen}
+                densityMode={densityMode}
+                devices={devices}
+                historyQueryRefetch={() => void historyQuery.refetch()}
+                liveConnected={live.connected}
+                rangeId={rangeId}
+                selectedDevice={selectedDevice}
+                accentOverride={accentOverride}
+                themeMode={themeMode}
+                onAccentChange={(color) => { setAccentOverride(color); setStoredAccentOverride(skin, color); }}
+                onComparisonChange={setComparisonOption}
+                onDensityChange={setDensityMode}
+                onDeviceChange={setSelectedDevice}
+                onExportCsv={() => { if (timeline.length > 0) exportTimelineToCsv(timeline, range.label); }}
+                onRangeChange={(id) => {
+                  if (id === CUSTOM_RANGE_ID) {
+                    setDatePickerOpen((open) => !open);
+                  } else {
+                    setDatePickerOpen(false);
+                    setRangeId(id);
+                    setCustomApplied(false);
+                  }
+                }}
+                onSettingsOpen={() => setSettingsOpen(true)}
+                onThemeChange={setThemeMode}
+              />
 
-          {datePickerOpen ? (
-            <CustomDateRange
-              endIso={customEnd}
-              startIso={customStart}
-              onApply={() => {
-                setRangeId(CUSTOM_RANGE_ID);
-                setCustomApplied(true);
-                setDatePickerOpen(false);
-              }}
-              onClose={() => setDatePickerOpen(false)}
-              onEndChange={setCustomEnd}
-              onStartChange={setCustomStart}
-            />
-          ) : null}
+              {datePickerOpen ? (
+                <CustomDateRange
+                  endIso={customEnd}
+                  startIso={customStart}
+                  onApply={() => {
+                    setRangeId(CUSTOM_RANGE_ID);
+                    setCustomApplied(true);
+                    setDatePickerOpen(false);
+                  }}
+                  onClose={() => setDatePickerOpen(false)}
+                  onEndChange={setCustomEnd}
+                  onStartChange={setCustomStart}
+                />
+              ) : null}
+            </div>
+          </div>
         </div>
 
         {devices.length === 0 ? (

@@ -11,6 +11,7 @@ commit: af8c148
 
 - Fixed the analytics mobile layout collapse by resetting desktop panel grid placement below tablet width.
 - Reworked phone-width controls so device/range/comparison controls span full width while icon actions sit in compact touch-friendly rows.
+- Follow-up: collapsed the entire controls section behind a mobile Controls drawer and kept all time-window buttons on one horizontal row.
 - Kept KPI cards on a two-column phone layout, made side stats wrap as cards, and tightened date picker, notes, panel header, and settings modal behavior for small screens.
 - Added `analytics/tests/mobile-layout.spec.ts` to verify no page-level horizontal overflow, full-width panel stacking, touch-sized controls, and contained settings modal rendering at `390x844`.
 

@@ -140,6 +140,14 @@ input:focus-visible {
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.1);
 }
 
+.controls-drawer-toggle {
+  display: none;
+}
+
+.controls-drawer-panel {
+  display: block;
+}
+
 
 
 .control-field {
@@ -184,6 +192,15 @@ input:focus-visible {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-deep);
+}
+
+.segmented::-webkit-scrollbar {
+  height: 4px;
+}
+
+.segmented::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--border-strong);
 }
 
 .segmented button,
@@ -2037,6 +2054,48 @@ input:focus-visible {
     font-size: 0.82rem;
   }
 
+  .controls-drawer {
+    margin-bottom: 12px;
+  }
+
+  .controls-drawer-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--device-bar-bg);
+    color: var(--text);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.1);
+  }
+
+  .controls-drawer-toggle span {
+    flex: 1 1 auto;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .controls-drawer-toggle strong {
+    color: var(--accent);
+    font-family: var(--font-numeric);
+    font-size: 0.82rem;
+  }
+
+  .controls-drawer-panel {
+    display: none;
+    padding-top: 8px;
+  }
+
+  .controls-drawer.is-open .controls-drawer-panel {
+    display: block;
+  }
+
   .field-picker {
     grid-template-columns: 1fr;
   }
@@ -2044,7 +2103,7 @@ input:focus-visible {
   .controls-band {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 0;
     padding: 10px;
   }
 
@@ -2085,14 +2144,17 @@ input:focus-visible {
   }
 
   .segmented {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     height: auto;
-    overflow: visible;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
   }
 
   .segmented button {
-    min-width: 0;
+    flex: 0 0 auto;
+    min-width: 54px;
     min-height: 38px;
     padding: 0 8px;
     font-size: 0.82rem;
@@ -2272,9 +2334,12 @@ input:focus-visible {
     font-size: 2.15rem;
   }
 
-  :root[data-analytics-density="compact"] .controls-band,
   :root[data-analytics-density="compact"] .field-picker {
     grid-template-columns: 1fr;
+  }
+
+  :root[data-analytics-density="compact"] .controls-band {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   :root[data-analytics-density="compact"] .icon-button {
