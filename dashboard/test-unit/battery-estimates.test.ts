@@ -88,7 +88,7 @@ describe('battery estimate counters', () => {
 
     expect(estimate.minutes).toBe(300);
     expect(estimate.source).toBe('instant');
-    expect(estimate.confidence).toBe('medium');
+    expect(estimate.confidence).toBe('low');
     expect(estimate.inputs.some((input) => input.includes('net discharge'))).toBe(true);
   });
 
@@ -101,7 +101,7 @@ describe('battery estimate counters', () => {
 
     expect(estimate.source).toBe('instant');
     expect(estimate.minutes).toBe(300);
-    expect(estimate.confidence).toBe('medium');
+    expect(estimate.confidence).toBe('low');
   });
 
   test('prefers historical calibration over configured capacity fallback', () => {

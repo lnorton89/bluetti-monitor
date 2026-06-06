@@ -311,6 +311,7 @@ function instantRuntimeCandidate(state: DeviceState, effectiveCapacityWh: number
   const netDischargeW = getTotalOutputPower(state) - getTotalInputPower(state);
   const remainingWh = getRemainingCapacityWh(state)
     ?? estimateRemainingWhFromPercent(state, effectiveCapacityWh);
+  const capacityFromConfig = getFirstField(state, BATTERY_CAPACITY_FIELDS) === null;
 
   if (netDischargeW <= POWER_FLOW_DEADBAND_W) {
     return candidate('instant', 'Instant net discharge', null, 'unavailable', 'Net discharge is below the useful estimate threshold.', [
@@ -330,7 +331,7 @@ function instantRuntimeCandidate(state: DeviceState, effectiveCapacityWh: number
     'instant',
     'Instant net discharge',
     (remainingWh / netDischargeW) * 60,
-    'medium',
+    capacityFromConfig ? 'low' : 'medium',
     'Estimated from current remaining energy and net discharge.',
     [`remaining energy: ${Math.round(remainingWh)} Wh`, `net discharge: ${Math.round(netDischargeW)} W`],
     ['Instantaneous power can be noisy if load or input changes.'],
@@ -341,6 +342,8 @@ function instantChargeCandidate(state: DeviceState, effectiveCapacityWh: number 
   const capacityWh = getBatteryCapacityWh(state) ?? effectiveCapacityWh;
   const remainingWh = getRemainingCapacityWh(state)
     ?? estimateRemainingWhFromPercent(state, capacityWh);
+  const capacityFromConfig = getFirstField(state, BATTERY_CAPACITY_FIELDS) === null;
+
   if (capacityWh === null || remainingWh === null) {
     return candidate('instant', 'Instant net charge', null, 'unavailable', 'Capacity or remaining energy is unavailable.', [
       `battery_capacity: ${state.battery_capacity?.value ?? state.pack_capacity?.value ?? 'unavailable'}`,
@@ -368,7 +371,7 @@ function instantChargeCandidate(state: DeviceState, effectiveCapacityWh: number 
     'instant',
     'Instant net charge',
     ((targetWh - remainingWh) / netChargeW) * 60,
-    'medium',
+    capacityFromConfig ? 'low' : 'medium',
     'Estimated from current charge deficit and net charge power.',
     [
       `deficit: ${Math.round(targetWh - remainingWh)} Wh`,
