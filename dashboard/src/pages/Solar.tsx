@@ -24,7 +24,6 @@ import { useShellStore } from '../store/shell';
 import { useAppSettingsStore } from '../store/settings';
 import { useWsStore } from '../store/ws';
 import { RANGE_PRESETS, useDeviceSelector, type RangePreset } from '../lib/shared-controls';
-import { buildBatteryEstimate, type EstimateHistory } from '../lib/battery-estimates';
 
 const FOCUS_OPTIONS = [
   { id: 'generation', label: 'Generation', icon: Sun },
@@ -46,8 +45,6 @@ const SOLAR_FIELD_ALIASES = {
   acLoad: ['ac_output_power'],
   dcLoad: ['dc_output_power'],
   batteryPercent: ['total_battery_percent', 'battery_percent', 'charge_level', 'soc'],
-  batteryToFull: ['battery_range_to_full'],
-  chargeCeiling: ['battery_range_end'],
 } as const;
 
 type FocusId = typeof FOCUS_OPTIONS[number]['id'];
@@ -68,7 +65,6 @@ type SolarTimelinePoint = {
   gridInput: number | null;
   totalOutput: number | null;
   batteryPercent: number | null;
-  batteryToFull: number | null;
   solarNet: number | null;
 };
 type SolarAnalyticsPayload = {
@@ -77,13 +73,6 @@ type SolarAnalyticsPayload = {
   history: Record<SolarFieldKey, HistoryPoint[]>;
   bucketLabel: string;
   sinceIso: string;
-};
-type ChargeEstimate = {
-  minutes: number | null;
-  sourceLabel: string;
-  detail: string;
-  targetPercent: number | null;
-  percentPerHour: number | null;
 };
 type SeriesSummary = {
   current: number | null;
@@ -121,6 +110,7 @@ export default function Solar() {
 
   const range = RANGE_PRESETS.find((preset) => preset.id === rangeId) ?? RANGE_PRESETS[2];
   const sinceIso = new Date(Date.now() - range.minutes * 60_000).toISOString();
+  const todaySinceIso = getStartOfTodayIso();
   const liveState = wsState[selectedDevice] ?? {};
 
   const { data: fields = [], isLoading: isLoadingFields } = useQuery({
@@ -160,16 +150,27 @@ export default function Solar() {
     },
   });
 
-  if (liveDevices.length === 0) {
-    return (
-      <div className="page-stack animate-fade-in">
-        <EmptyState
-          title="Waiting for solar telemetry"
-          description="Once the selected device starts publishing live input fields, this page will turn into a dedicated solar workspace for both PV inputs, charge tracking, and harvest history."
-        />
-      </div>
-    );
-  }
+  const dailyInputPeakQuery = useQuery({
+    queryKey: ['solar-daily-input-peaks', selectedDevice, Object.values(resolvedFields).join('|'), todaySinceIso],
+    enabled: isActive && !!selectedDevice && Object.keys(liveState).length > 0,
+    queryFn: async () => {
+      const inputFields = [
+        resolvedFields.totalSolar,
+        resolvedFields.pv1Power,
+        resolvedFields.pv2Power,
+      ].filter((field): field is string => Boolean(field))
+        .filter((field, index, list) => list.indexOf(field) === index);
+
+      const historyEntries = await Promise.all(
+        inputFields.map(async (field) => (
+          [field, await fetchHistory(selectedDevice, field, { limit: 2_000, since: todaySinceIso })] as const
+        )),
+      );
+      const resolvedHistory = mapResolvedHistory(resolvedFields, Object.fromEntries(historyEntries));
+
+      return buildDailyInputPeaks(resolvedHistory);
+    },
+  });
 
   const timeline = solarQuery.data?.timeline ?? [];
   const resolved = solarQuery.data?.resolvedFields ?? resolvedFields;
@@ -181,6 +182,18 @@ export default function Solar() {
       resetRouteSignal('solar');
     };
   }, [liveSnapshot.totalSolar, resetRouteSignal, setRouteSignal]);
+
+  if (liveDevices.length === 0) {
+    return (
+      <div className="page-stack animate-fade-in">
+        <EmptyState
+          title="Waiting for solar telemetry"
+          description="Once the selected device starts publishing live input fields, this page will turn into a dedicated solar workspace for both PV inputs, charge tracking, and harvest history."
+        />
+      </div>
+    );
+  }
+
   const totalSolarSummary = summarizeSeries(timeline, 'totalSolar');
   const pv1Summary = summarizeSeries(timeline, 'pv1Power');
   const pv2Summary = summarizeSeries(timeline, 'pv2Power');
@@ -189,10 +202,10 @@ export default function Solar() {
   const inputSummary = summarizeSeries(timeline, 'totalInput');
   const outputSummary = summarizeSeries(timeline, 'totalOutput');
   const solarNetSummary = summarizeSeries(timeline, 'solarNet');
-  const batteryToFullSummary = summarizeSeries(timeline, 'batteryToFull');
   const solarPeak = findPeakPoint(timeline, 'totalSolar');
   const pv1Peak = findPeakPoint(timeline, 'pv1Power');
   const pv2Peak = findPeakPoint(timeline, 'pv2Power');
+  const dailyInputPeaks = dailyInputPeakQuery.data;
   const hasSplitElectrical = Boolean(
     resolved.pv1Voltage || resolved.pv2Voltage || resolved.pv1Current || resolved.pv2Current,
   );
@@ -206,8 +219,6 @@ export default function Solar() {
   const solarShare = inputSummary && inputSummary.avg > 0 && totalSolarSummary
     ? clampPercent((totalSolarSummary.avg / inputSummary.avg) * 100)
     : null;
-  const chargeEstimate = buildChargeEstimate(liveState, timeline, resolved, range, solarQuery.data?.history);
-
   return (
     <div className="page-stack animate-fade-in">
       {/* Show loading skeleton on initial load */}
@@ -245,7 +256,7 @@ export default function Solar() {
           kicker="Solar workspace"
           title="One place to track both solar inputs and charging progress"
           icon={Sun}
-          description="This page is centered on the device's solar-side telemetry: total harvest, per-input string behavior, output coverage, and a battery full-charge estimate tied back to the fields your stack actually receives."
+          description="This page is centered on the device's solar-side telemetry: total harvest, per-input string behavior, output coverage, and battery movement tied back to the fields your stack actually receives."
           meta={
             <div className="workspace-panel-meta">
               <StatusChip label={solarQuery.data?.bucketLabel ?? buildCoverageLabel(range.bucketMs)} variant="info" />
@@ -314,7 +325,7 @@ export default function Solar() {
         </Card>
       ) : null}
 
-      <div className="tile-grid tile-grid--cols-4 solar-score-grid">
+      <div className="tile-grid tile-grid--cols-3 solar-score-grid">
         <MetricTile label="Solar right now" value={formatMetricValue(liveSnapshot.totalSolar, 'W')} detail={resolved.totalSolar ? `Live field ${resolved.totalSolar}` : 'Combined from PV1 + PV2 when available'} accent="var(--cat-input)" tooltip={{
           summary: 'Solar right now is the live total solar input reaching the selected device.',
           dataPoints: [
@@ -350,19 +361,6 @@ export default function Solar() {
             'Read the currently mapped PV2 power field.',
             'Show voltage and current as supporting electrical context when those fields exist.',
           ],
-        }} />
-        <MetricTile label="Battery to full" value={formatDuration(chargeEstimate.minutes)} detail={chargeEstimate.detail} accent="var(--cat-battery)" tooltip={{
-          summary: 'Battery to full prefers the device-reported time-to-full and otherwise falls back to the recent charge trend.',
-          dataPoints: [
-            resolvedFieldLine('battery_range_to_full', resolved.batteryToFull, getLiveNumber(liveState, resolved.batteryToFull), 'min'),
-            resolvedFieldLine('Battery reserve', resolved.batteryPercent, getLiveNumber(liveState, resolved.batteryPercent), '%', 1),
-            resolvedFieldLine('Charge ceiling', resolved.chargeCeiling, getLiveNumber(liveState, resolved.chargeCeiling), '%', 1),
-          ],
-          calculation: [
-            'Use battery_range_to_full directly when the device publishes it.',
-            `Otherwise estimate from the battery-percent climb across the selected ${range.label} window until the configured ceiling.`,
-          ],
-          note: chargeEstimate.detail,
         }} />
       </div>
 
@@ -417,7 +415,7 @@ export default function Solar() {
               </div>
             }
           >
-            <p className="analytics-report-copy">{getFocusSubtitle(focus, resolved, chargeEstimate)}</p>
+            <p className="analytics-report-copy">{getFocusSubtitle(focus, resolved)}</p>
 
             <div className="analytics-report-body">
               <div className="analytics-chart-shell">
@@ -476,7 +474,6 @@ export default function Solar() {
                       <>
                         <Line yAxisId="left" type="monotone" dataKey="batteryPercent" name="batteryPercent" stroke="#34d399" strokeWidth={2.6} dot={false} activeDot={{ r: 4 }} />
                         <Area yAxisId="right" type="monotone" dataKey="solarNet" name="solarNet" stroke="#f59e0b" fill="rgba(245, 158, 11, 0.16)" strokeWidth={2} dot={false} />
-                        <Line yAxisId="right" type="monotone" dataKey="batteryToFull" name="batteryToFull" stroke="#60a5fa" strokeWidth={1.8} dot={false} />
                         <ReferenceLine yAxisId="right" y={0} stroke="var(--border-hi)" strokeDasharray="4 4" />
                       </>
                     ) : null}
@@ -525,11 +522,6 @@ export default function Solar() {
                       calculation: ['window climb = latest reserve bucket - earliest reserve bucket'],
                     }} />
                     <SideStat label="Solar net avg" value={formatSignedMetric(solarNetSummary?.avg, 'W')} detail="Solar minus current load" tooltip={bucketAverageTooltip('Solar net avg', solarNetSummary?.avg, 'W', [`Average solar: ${formatMetricValue(totalSolarSummary?.avg, 'W')}`, `Average load: ${formatMetricValue(outputSummary?.avg, 'W')}`], 'For each bucket, solarNet = totalSolar - totalOutput, then average the bucket values.')} />
-                    <SideStat label="Reported full time" value={formatMetricValue(batteryToFullSummary?.current, 'min')} detail={resolved.batteryToFull ?? 'Derived estimate in hero'} tooltip={{
-                      summary: 'Reported full time is the latest bucketed device time-to-full reading when that field exists.',
-                      dataPoints: [resolvedFieldLine('battery_range_to_full', resolved.batteryToFull, batteryToFullSummary?.current ?? null, 'min')],
-                      calculation: ['Bucket the device time-to-full series and use the latest bucket value.', 'If the field is missing, the main Battery to full card falls back to the derived estimate.'],
-                    }} />
                   </>
                 ) : null}
               </div>
@@ -561,6 +553,7 @@ export default function Solar() {
                       power={liveSnapshot.pv1Power}
                       voltage={liveSnapshot.pv1Voltage}
                       current={liveSnapshot.pv1Current}
+                      dailyPeak={dailyInputPeaks?.pv1Power ?? null}
                       peak={pv1Peak ? `${formatMetricValue(pv1Peak.pv1Power, 'W')} peak` : 'Peak unavailable'}
                       accent="#f472b6"
                     />
@@ -569,6 +562,7 @@ export default function Solar() {
                       power={liveSnapshot.pv2Power}
                       voltage={liveSnapshot.pv2Voltage}
                       current={liveSnapshot.pv2Current}
+                      dailyPeak={dailyInputPeaks?.pv2Power ?? null}
                       peak={pv2Peak ? `${formatMetricValue(pv2Peak.pv2Power, 'W')} peak` : 'Peak unavailable'}
                       accent="#38bdf8"
                     />
@@ -579,6 +573,7 @@ export default function Solar() {
                     power={liveSnapshot.totalSolar}
                     voltage={liveSnapshot.solarVoltage}
                     current={liveSnapshot.solarCurrent}
+                    dailyPeak={dailyInputPeaks?.totalSolar ?? null}
                     peak={solarPeak ? `${formatMetricValue(solarPeak.totalSolar, 'W')} peak` : 'Peak unavailable'}
                     accent="var(--cat-input)"
                   />
@@ -655,23 +650,6 @@ export default function Solar() {
 
             <div className="solar-side-column">
               <SectionPanel
-                title="How long until the battery is full"
-                kicker="Charge estimate"
-                icon={Battery}
-                className="solar-forecast-card"
-              >
-                <p className="analytics-report-copy">
-                  {chargeEstimate.sourceLabel}. When the device reports a direct time-to-full value, that wins. Otherwise this page derives the estimate from the recent battery-percent climb and the configured charge ceiling.
-                </p>
-                <div className="solar-forecast-value">{formatDuration(chargeEstimate.minutes)}</div>
-                <div className="solar-forecast-meta">
-                  <InfoRow label="Charge detail" value={chargeEstimate.detail} />
-                  <InfoRow label="Charge trend" value={chargeEstimate.percentPerHour === null ? 'Charge trend unavailable' : `${chargeEstimate.percentPerHour.toFixed(2)}% per hour`} />
-                  <InfoRow label="Battery now" value={batterySummary ? formatMetricValue(batterySummary.current, '%', 1) : 'Battery reserve unavailable'} />
-                </div>
-              </SectionPanel>
-
-              <SectionPanel
                 title="Fields driving this solar page"
                 kicker="Telemetry map"
                 icon={Gauge}
@@ -687,8 +665,6 @@ export default function Solar() {
                 <InfoRow label="Solar bus voltage" value={resolved.solarVoltage ?? 'Unavailable'} />
                 <InfoRow label="Solar bus current" value={resolved.solarCurrent ?? 'Unavailable'} />
                 <InfoRow label="Battery reserve" value={resolved.batteryPercent ?? 'Unavailable'} />
-                <InfoRow label="Battery full time" value={resolved.batteryToFull ?? 'Unavailable'} />
-                <InfoRow label="Charge ceiling" value={resolved.chargeCeiling ?? 'Unavailable'} />
               </SectionPanel>
 
               <SectionPanel
@@ -754,6 +730,7 @@ function SolarInputCard({
   power,
   voltage,
   current,
+  dailyPeak,
   peak,
   accent,
 }: {
@@ -761,6 +738,7 @@ function SolarInputCard({
   power: number | null;
   voltage: number | null;
   current: number | null;
+  dailyPeak: number | null;
   peak: string;
   accent: string;
 }) {
@@ -777,6 +755,10 @@ function SolarInputCard({
       <div className="solar-input-card-row">
         <span>Current</span>
         <strong>{formatMetricValue(current, 'A', 1)}</strong>
+      </div>
+      <div className="solar-input-card-row">
+        <span>Highest today</span>
+        <strong>{formatMetricValue(dailyPeak, 'W')}</strong>
       </div>
       <div className="solar-input-card-foot">{peak}</div>
     </div>
@@ -821,7 +803,6 @@ function buildSolarTimeline(
     acLoad: bucketHistory(historyByMetric.acLoad ?? [], bucketMs),
     dcLoad: bucketHistory(historyByMetric.dcLoad ?? [], bucketMs),
     batteryPercent: bucketHistory(historyByMetric.batteryPercent ?? [], bucketMs),
-    batteryToFull: bucketHistory(historyByMetric.batteryToFull ?? [], bucketMs),
   };
 
   const timestamps = collectBucketKeys(Object.values(bucketed));
@@ -856,7 +837,6 @@ function buildSolarTimeline(
       gridInput,
       totalOutput,
       batteryPercent: bucketed.batteryPercent.get(ts) ?? null,
-      batteryToFull: bucketed.batteryToFull.get(ts) ?? null,
       solarNet: hasAnyValue([totalSolar, totalOutput]) ? (totalSolar ?? 0) - (totalOutput ?? 0) : null,
     };
   });
@@ -887,70 +867,6 @@ function buildLiveSnapshot(state: DeviceState, resolved: ResolvedSolarFields) {
       getLiveNumber(state, resolved.pv2Current),
     ]),
     totalOutput,
-  };
-}
-
-function buildChargeEstimate(
-  state: DeviceState,
-  timeline: SolarTimelinePoint[],
-  resolved: ResolvedSolarFields,
-  range: RangePreset,
-  historyByMetric?: Record<SolarFieldKey, HistoryPoint[]>,
-): ChargeEstimate {
-  const currentPercent = getLiveNumber(state, resolved.batteryPercent);
-  const configuredCeiling = getLiveNumber(state, resolved.chargeCeiling);
-  const targetPercent = Math.max(currentPercent ?? 0, Math.min(100, configuredCeiling ?? 100));
-  const estimateHistory: EstimateHistory = {
-    batteryPercent: historyByMetric?.batteryPercent ?? [],
-    acInput: historyByMetric?.gridInput ?? [],
-    dcInput: historyByMetric?.totalSolar ?? [],
-    pv1Power: historyByMetric?.pv1Power ?? [],
-    pv2Power: historyByMetric?.pv2Power ?? [],
-    acOutput: historyByMetric?.acLoad ?? [],
-    dcOutput: historyByMetric?.dcLoad ?? [],
-    rangeToFull: historyByMetric?.batteryToFull ?? [],
-  };
-  const estimate = buildBatteryEstimate('charge', state, estimateHistory);
-
-  if (estimate.minutes !== null) {
-    return {
-      minutes: estimate.minutes,
-      sourceLabel: estimate.sourceLabel,
-      detail: `${estimate.confidence} confidence: ${estimate.detail}`,
-      targetPercent,
-      percentPerHour: null,
-    };
-  }
-
-  const batteryPoints = timeline.filter(
-    (point): point is SolarTimelinePoint & { batteryPercent: number } =>
-      typeof point.batteryPercent === 'number' && Number.isFinite(point.batteryPercent),
-  );
-
-  if (batteryPoints.length >= 2 && currentPercent !== null && targetPercent > currentPercent) {
-    const first = batteryPoints[0];
-    const last = batteryPoints.at(-1) ?? first;
-    const elapsedHours = (last.ts - first.ts) / 3_600_000;
-    const percentChange = last.batteryPercent - first.batteryPercent;
-    const percentPerHour = elapsedHours > 0 ? percentChange / elapsedHours : null;
-
-    if (percentPerHour !== null && percentPerHour > 0) {
-      return {
-        minutes: ((targetPercent - currentPercent) / percentPerHour) * 60,
-        sourceLabel: 'Derived from recent battery climb',
-        detail: `Based on reserve change over the selected ${range.label} window`,
-        targetPercent,
-        percentPerHour,
-      };
-    }
-  }
-
-  return {
-    minutes: null,
-    sourceLabel: 'Estimate unavailable',
-    detail: 'Waiting for either battery_range_to_full or a positive battery-percent trend',
-    targetPercent: configuredCeiling ?? currentPercent ?? null,
-    percentPerHour: null,
   };
 }
 
@@ -995,6 +911,33 @@ function findPeakPoint(
   }
 
   return match;
+}
+
+function buildDailyInputPeaks(historyByMetric: Record<SolarFieldKey, HistoryPoint[]>) {
+  const pv1Power = findHistoryPeak(historyByMetric.pv1Power);
+  const pv2Power = findHistoryPeak(historyByMetric.pv2Power);
+  const directTotalSolar = findHistoryPeak(historyByMetric.totalSolar);
+  const splitTimeline = buildSolarTimeline(historyByMetric, 60_000);
+  const splitPeak = findPeakPoint(splitTimeline, 'totalSolar')?.totalSolar ?? null;
+
+  return {
+    totalSolar: directTotalSolar ?? splitPeak,
+    pv1Power,
+    pv2Power,
+  };
+}
+
+function findHistoryPeak(points: HistoryPoint[]) {
+  let peak: number | null = null;
+
+  for (const point of points) {
+    const value = Number.parseFloat(point.value);
+    if (Number.isFinite(value) && (peak === null || value > peak)) {
+      peak = value;
+    }
+  }
+
+  return peak;
 }
 
 function bucketHistory(points: HistoryPoint[], bucketMs: number) {
@@ -1062,23 +1005,6 @@ function formatSignedMetric(value: number | null | undefined, unit: string, digi
   return `${prefix}${value.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${unit}`.trim();
 }
 
-function formatDuration(minutes: number | null | undefined) {
-  if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) return '--';
-  const rounded = Math.max(0, Math.round(minutes));
-  const hours = Math.floor(rounded / 60);
-  const remainder = rounded % 60;
-
-  if (hours === 0) {
-    return `${remainder}m`;
-  }
-
-  if (remainder === 0) {
-    return `${hours}h`;
-  }
-
-  return `${hours}h ${remainder}m`;
-}
-
 function describeElectricalLive(voltage: number | null, current: number | null) {
   if (voltage === null && current === null) {
     return 'Voltage and current not published yet';
@@ -1120,17 +1046,22 @@ function getFocusTitle(focus: FocusId) {
 function getFocusSubtitle(
   focus: FocusId,
   resolved: ResolvedSolarFields,
-  estimate: ChargeEstimate,
 ) {
   if (focus === 'inputs') {
     return `Comparing ${resolved.pv1Power ?? 'PV1'} and ${resolved.pv2Power ?? 'PV2'} so mismatched string behavior is visible instead of implied.`;
   }
 
   if (focus === 'charge') {
-    return `${estimate.sourceLabel}. The report pairs battery reserve with solar net power so you can judge whether harvest is actually lifting the pack.`;
+    return 'Pairing battery reserve with solar net power so you can judge whether harvest is actually lifting the pack.';
   }
 
   return `Following ${resolved.totalSolar ?? 'total solar input'} against current output and battery reserve so you can see whether solar is covering demand or just assisting it.`;
+}
+
+function getStartOfTodayIso() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today.toISOString();
 }
 
 function formatAxisTick(ts: number, range: RangePreset) {
@@ -1150,7 +1081,6 @@ function formatTooltipLabel(ts: number, range: RangePreset) {
 function formatSolarTooltipValue(name: string, value: unknown) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '--';
   if (name === 'batteryPercent') return `${value.toFixed(1)} %`;
-  if (name === 'batteryToFull') return `${Math.round(value)} min`;
   if (name === 'pv1Voltage' || name === 'pv2Voltage' || name === 'solarVoltage') return `${value.toFixed(1)} V`;
   if (name === 'pv1Current' || name === 'pv2Current' || name === 'solarCurrent') return `${value.toFixed(1)} A`;
   return `${Math.round(value).toLocaleString()} W`;
@@ -1169,7 +1099,6 @@ function getSeriesLabel(name: string) {
   if (name === 'gridInput') return 'Grid assist';
   if (name === 'totalOutput') return 'Total output';
   if (name === 'batteryPercent') return 'Battery reserve';
-  if (name === 'batteryToFull') return 'Time to full';
   if (name === 'solarNet') return 'Solar net';
   return name;
 }

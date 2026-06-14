@@ -154,7 +154,6 @@ export default function Settings() {
   const ntfyTopic = useAppSettingsStore((s) => s.alerts.ntfyTopic);
   const defaultAnalyticsWindow = useAppSettingsStore((s) => s.dashboard.defaultAnalyticsWindow);
   const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
-  const batteryCapacityWh = useAppSettingsStore((s) => s.dashboard.batteryCapacityWh);
   const logCaptureEnabled = useAppSettingsStore((s) => s.desktop.logCaptureEnabled);
   const logRetainBytes = useAppSettingsStore((s) => s.desktop.logRetainBytes);
   const logTruncateAtBytes = useAppSettingsStore((s) => s.desktop.logTruncateAtBytes);
@@ -465,7 +464,7 @@ export default function Settings() {
                 <div>
                   <span className="settings-toggle-label">Battery capacity</span>
                   <p className="settings-toggle-description">
-                    Total Wh capacity of your battery system. Used to estimate runtime and charge time from live power. The AC500 does not report capacity over BLE, so set this to match your pack configuration (e.g. 3072 for a B300, 6144 for dual B300).
+                    Total Wh capacity of your battery system. The AC500 does not report capacity over BLE, so set this to match your pack configuration (e.g. 3072 for a B300, 6144 for dual B300).
                   </p>
                 </div>
                 <span className="settings-impact-pill">Persists</span>

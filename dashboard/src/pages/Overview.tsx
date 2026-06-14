@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowDownRight,
   ArrowRight,
@@ -22,8 +23,8 @@ import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, StatusChip, EmptySt
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
-import { BatteryEstimates } from '../components/BatteryEstimates';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
+import { fetchHistoryBundle, type HistoryPoint } from '../lib/api';
 
 type FieldValue = { value: string; ts: string };
 type DeviceState = Record<string, FieldValue>;
@@ -42,6 +43,8 @@ type MetricDefinition = {
   accent?: string;
   tooltip: StatHelpContent;
 };
+
+const INPUT_HISTORY_FIELDS = ['dc_input_power', 'ac_input_power'] as const;
 
 function getNumber(state: DeviceState, field: string) {
   const raw = state[field]?.value;
@@ -111,6 +114,39 @@ function latestTimestamp(state: DeviceState) {
     }
   }
   return latest;
+}
+
+function getHighestInputToday(
+  history: Record<string, HistoryPoint[]> | undefined,
+  liveInput: number,
+) {
+  const totalsByTs = new Map<string, number>();
+
+  for (const field of INPUT_HISTORY_FIELDS) {
+    for (const point of history?.[field] ?? []) {
+      const value = Number.parseFloat(point.value);
+      if (!Number.isFinite(value)) {
+        continue;
+      }
+
+      totalsByTs.set(point.ts, (totalsByTs.get(point.ts) ?? 0) + value);
+    }
+  }
+
+  const historyPeak = totalsByTs.size > 0 ? Math.max(...totalsByTs.values()) : null;
+  const livePeak = Number.isFinite(liveInput) ? liveInput : null;
+
+  if (historyPeak === null) {
+    return livePeak;
+  }
+
+  return livePeak === null ? historyPeak : Math.max(historyPeak, livePeak);
+}
+
+function getStartOfTodayIso() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today.toISOString();
 }
 
 function batteryTone(percent: number | null) {
@@ -259,7 +295,7 @@ function InfoTable({
   );
 }
 
-function Hero({ model, state, deviceId }: { model: string; state: DeviceState; deviceId: string }) {
+function Hero({ model, state, highestInputToday }: { model: string; state: DeviceState; highestInputToday: number | null }) {
   const dcInput = getNumber(state, 'dc_input_power') ?? 0;
   const acInput = getNumber(state, 'ac_input_power') ?? 0;
   const acOutput = getNumber(state, 'ac_output_power') ?? 0;
@@ -362,8 +398,6 @@ function Hero({ model, state, deviceId }: { model: string; state: DeviceState; d
                 {formatNumber(net)} W
               </strong>
             </div>
-
-            <BatteryEstimates deviceId={deviceId} state={state} />
           </div>
         </div>
 
@@ -399,6 +433,10 @@ function Hero({ model, state, deviceId }: { model: string; state: DeviceState; d
             <div className="power-node-split">
               <span>AC input</span>
               <strong>{formatNumber(acInput)} W</strong>
+            </div>
+            <div className="power-node-split">
+              <span>Highest today</span>
+              <strong>{highestInputToday === null ? '--' : `${formatNumber(highestInputToday)} W`}</strong>
             </div>
             <div className="power-node-foot">
               <span>{generation !== null ? `Generated ${formatNumber(generation, 1)} kWh` : inputSummary}</span>
@@ -464,6 +502,15 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
   const batteryRangeEnd = getNumber(state, 'battery_range_end');
   const selectedPack = getNumber(state, 'pack_num');
   const packCount = getNumber(state, 'pack_num_max');
+  const liveInput = (getNumber(state, 'dc_input_power') ?? 0) + (getNumber(state, 'ac_input_power') ?? 0);
+  const todaySinceIso = getStartOfTodayIso();
+  const inputHistoryQuery = useQuery({
+    queryKey: ['overview-input-highest-today', deviceId, todaySinceIso],
+    enabled: Boolean(deviceId),
+    staleTime: 60_000,
+    queryFn: () => fetchHistoryBundle(deviceId, [...INPUT_HISTORY_FIELDS], { limit: 2_000, since: todaySinceIso }),
+  });
+  const highestInputToday = getHighestInputToday(inputHistoryQuery.data, liveInput);
 
   const topCards = [
     {
@@ -609,7 +656,7 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
         </div>
       </div>
 
-      <Hero model={model} state={state} deviceId={deviceId} />
+      <Hero model={model} state={state} highestInputToday={highestInputToday} />
 
       <div className="tile-grid tile-grid--fit">
         {topCards.map((card) => (

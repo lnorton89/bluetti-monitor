@@ -26,6 +26,18 @@ describe('battery estimate counters', () => {
     }), CAPACITY)).toBe(300);
   });
 
+  test('estimates runtime only from energy above the configured reserve floor', () => {
+    const estimate = buildBatteryEstimate('runtime', state({
+      total_battery_percent: '57',
+      battery_range_start: '20',
+      ac_output_power: '168',
+    }), {}, 6144);
+
+    expect(Math.round(estimate.minutes ?? 0)).toBe(812);
+    expect(estimate.inputs).toContain('usable energy: 2273 Wh');
+    expect(estimate.inputs).toContain('reserve floor: 20%');
+  });
+
   test('does not estimate runtime while input covers the load', () => {
     expect(estimateRuntimeMinutes(state({
       total_battery_percent: '50',

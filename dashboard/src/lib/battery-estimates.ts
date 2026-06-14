@@ -40,6 +40,8 @@ export type EstimateHistoryField =
   | 'batteryPercent'
   | 'remainingCapacity'
   | 'batteryCapacity'
+  | 'batteryVoltage'
+  | 'batteryCurrent'
   | 'acInput'
   | 'dcInput'
   | 'pv1Power'
@@ -60,6 +62,8 @@ export const ESTIMATE_HISTORY_ALIASES: Record<EstimateHistoryField, readonly str
   ],
   remainingCapacity: ['remaining_capacity'],
   batteryCapacity: ['battery_capacity', 'pack_capacity'],
+  batteryVoltage: ['total_battery_voltage', 'battery_voltage'],
+  batteryCurrent: ['total_battery_current', 'battery_current'],
   acInput: ['ac_input_power', 'grid_charge_power'],
   dcInput: ['dc_input_power', 'pv_input_power', 'solar_power'],
   pv1Power: ['pv1_power', 'dc_input_1_power', 'dc_input_power1'],
@@ -73,6 +77,8 @@ export const ESTIMATE_HISTORY_ALIASES: Record<EstimateHistoryField, readonly str
 const BATTERY_PERCENT_FIELDS = ESTIMATE_HISTORY_ALIASES.batteryPercent;
 const BATTERY_CAPACITY_FIELDS = ESTIMATE_HISTORY_ALIASES.batteryCapacity;
 const REMAINING_CAPACITY_FIELDS = ESTIMATE_HISTORY_ALIASES.remainingCapacity;
+const BATTERY_VOLTAGE_FIELDS = ESTIMATE_HISTORY_ALIASES.batteryVoltage;
+const BATTERY_CURRENT_FIELDS = ESTIMATE_HISTORY_ALIASES.batteryCurrent;
 const AC_INPUT_FIELDS = ESTIMATE_HISTORY_ALIASES.acInput;
 const SOLAR_INPUT_FIELDS = ESTIMATE_HISTORY_ALIASES.dcInput;
 const SPLIT_SOLAR_FIELDS = [...ESTIMATE_HISTORY_ALIASES.pv1Power, ...ESTIMATE_HISTORY_ALIASES.pv2Power] as const;
@@ -215,10 +221,10 @@ function chooseCandidate(kind: EstimateKind, candidates: EstimateCandidate[]): B
   };
   const sourcePriority: Record<EstimateSource, number> = {
     device: 7,
-    'historical-match': 6,
-    'historical-calibration': 5,
+    instant: 6,
+    'historical-match': 5,
+    'historical-calibration': 4,
     'recent-trend': 3,
-    instant: 2,
     unavailable: 1,
   };
   const valid = candidates
@@ -308,33 +314,51 @@ function directCounterCandidate(
 }
 
 function instantRuntimeCandidate(state: DeviceState, effectiveCapacityWh: number | null): EstimateCandidate {
-  const netDischargeW = getTotalOutputPower(state) - getTotalInputPower(state);
-  const remainingWh = getRemainingCapacityWh(state)
-    ?? estimateRemainingWhFromPercent(state, effectiveCapacityWh);
+  const fallbackNetDischargeW = getTotalOutputPower(state) - getTotalInputPower(state);
+  const batterySideDischargeW = getBatterySideDischargePower(state);
+  const dischargeW = batterySideDischargeW ?? fallbackNetDischargeW;
+  const usableWh = getUsableRuntimeWh(state, effectiveCapacityWh);
   const capacityFromConfig = getFirstField(state, BATTERY_CAPACITY_FIELDS) === null;
+  const floorPercent = getBatteryRangeStartPercent(state);
+  const usesBatterySidePower = batterySideDischargeW !== null;
 
-  if (netDischargeW <= POWER_FLOW_DEADBAND_W) {
+  if (dischargeW <= POWER_FLOW_DEADBAND_W) {
     return candidate('instant', 'Instant net discharge', null, 'unavailable', 'Net discharge is below the useful estimate threshold.', [
-      `net discharge: ${Math.round(netDischargeW)} W`,
+      `battery-side discharge: ${batterySideDischargeW === null ? 'unavailable' : `${Math.round(batterySideDischargeW)} W`}`,
+      `load-side net discharge: ${Math.round(fallbackNetDischargeW)} W`,
       `deadband: ${POWER_FLOW_DEADBAND_W} W`,
     ], ['Input currently covers the load or the delta is too small.'], true);
   }
 
-  if (remainingWh === null || remainingWh <= 0) {
+  if (usableWh === null || usableWh <= 0) {
     return candidate('instant', 'Instant net discharge', null, 'unavailable', 'Remaining energy is unavailable.', [
       `remaining_capacity: ${state.remaining_capacity?.value ?? 'unavailable'}`,
       `battery percent: ${getBatteryPercent(state) ?? 'unavailable'}`,
-    ], ['Need remaining capacity or battery percent plus capacity.'], true);
+      `battery_range_start: ${floorPercent}%`,
+    ], ['Need remaining capacity or battery percent plus capacity above the reserve floor.'], true);
   }
 
   return candidate(
     'instant',
-    'Instant net discharge',
-    (remainingWh / netDischargeW) * 60,
-    capacityFromConfig ? 'low' : 'medium',
-    'Estimated from current remaining energy and net discharge.',
-    [`remaining energy: ${Math.round(remainingWh)} Wh`, `net discharge: ${Math.round(netDischargeW)} W`],
-    ['Instantaneous power can be noisy if load or input changes.'],
+    usesBatterySidePower ? 'Battery-side instant discharge' : 'Load-side instant fallback',
+    (usableWh / dischargeW) * 60,
+    usesBatterySidePower && effectiveCapacityWh !== null && effectiveCapacityWh > 0 && capacityFromConfig
+      ? 'medium'
+      : capacityFromConfig ? 'low' : 'medium',
+    usesBatterySidePower
+      ? 'Estimated from usable energy above the reserve floor and battery bus discharge.'
+      : 'Estimated from usable energy above the reserve floor and load-side net discharge.',
+    [
+      `usable energy: ${Math.round(usableWh)} Wh`,
+      `reserve floor: ${floorPercent}%`,
+      `battery voltage: ${getFirstField(state, BATTERY_VOLTAGE_FIELDS) ?? 'unavailable'} V`,
+      `battery current: ${getFirstField(state, BATTERY_CURRENT_FIELDS) ?? 'unavailable'} A`,
+      `discharge power: ${Math.round(dischargeW)} W`,
+      `load-side net discharge: ${Math.round(fallbackNetDischargeW)} W`,
+    ],
+    usesBatterySidePower
+      ? ['Instantaneous battery current can be noisy if load or input changes.']
+      : ['Battery-side current is unavailable; load-side power omits AC500 conversion and idle losses.'],
   );
 }
 
@@ -389,6 +413,37 @@ function estimateRemainingWhFromPercent(state: DeviceState, capacityWh: number |
   }
 
   return capacityWh * (percent / 100);
+}
+
+function getUsableRuntimeWh(state: DeviceState, capacityWh: number | null): number | null {
+  const floorPercent = getBatteryRangeStartPercent(state);
+  const remainingWh = getRemainingCapacityWh(state)
+    ?? estimateRemainingWhFromPercent(state, capacityWh);
+
+  if (remainingWh === null) {
+    return null;
+  }
+
+  if (floorPercent <= 0) {
+    return remainingWh;
+  }
+
+  const resolvedCapacityWh = getBatteryCapacityWh(state, capacityWh);
+  if (resolvedCapacityWh === null) {
+    return remainingWh;
+  }
+
+  return Math.max(0, remainingWh - resolvedCapacityWh * (floorPercent / 100));
+}
+
+function getBatterySideDischargePower(state: DeviceState): number | null {
+  const voltage = getFirstField(state, BATTERY_VOLTAGE_FIELDS);
+  const current = getFirstField(state, BATTERY_CURRENT_FIELDS);
+  if (voltage === null || current === null || voltage <= 0 || current <= 0) {
+    return null;
+  }
+
+  return voltage * current;
 }
 
 function trendCandidate(state: DeviceState, history: EstimateHistory, kind: EstimateKind): EstimateCandidate {
