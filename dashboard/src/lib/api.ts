@@ -69,3 +69,38 @@ export const fetchHistoryBundle = (
         },
       }).then((r) => r.data);
 };
+
+export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions, 'since'> = {}) => {
+  if (IS_MOCK_MODE) {
+    const history = {
+      dc_input_power: getMockHistory('dc_input_power', { limit: 100_000, since: options.since }),
+      ac_input_power: getMockHistory('ac_input_power', { limit: 100_000, since: options.since }),
+    };
+    const events = Object.entries(history)
+      .flatMap(([field, points]) => points.map((point) => ({
+        field,
+        ts: Date.parse(point.ts),
+        value: Number.parseFloat(point.value),
+      })))
+      .filter((event) => Number.isFinite(event.ts) && Number.isFinite(event.value))
+      .sort((left, right) => left.ts - right.ts);
+    let dcInput = 0;
+    let acInput = 0;
+    let peak: number | null = null;
+
+    for (const event of events) {
+      if (event.field === 'dc_input_power') {
+        dcInput = event.value;
+      } else {
+        acInput = event.value;
+      }
+
+      const total = dcInput + acInput;
+      peak = peak === null ? total : Math.max(peak, total);
+    }
+
+    return Promise.resolve({ value: peak });
+  }
+
+  return api.get<{ value: number | null }>(`/stats/${device}/input-max`, { params: options }).then((r) => r.data);
+};

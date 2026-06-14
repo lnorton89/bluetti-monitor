@@ -47,6 +47,8 @@ const SOLAR_FIELD_ALIASES = {
   batteryPercent: ['total_battery_percent', 'battery_percent', 'charge_level', 'soc'],
 } as const;
 
+const DAILY_INPUT_HISTORY_LIMIT = 100_000;
+
 type FocusId = typeof FOCUS_OPTIONS[number]['id'];
 type SolarFieldKey = keyof typeof SOLAR_FIELD_ALIASES;
 type ResolvedSolarFields = Record<SolarFieldKey, string | null>;
@@ -163,7 +165,7 @@ export default function Solar() {
 
       const historyEntries = await Promise.all(
         inputFields.map(async (field) => (
-          [field, await fetchHistory(selectedDevice, field, { limit: 2_000, since: todaySinceIso })] as const
+          [field, await fetchHistory(selectedDevice, field, { limit: DAILY_INPUT_HISTORY_LIMIT, since: todaySinceIso })] as const
         )),
       );
       const resolvedHistory = mapResolvedHistory(resolvedFields, Object.fromEntries(historyEntries));

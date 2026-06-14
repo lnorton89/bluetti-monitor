@@ -24,7 +24,7 @@ import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
-import { fetchHistoryBundle, type HistoryPoint } from '../lib/api';
+import { fetchInputMax } from '../lib/api';
 
 type FieldValue = { value: string; ts: string };
 type DeviceState = Record<string, FieldValue>;
@@ -43,8 +43,6 @@ type MetricDefinition = {
   accent?: string;
   tooltip: StatHelpContent;
 };
-
-const INPUT_HISTORY_FIELDS = ['dc_input_power', 'ac_input_power'] as const;
 
 function getNumber(state: DeviceState, field: string) {
   const raw = state[field]?.value;
@@ -114,33 +112,6 @@ function latestTimestamp(state: DeviceState) {
     }
   }
   return latest;
-}
-
-function getHighestInputToday(
-  history: Record<string, HistoryPoint[]> | undefined,
-  liveInput: number,
-) {
-  const totalsByTs = new Map<string, number>();
-
-  for (const field of INPUT_HISTORY_FIELDS) {
-    for (const point of history?.[field] ?? []) {
-      const value = Number.parseFloat(point.value);
-      if (!Number.isFinite(value)) {
-        continue;
-      }
-
-      totalsByTs.set(point.ts, (totalsByTs.get(point.ts) ?? 0) + value);
-    }
-  }
-
-  const historyPeak = totalsByTs.size > 0 ? Math.max(...totalsByTs.values()) : null;
-  const livePeak = Number.isFinite(liveInput) ? liveInput : null;
-
-  if (historyPeak === null) {
-    return livePeak;
-  }
-
-  return livePeak === null ? historyPeak : Math.max(historyPeak, livePeak);
 }
 
 function getStartOfTodayIso() {
@@ -508,9 +479,9 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
     queryKey: ['overview-input-highest-today', deviceId, todaySinceIso],
     enabled: Boolean(deviceId),
     staleTime: 60_000,
-    queryFn: () => fetchHistoryBundle(deviceId, [...INPUT_HISTORY_FIELDS], { limit: 2_000, since: todaySinceIso }),
+    queryFn: () => fetchInputMax(deviceId, { since: todaySinceIso }),
   });
-  const highestInputToday = getHighestInputToday(inputHistoryQuery.data, liveInput);
+  const highestInputToday = Math.max(inputHistoryQuery.data?.value ?? 0, liveInput);
 
   const topCards = [
     {

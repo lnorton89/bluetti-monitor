@@ -217,6 +217,54 @@ def get_history_bundle(
         bundled[row["field"]].append({"value": row["value"], "ts": row["ts"]})
     return bundled
 
+@app.get("/stats/{device}/input-max")
+def get_input_max(
+    device: str,
+    since: Optional[str] = Query(default=None, description="ISO8601 timestamp"),
+):
+    """
+    Highest total input watts for a device since the provided timestamp.
+    Walks the full calendar-day field stream so dense polling cannot age out
+    an earlier peak.
+    """
+    params: list[object] = [device]
+    since_clause = ""
+    if since:
+        since_clause = "AND ts>=?"
+        params.append(since)
+
+    with db_connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT field, value, ts
+            FROM readings
+            WHERE device=?
+              AND field IN ('dc_input_power', 'ac_input_power')
+              {since_clause}
+            ORDER BY ts ASC
+            """,
+            params,
+        ).fetchall()
+
+    dc_input = 0.0
+    ac_input = 0.0
+    peak: float | None = None
+    for row in rows:
+        try:
+            value = float(row["value"])
+        except (TypeError, ValueError):
+            continue
+
+        if row["field"] == "dc_input_power":
+            dc_input = value
+        else:
+            ac_input = value
+
+        total = dc_input + ac_input
+        peak = total if peak is None else max(peak, total)
+
+    return {"value": peak}
+
 @app.get("/devices")
 def get_devices():
     """List all devices seen so far."""
