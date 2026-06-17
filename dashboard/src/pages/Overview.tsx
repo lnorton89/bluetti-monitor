@@ -25,6 +25,8 @@ import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
 import { fetchInputMax } from '../lib/api';
+import { getDailyInputPeakWindow, resolveDailyInputPeakValue } from '../lib/daily-input-window';
+import { getCurrentInputWatts } from '../lib/power';
 
 type FieldValue = { value: string; ts: string };
 type DeviceState = Record<string, FieldValue>;
@@ -112,12 +114,6 @@ function latestTimestamp(state: DeviceState) {
     }
   }
   return latest;
-}
-
-function getStartOfTodayIso() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today.toISOString();
 }
 
 function batteryTone(percent: number | null) {
@@ -267,8 +263,13 @@ function InfoTable({
 }
 
 function Hero({ model, state, highestInputToday }: { model: string; state: DeviceState; highestInputToday: number | null }) {
-  const dcInput = getNumber(state, 'dc_input_power') ?? 0;
-  const acInput = getNumber(state, 'ac_input_power') ?? 0;
+  const pv1Input = getNumber(state, 'dc_input_1_power') ?? getNumber(state, 'pv1_power') ?? getNumber(state, 'dc_input_power1') ?? 0;
+  const pv2Input = getNumber(state, 'dc_input_2_power') ?? getNumber(state, 'pv2_power') ?? getNumber(state, 'dc_input_power2') ?? 0;
+  const splitDcInput = pv1Input + pv2Input;
+  const dcInput = splitDcInput > 0
+    ? splitDcInput
+    : (getNumber(state, 'dc_input_power') ?? getNumber(state, 'pv_input_power') ?? getNumber(state, 'solar_power') ?? 0);
+  const acInput = getNumber(state, 'ac_input_power') ?? getNumber(state, 'grid_charge_power') ?? 0;
   const acOutput = getNumber(state, 'ac_output_power') ?? 0;
   const dcOutput = getNumber(state, 'dc_output_power') ?? 0;
   const generation = getNumber(state, 'power_generation');
@@ -473,15 +474,19 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
   const batteryRangeEnd = getNumber(state, 'battery_range_end');
   const selectedPack = getNumber(state, 'pack_num');
   const packCount = getNumber(state, 'pack_num_max');
-  const liveInput = (getNumber(state, 'dc_input_power') ?? 0) + (getNumber(state, 'ac_input_power') ?? 0);
-  const todaySinceIso = getStartOfTodayIso();
+  const liveInput = getCurrentInputWatts(state);
+  const inputPeakWindow = getDailyInputPeakWindow();
   const inputHistoryQuery = useQuery({
-    queryKey: ['overview-input-highest-today', deviceId, todaySinceIso],
-    enabled: Boolean(deviceId),
+    queryKey: ['overview-input-highest-today', deviceId, inputPeakWindow.since, inputPeakWindow.until],
+    enabled: Boolean(deviceId) && inputPeakWindow.hasStarted,
     staleTime: 60_000,
-    queryFn: () => fetchInputMax(deviceId, { since: todaySinceIso }),
+    queryFn: () => fetchInputMax(deviceId, { since: inputPeakWindow.since, until: inputPeakWindow.until }),
   });
-  const highestInputToday = Math.max(inputHistoryQuery.data?.value ?? 0, liveInput);
+  const highestInputToday = resolveDailyInputPeakValue(
+    inputHistoryQuery.data?.value,
+    liveInput,
+    inputPeakWindow.containsNow,
+  );
 
   const topCards = [
     {

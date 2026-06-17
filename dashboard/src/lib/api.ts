@@ -1,5 +1,12 @@
 import axios from 'axios';
 import { getMockDevices, getMockFields, getMockHistory, mockState } from './mock';
+import {
+  getCurrentInputWatts,
+  GRID_INPUT_FIELDS,
+  PV1_INPUT_FIELDS,
+  PV2_INPUT_FIELDS,
+  TOTAL_SOLAR_INPUT_FIELDS,
+} from './power';
 
 export const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 export const WS_URL =
@@ -27,6 +34,7 @@ export interface HistoryPoint {
 export interface FetchHistoryOptions {
   limit?: number;
   since?: string;
+  until?: string;
 }
 
 export const fetchStatus = () =>
@@ -70,12 +78,17 @@ export const fetchHistoryBundle = (
       }).then((r) => r.data);
 };
 
-export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions, 'since'> = {}) => {
+export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions, 'since' | 'until'> = {}) => {
   if (IS_MOCK_MODE) {
-    const history = {
-      dc_input_power: getMockHistory('dc_input_power', { limit: 100_000, since: options.since }),
-      ac_input_power: getMockHistory('ac_input_power', { limit: 100_000, since: options.since }),
-    };
+    const fields = [
+      ...GRID_INPUT_FIELDS,
+      ...TOTAL_SOLAR_INPUT_FIELDS,
+      ...PV1_INPUT_FIELDS,
+      ...PV2_INPUT_FIELDS,
+    ];
+    const history = Object.fromEntries(
+      fields.map((field) => [field, getMockHistory(field, { limit: 100_000, since: options.since, until: options.until })]),
+    );
     const events = Object.entries(history)
       .flatMap(([field, points]) => points.map((point) => ({
         field,
@@ -84,18 +97,12 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
       })))
       .filter((event) => Number.isFinite(event.ts) && Number.isFinite(event.value))
       .sort((left, right) => left.ts - right.ts);
-    let dcInput = 0;
-    let acInput = 0;
+    const state: DeviceState = {};
     let peak: number | null = null;
 
     for (const event of events) {
-      if (event.field === 'dc_input_power') {
-        dcInput = event.value;
-      } else {
-        acInput = event.value;
-      }
-
-      const total = dcInput + acInput;
+      state[event.field] = { value: String(event.value), ts: new Date(event.ts).toISOString() };
+      const total = getCurrentInputWatts(state);
       peak = peak === null ? total : Math.max(peak, total);
     }
 

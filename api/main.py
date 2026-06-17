@@ -18,6 +18,16 @@ MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DB_PATH = os.getenv("DB_PATH", "/data/bluetti.db")
 MAX_HISTORY_ROWS = 100_000
+GRID_INPUT_FIELDS = ("ac_input_power", "grid_charge_power")
+TOTAL_SOLAR_INPUT_FIELDS = ("dc_input_power", "pv_input_power", "solar_power")
+PV1_INPUT_FIELDS = ("dc_input_1_power", "pv1_power", "dc_input_power1")
+PV2_INPUT_FIELDS = ("dc_input_2_power", "pv2_power", "dc_input_power2")
+INPUT_MAX_FIELDS = (
+    *GRID_INPUT_FIELDS,
+    *TOTAL_SOLAR_INPUT_FIELDS,
+    *PV1_INPUT_FIELDS,
+    *PV2_INPUT_FIELDS,
+)
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +59,22 @@ def db_insert(device: str, field: str, value: str):
         )
         conn.commit()
     return ts
+
+def first_numeric_value(state: dict[str, float], fields: tuple[str, ...]) -> float | None:
+    for field in fields:
+        if field in state:
+            return state[field]
+    return None
+
+def current_input_watts(state: dict[str, float]) -> float:
+    grid_input = first_numeric_value(state, GRID_INPUT_FIELDS) or 0.0
+    split_solar_input = (
+        (first_numeric_value(state, PV1_INPUT_FIELDS) or 0.0)
+        + (first_numeric_value(state, PV2_INPUT_FIELDS) or 0.0)
+    )
+    total_solar_input = first_numeric_value(state, TOTAL_SOLAR_INPUT_FIELDS) or 0.0
+
+    return grid_input + (split_solar_input if split_solar_input > 0 else total_solar_input)
 
 # ── WebSocket connection manager ──────────────────────────────────────────────
 
@@ -221,17 +247,52 @@ def get_history_bundle(
 def get_input_max(
     device: str,
     since: Optional[str] = Query(default=None, description="ISO8601 timestamp"),
+    until: Optional[str] = Query(default=None, description="Exclusive ISO8601 timestamp"),
 ):
     """
-    Highest total input watts for a device since the provided timestamp.
-    Walks the full calendar-day field stream so dense polling cannot age out
-    an earlier peak.
+    Highest total input watts for a device in the requested timestamp window.
+    Seeds state from the latest value before the window, then walks only the
+    bounded field stream so split input fields are reconstructed coherently.
     """
-    params: list[object] = [device]
-    since_clause = ""
+    placeholders = ",".join("?" for _ in INPUT_MAX_FIELDS)
+
+    state: dict[str, float] = {}
     if since:
-        since_clause = "AND ts>=?"
+        with db_connect() as conn:
+            baseline_rows = conn.execute(
+                f"""
+                SELECT field, value, ts
+                FROM (
+                    SELECT
+                        field,
+                        value,
+                        ts,
+                        ROW_NUMBER() OVER (PARTITION BY field ORDER BY ts DESC) AS rn
+                    FROM readings
+                    WHERE device=?
+                      AND field IN ({placeholders})
+                      AND ts<?
+                )
+                WHERE rn = 1
+                """,
+                [device, *INPUT_MAX_FIELDS, since],
+            ).fetchall()
+
+        for row in baseline_rows:
+            try:
+                state[row["field"]] = float(row["value"])
+            except (TypeError, ValueError):
+                continue
+
+    params: list[object] = [device, *INPUT_MAX_FIELDS]
+    window_clauses = []
+    if since:
+        window_clauses.append("AND ts>=?")
         params.append(since)
+    if until:
+        window_clauses.append("AND ts<?")
+        params.append(until)
+    window_clause = "\n              ".join(window_clauses)
 
     with db_connect() as conn:
         rows = conn.execute(
@@ -239,28 +300,22 @@ def get_input_max(
             SELECT field, value, ts
             FROM readings
             WHERE device=?
-              AND field IN ('dc_input_power', 'ac_input_power')
-              {since_clause}
+              AND field IN ({placeholders})
+              {window_clause}
             ORDER BY ts ASC
             """,
             params,
         ).fetchall()
 
-    dc_input = 0.0
-    ac_input = 0.0
-    peak: float | None = None
+    peak: float | None = current_input_watts(state) if state else None
     for row in rows:
         try:
             value = float(row["value"])
         except (TypeError, ValueError):
             continue
 
-        if row["field"] == "dc_input_power":
-            dc_input = value
-        else:
-            ac_input = value
-
-        total = dc_input + ac_input
+        state[row["field"]] = value
+        total = current_input_watts(state)
         peak = total if peak is None else max(peak, total)
 
     return {"value": peak}

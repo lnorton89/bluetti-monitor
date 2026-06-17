@@ -116,8 +116,10 @@ export function getMockHistory(field: string, options: number | FetchHistoryOpti
   const resolved = typeof options === 'number' ? { limit: options } : options;
   const limit = resolved.limit ?? 500;
   const sinceTs = resolved.since ? Date.parse(resolved.since) : null;
+  const untilTs = resolved.until ? Date.parse(resolved.until) : null;
   const filtered = (mockHistory[field] ?? [])
     .filter((point) => sinceTs === null || Date.parse(point.ts) >= sinceTs)
+    .filter((point) => untilTs === null || Date.parse(point.ts) < untilTs)
     .toSorted((left, right) => Date.parse(right.ts) - Date.parse(left.ts));
 
   return filtered.slice(0, limit);

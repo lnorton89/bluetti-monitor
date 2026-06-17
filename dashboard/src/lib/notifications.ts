@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AllState, DeviceState } from './api';
 import { isDesktopHostAvailable, sendToDesktopHost } from './desktop-host';
+import {
+  getCurrentInputWatts,
+  getCurrentOutputWatts,
+  parseNumericValue,
+} from './power';
 import { useAppSettingsStore } from '../store/settings';
 
 export type BrowserNotificationPermissionState =
@@ -40,41 +45,7 @@ type NtfyPublishRequest = {
   url: string;
 };
 
-function parseNumericValue(raw: string | undefined) {
-  if (raw === undefined) {
-    return null;
-  }
-
-  const parsed = Number.parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function sumNumericFields(state: DeviceState, fields: string[]) {
-  return fields.reduce((total, field) => total + (parseNumericValue(state[field]?.value) ?? 0), 0);
-}
-
-function getFirstNumericValue(state: DeviceState, fields: string[]) {
-  for (const field of fields) {
-    const value = parseNumericValue(state[field]?.value);
-    if (value !== null) {
-      return value;
-    }
-  }
-
-  return null;
-}
-
-export function getCurrentInputWatts(state: DeviceState) {
-  const gridInput = getFirstNumericValue(state, ['ac_input_power', 'grid_charge_power']) ?? 0;
-  const splitSolarInput = sumNumericFields(state, ['dc_input_1_power', 'dc_input_2_power', 'pv1_power', 'pv2_power', 'dc_input_power1', 'dc_input_power2']);
-  const totalSolarInput = getFirstNumericValue(state, ['dc_input_power', 'pv_input_power', 'solar_power']) ?? 0;
-
-  return gridInput + (splitSolarInput > 0 ? splitSolarInput : totalSolarInput);
-}
-
-export function getCurrentOutputWatts(state: DeviceState) {
-  return sumNumericFields(state, ['ac_output_power', 'dc_output_power']);
-}
+export { getCurrentInputWatts, getCurrentOutputWatts } from './power';
 
 export function getBatteryPercent(state: DeviceState) {
   return (
