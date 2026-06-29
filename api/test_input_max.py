@@ -45,7 +45,35 @@ class InputMaxStatsTest(unittest.TestCase):
             until="2026-06-16T18:00:00.000000+00:00",
         )
 
-        self.assertEqual(result, {"value": 620.0})
+        self.assertEqual(result, {"value": 570.0})
+
+    def test_input_max_does_not_count_pre_window_baseline_as_peak(self):
+        self.insert("dc_input_1_power", 1800, "2026-06-16T05:59:00.000000+00:00")
+        self.insert("dc_input_2_power", 200, "2026-06-16T05:59:00.000000+00:00")
+        self.insert("dc_input_1_power", 300, "2026-06-16T06:01:00.000000+00:00")
+        self.insert("dc_input_2_power", 250, "2026-06-16T06:02:00.000000+00:00")
+
+        result = main.get_input_max(
+            "AC500",
+            since="2026-06-16T06:00:00.000000+00:00",
+            until="2026-06-16T18:00:00.000000+00:00",
+        )
+
+        self.assertEqual(result, {"value": 550.0})
+
+    def test_input_max_ignores_ac_input(self):
+        self.insert("ac_input_power", 2000, "2026-06-16T06:15:00.000000+00:00")
+        self.insert("grid_charge_power", 1800, "2026-06-16T06:30:00.000000+00:00")
+        self.insert("dc_input_1_power", 320, "2026-06-16T06:45:00.000000+00:00")
+        self.insert("dc_input_2_power", 280, "2026-06-16T07:00:00.000000+00:00")
+
+        result = main.get_input_max(
+            "AC500",
+            since="2026-06-16T06:00:00.000000+00:00",
+            until="2026-06-16T18:00:00.000000+00:00",
+        )
+
+        self.assertEqual(result, {"value": 600.0})
 
 
 if __name__ == "__main__":

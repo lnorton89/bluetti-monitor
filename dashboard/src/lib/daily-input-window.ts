@@ -38,3 +38,15 @@ export function resolveDailyInputPeakValue(
 
   return historyPeak;
 }
+
+export function accumulateLiveInputPeak(
+  previousPeak: number | null,
+  liveInput: number,
+  containsNow: boolean,
+) {
+  if (!containsNow || !Number.isFinite(liveInput)) {
+    return previousPeak;
+  }
+
+  return Math.max(previousPeak ?? 0, liveInput);
+}

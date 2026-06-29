@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { getDailyInputPeakWindow, resolveDailyInputPeakValue } from '../src/lib/daily-input-window';
+import {
+  accumulateLiveInputPeak,
+  getDailyInputPeakWindow,
+  resolveDailyInputPeakValue,
+} from '../src/lib/daily-input-window';
 
 describe('daily input peak window', () => {
   test('uses the local 6 AM to 6 PM daylight window for the current day', () => {
@@ -32,5 +36,19 @@ describe('daily input peak window', () => {
 
   test('does not display live input as the peak before history has loaded', () => {
     expect(resolveDailyInputPeakValue(undefined, 1405, true)).toBeNull();
+  });
+
+  test('retains a live peak after the instantaneous input falls', () => {
+    let livePeak: number | null = null;
+    livePeak = accumulateLiveInputPeak(livePeak, 1603, true);
+    livePeak = accumulateLiveInputPeak(livePeak, 1965, true);
+    livePeak = accumulateLiveInputPeak(livePeak, 1200, true);
+
+    expect(livePeak).toBe(1965);
+    expect(resolveDailyInputPeakValue(1500, livePeak, true)).toBe(1965);
+  });
+
+  test('does not accumulate live input outside the daylight window', () => {
+    expect(accumulateLiveInputPeak(900, 1400, false)).toBe(900);
   });
 });

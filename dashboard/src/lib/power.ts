@@ -32,11 +32,15 @@ export function getFirstNumericValue(state: DeviceState, fields: readonly string
 
 export function getCurrentInputWatts(state: DeviceState) {
   const gridInput = getFirstNumericValue(state, GRID_INPUT_FIELDS) ?? 0;
+  return gridInput + getCurrentSolarInputWatts(state);
+}
+
+export function getCurrentSolarInputWatts(state: DeviceState) {
   const splitSolarInput = (getFirstNumericValue(state, PV1_INPUT_FIELDS) ?? 0)
     + (getFirstNumericValue(state, PV2_INPUT_FIELDS) ?? 0);
   const totalSolarInput = getFirstNumericValue(state, TOTAL_SOLAR_INPUT_FIELDS) ?? 0;
 
-  return gridInput + (splitSolarInput > 0 ? splitSolarInput : totalSolarInput);
+  return splitSolarInput > 0 ? splitSolarInput : totalSolarInput;
 }
 
 export function getCurrentOutputWatts(state: DeviceState) {

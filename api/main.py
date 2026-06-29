@@ -23,7 +23,6 @@ TOTAL_SOLAR_INPUT_FIELDS = ("dc_input_power", "pv_input_power", "solar_power")
 PV1_INPUT_FIELDS = ("dc_input_1_power", "pv1_power", "dc_input_power1")
 PV2_INPUT_FIELDS = ("dc_input_2_power", "pv2_power", "dc_input_power2")
 INPUT_MAX_FIELDS = (
-    *GRID_INPUT_FIELDS,
     *TOTAL_SOLAR_INPUT_FIELDS,
     *PV1_INPUT_FIELDS,
     *PV2_INPUT_FIELDS,
@@ -66,15 +65,14 @@ def first_numeric_value(state: dict[str, float], fields: tuple[str, ...]) -> flo
             return state[field]
     return None
 
-def current_input_watts(state: dict[str, float]) -> float:
-    grid_input = first_numeric_value(state, GRID_INPUT_FIELDS) or 0.0
+def current_solar_input_watts(state: dict[str, float]) -> float:
     split_solar_input = (
         (first_numeric_value(state, PV1_INPUT_FIELDS) or 0.0)
         + (first_numeric_value(state, PV2_INPUT_FIELDS) or 0.0)
     )
     total_solar_input = first_numeric_value(state, TOTAL_SOLAR_INPUT_FIELDS) or 0.0
 
-    return grid_input + (split_solar_input if split_solar_input > 0 else total_solar_input)
+    return split_solar_input if split_solar_input > 0 else total_solar_input
 
 # ── WebSocket connection manager ──────────────────────────────────────────────
 
@@ -250,7 +248,7 @@ def get_input_max(
     until: Optional[str] = Query(default=None, description="Exclusive ISO8601 timestamp"),
 ):
     """
-    Highest total input watts for a device in the requested timestamp window.
+    Highest solar/DC input watts for a device in the requested timestamp window.
     Seeds state from the latest value before the window, then walks only the
     bounded field stream so split input fields are reconstructed coherently.
     """
@@ -307,7 +305,10 @@ def get_input_max(
             params,
         ).fetchall()
 
-    peak: float | None = current_input_watts(state) if state else None
+    # Baseline values reconstruct the complete input state when the first
+    # in-window field arrives, but readings before `since` are not themselves
+    # candidates for the bounded window's peak.
+    peak: float | None = None
     for row in rows:
         try:
             value = float(row["value"])
@@ -315,7 +316,7 @@ def get_input_max(
             continue
 
         state[row["field"]] = value
-        total = current_input_watts(state)
+        total = current_solar_input_watts(state)
         peak = total if peak is None else max(peak, total)
 
     return {"value": peak}

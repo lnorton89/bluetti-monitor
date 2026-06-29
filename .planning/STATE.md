@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 verified against live AC500 telemetry
-Last activity: 2026-06-14 - Completed quick task 260614-nfa: Fix daily max input wattage to cover full calendar day
+Last activity: 2026-06-29 - Completed quick task 260628-o7r: peak input on overview page shouldnt use AC input in that calc
 
 ## Accumulated Context
 
@@ -58,6 +58,7 @@ Decisions are logged in PROJECT.md.
 | 260606-euj | Make analytics web app polished and mobile friendly using Playwright verification | 2026-06-06 | af8c148 | [260606-euj-make-analytics-web-app-polished-and-mobi](./quick/260606-euj-make-analytics-web-app-polished-and-mobi/) |
 | 260614-ftq | Remove runtime and time-to-full estimates; add daily highest wattage to input card | 2026-06-14 | working tree | [260614-ftq-remove-runtime-and-time-to-full-estimate](./quick/260614-ftq-remove-runtime-and-time-to-full-estimate/) |
 | 260614-nfa | Fix daily max input wattage to cover full calendar day | 2026-06-14 | working tree | [260614-nfa-fix-daily-max-input-wattage-to-cover-ful](./quick/260614-nfa-fix-daily-max-input-wattage-to-cover-ful/) |
+| 260628-o7r | peak input on overview page shouldnt use AC input in that calc | 2026-06-29 | working tree | [260628-o7r-peak-input-on-overview-page-shouldnt-use](./quick/260628-o7r-peak-input-on-overview-page-shouldnt-use/) |
 | 260605-o2a | Decouple Electrobun desktop dev startup from monitor stack orchestration | 2026-06-05 | working tree | [260605-o2a-decouple-electrobun-desktop-dev-startup-](./quick/260605-o2a-decouple-electrobun-desktop-dev-startup-/) |
 | 260421-jjb | Add tooltips to every UI stat showing source datapoints and calculation details, using clear accessible popovers and matching existing dashboard design | 2026-04-21 | working tree | [260421-jjb-add-tooltips-to-every-ui-stat-showing-so](./quick/260421-jjb-add-tooltips-to-every-ui-stat-showing-so/) |
 | 260421-ket | Remove the Why This Layout Changed section from the overview page and fix the switchboard section so it reflects real on/off telemetry correctly | 2026-04-21 | working tree | [260421-ket-remove-the-why-this-layout-changed-secti](./quick/260421-ket-remove-the-why-this-layout-changed-secti/) |

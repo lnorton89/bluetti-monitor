@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowDownRight,
@@ -25,8 +25,8 @@ import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
 import { fetchInputMax } from '../lib/api';
-import { getDailyInputPeakWindow, resolveDailyInputPeakValue } from '../lib/daily-input-window';
-import { getCurrentInputWatts } from '../lib/power';
+import { accumulateLiveInputPeak, getDailyInputPeakWindow, resolveDailyInputPeakValue } from '../lib/daily-input-window';
+import { getCurrentSolarInputWatts } from '../lib/power';
 
 type FieldValue = { value: string; ts: string };
 type DeviceState = Record<string, FieldValue>;
@@ -474,17 +474,30 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
   const batteryRangeEnd = getNumber(state, 'battery_range_end');
   const selectedPack = getNumber(state, 'pack_num');
   const packCount = getNumber(state, 'pack_num_max');
-  const liveInput = getCurrentInputWatts(state);
+  const liveInput = getCurrentSolarInputWatts(state);
   const inputPeakWindow = getDailyInputPeakWindow();
+  const liveInputPeakRef = useRef<{ windowSince: string; value: number | null }>({
+    windowSince: inputPeakWindow.since,
+    value: null,
+  });
+  if (liveInputPeakRef.current.windowSince !== inputPeakWindow.since) {
+    liveInputPeakRef.current = { windowSince: inputPeakWindow.since, value: null };
+  }
+  liveInputPeakRef.current.value = accumulateLiveInputPeak(
+    liveInputPeakRef.current.value,
+    liveInput,
+    inputPeakWindow.containsNow,
+  );
   const inputHistoryQuery = useQuery({
     queryKey: ['overview-input-highest-today', deviceId, inputPeakWindow.since, inputPeakWindow.until],
     enabled: Boolean(deviceId) && inputPeakWindow.hasStarted,
     staleTime: 60_000,
+    refetchOnMount: 'always',
     queryFn: () => fetchInputMax(deviceId, { since: inputPeakWindow.since, until: inputPeakWindow.until }),
   });
   const highestInputToday = resolveDailyInputPeakValue(
     inputHistoryQuery.data?.value,
-    liveInput,
+    liveInputPeakRef.current.value ?? liveInput,
     inputPeakWindow.containsNow,
   );
 

@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { getMockDevices, getMockFields, getMockHistory, mockState } from './mock';
 import {
-  getCurrentInputWatts,
-  GRID_INPUT_FIELDS,
+  getCurrentSolarInputWatts,
   PV1_INPUT_FIELDS,
   PV2_INPUT_FIELDS,
   TOTAL_SOLAR_INPUT_FIELDS,
@@ -81,7 +80,6 @@ export const fetchHistoryBundle = (
 export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions, 'since' | 'until'> = {}) => {
   if (IS_MOCK_MODE) {
     const fields = [
-      ...GRID_INPUT_FIELDS,
       ...TOTAL_SOLAR_INPUT_FIELDS,
       ...PV1_INPUT_FIELDS,
       ...PV2_INPUT_FIELDS,
@@ -102,7 +100,7 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
 
     for (const event of events) {
       state[event.field] = { value: String(event.value), ts: new Date(event.ts).toISOString() };
-      const total = getCurrentInputWatts(state);
+      const total = getCurrentSolarInputWatts(state);
       peak = peak === null ? total : Math.max(peak, total);
     }
 
