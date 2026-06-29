@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 verified against live AC500 telemetry
-Last activity: 2026-06-29 - Completed quick task 260628-o7r: peak input on overview page shouldnt use AC input in that calc
+Last activity: 2026-06-29 - Completed quick task 260629-naw: remove AC-side demand copy and add highest today AC/DC output
 
 ## Accumulated Context
 
@@ -56,6 +56,7 @@ Decisions are logged in PROJECT.md.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260606-euj | Make analytics web app polished and mobile friendly using Playwright verification | 2026-06-06 | af8c148 | [260606-euj-make-analytics-web-app-polished-and-mobi](./quick/260606-euj-make-analytics-web-app-polished-and-mobi/) |
+| 260629-naw | Remove AC-side demand copy and add highest today AC/DC output | 2026-06-29 | 2125525 | [260629-naw-remove-the-current-demand-is-mostly-on-t](./quick/260629-naw-remove-the-current-demand-is-mostly-on-t/) |
 | 260614-ftq | Remove runtime and time-to-full estimates; add daily highest wattage to input card | 2026-06-14 | working tree | [260614-ftq-remove-runtime-and-time-to-full-estimate](./quick/260614-ftq-remove-runtime-and-time-to-full-estimate/) |
 | 260614-nfa | Fix daily max input wattage to cover full calendar day | 2026-06-14 | working tree | [260614-nfa-fix-daily-max-input-wattage-to-cover-ful](./quick/260614-nfa-fix-daily-max-input-wattage-to-cover-ful/) |
 | 260628-o7r | peak input on overview page shouldnt use AC input in that calc | 2026-06-29 | working tree | [260628-o7r-peak-input-on-overview-page-shouldnt-use](./quick/260628-o7r-peak-input-on-overview-page-shouldnt-use/) |
