@@ -36,11 +36,15 @@ export function getCurrentInputWatts(state: DeviceState) {
 }
 
 export function getCurrentSolarInputWatts(state: DeviceState) {
+  const totalSolarInput = getFirstNumericValue(state, TOTAL_SOLAR_INPUT_FIELDS);
+  if (totalSolarInput !== null) {
+    return totalSolarInput;
+  }
+
   const splitSolarInput = (getFirstNumericValue(state, PV1_INPUT_FIELDS) ?? 0)
     + (getFirstNumericValue(state, PV2_INPUT_FIELDS) ?? 0);
-  const totalSolarInput = getFirstNumericValue(state, TOTAL_SOLAR_INPUT_FIELDS) ?? 0;
 
-  return splitSolarInput > 0 ? splitSolarInput : totalSolarInput;
+  return splitSolarInput;
 }
 
 export function getCurrentOutputWatts(state: DeviceState) {

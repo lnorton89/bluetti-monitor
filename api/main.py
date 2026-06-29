@@ -66,13 +66,16 @@ def first_numeric_value(state: dict[str, float], fields: tuple[str, ...]) -> flo
     return None
 
 def current_solar_input_watts(state: dict[str, float]) -> float:
+    total_solar_input = first_numeric_value(state, TOTAL_SOLAR_INPUT_FIELDS)
+    if total_solar_input is not None:
+        return total_solar_input
+
     split_solar_input = (
         (first_numeric_value(state, PV1_INPUT_FIELDS) or 0.0)
         + (first_numeric_value(state, PV2_INPUT_FIELDS) or 0.0)
     )
-    total_solar_input = first_numeric_value(state, TOTAL_SOLAR_INPUT_FIELDS) or 0.0
 
-    return split_solar_input if split_solar_input > 0 else total_solar_input
+    return split_solar_input
 
 # ── WebSocket connection manager ──────────────────────────────────────────────
 

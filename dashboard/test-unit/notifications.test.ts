@@ -51,11 +51,11 @@ describe('battery full notifications', () => {
       dc_output_power: { value: '30', ts: '2026-04-14T01:00:00.000Z' },
     };
 
-    expect(getCurrentInputWatts(state)).toBe(590);
+    expect(getCurrentInputWatts(state)).toBe(540);
     expect(getCurrentOutputWatts(state)).toBe(230);
   });
 
-  test('uses split AC500 solar fields for input watts without counting aliases twice', () => {
+  test('uses aggregate AC500 solar input before split aliases when both are present', () => {
     const state = {
       ac_input_power: { value: '75', ts: '2026-04-14T01:00:00.000Z' },
       dc_input_power: { value: '500', ts: '2026-04-14T01:00:00.000Z' },
@@ -65,7 +65,7 @@ describe('battery full notifications', () => {
       pv2_power: { value: '999', ts: '2026-04-14T01:00:00.000Z' },
     };
 
-    expect(getCurrentInputWatts(state)).toBe(655);
+    expect(getCurrentInputWatts(state)).toBe(575);
   });
 
   test('builds recurring status notification text with input, output, and SOC', () => {

@@ -282,12 +282,7 @@ function Hero({
   highestInputToday: number | null;
   outputPeaksToday: OutputPeaks | null;
 }) {
-  const pv1Input = getNumber(state, 'dc_input_1_power') ?? getNumber(state, 'pv1_power') ?? getNumber(state, 'dc_input_power1') ?? 0;
-  const pv2Input = getNumber(state, 'dc_input_2_power') ?? getNumber(state, 'pv2_power') ?? getNumber(state, 'dc_input_power2') ?? 0;
-  const splitDcInput = pv1Input + pv2Input;
-  const dcInput = splitDcInput > 0
-    ? splitDcInput
-    : (getNumber(state, 'dc_input_power') ?? getNumber(state, 'pv_input_power') ?? getNumber(state, 'solar_power') ?? 0);
+  const dcInput = getCurrentSolarInputWatts(state);
   const acInput = getNumber(state, 'ac_input_power') ?? getNumber(state, 'grid_charge_power') ?? 0;
   const acOutput = getNumber(state, 'ac_output_power') ?? 0;
   const dcOutput = getNumber(state, 'dc_output_power') ?? 0;

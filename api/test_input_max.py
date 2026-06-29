@@ -75,6 +75,20 @@ class InputMaxStatsTest(unittest.TestCase):
 
         self.assertEqual(result, {"value": 600.0})
 
+    def test_input_max_prefers_aggregate_solar_when_split_fields_are_stale(self):
+        self.insert("dc_input_power", 500, "2026-06-16T06:00:30.000000+00:00")
+        self.insert("dc_input_1_power", 900, "2026-06-16T06:01:00.000000+00:00")
+        self.insert("dc_input_2_power", 800, "2026-06-16T06:01:01.000000+00:00")
+        self.insert("dc_input_power", 650, "2026-06-16T07:00:00.000000+00:00")
+
+        result = main.get_input_max(
+            "AC500",
+            since="2026-06-16T06:00:00.000000+00:00",
+            until="2026-06-16T18:00:00.000000+00:00",
+        )
+
+        self.assertEqual(result, {"value": 650.0})
+
 
 if __name__ == "__main__":
     unittest.main()
