@@ -24,7 +24,7 @@ import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
-import { fetchInputMax } from '../lib/api';
+import { fetchInputMax, fetchOutputMax } from '../lib/api';
 import { accumulateLiveInputPeak, getDailyInputPeakWindow, resolveDailyInputPeakValue } from '../lib/daily-input-window';
 import { getCurrentSolarInputWatts } from '../lib/power';
 
@@ -44,6 +44,11 @@ type MetricDefinition = {
   detail?: string | null;
   accent?: string;
   tooltip: StatHelpContent;
+};
+
+type OutputPeaks = {
+  ac: number | null;
+  dc: number | null;
 };
 
 function getNumber(state: DeviceState, field: string) {
@@ -71,6 +76,26 @@ function formatNumber(value: number, digits = 0) {
 function formatMetric(value: number | null, unit = '', digits = 0) {
   if (value === null) return null;
   return `${formatNumber(value, digits)}${unit}`;
+}
+
+function getTodayWindow(now = new Date()) {
+  const since = new Date(now);
+  since.setHours(0, 0, 0, 0);
+  const until = new Date(since);
+  until.setDate(until.getDate() + 1);
+
+  return {
+    since: since.toISOString(),
+    until: until.toISOString(),
+  };
+}
+
+function formatOutputPeakSummary(peaks: OutputPeaks | null) {
+  if (!peaks) {
+    return 'Highest today AC -- / DC --';
+  }
+
+  return `Highest today AC ${peaks.ac === null ? '--' : `${formatNumber(peaks.ac)} W`} / DC ${peaks.dc === null ? '--' : `${formatNumber(peaks.dc)} W`}`;
 }
 
 function formatNumericFieldDetail(state: DeviceState, field: string, unit = '', digits = 0) {
@@ -137,22 +162,6 @@ function describeInputMix(dcInput: number, acInput: number) {
   }
 
   return 'No meaningful incoming power is being reported right now.';
-}
-
-function describeOutputMix(acOutput: number, dcOutput: number) {
-  if (acOutput > 0 && dcOutput > 0) {
-    return 'The device is serving both AC and DC loads.';
-  }
-
-  if (acOutput > 0) {
-    return 'The current demand is mostly on the AC side.';
-  }
-
-  if (dcOutput > 0) {
-    return 'The current demand is mostly on the DC side.';
-  }
-
-  return 'No active output load is being reported right now.';
 }
 
 function describeActivity(totalIn: number, totalOut: number, gridIn: number, solarIn: number) {
@@ -262,7 +271,17 @@ function InfoTable({
   );
 }
 
-function Hero({ model, state, highestInputToday }: { model: string; state: DeviceState; highestInputToday: number | null }) {
+function Hero({
+  model,
+  state,
+  highestInputToday,
+  outputPeaksToday,
+}: {
+  model: string;
+  state: DeviceState;
+  highestInputToday: number | null;
+  outputPeaksToday: OutputPeaks | null;
+}) {
   const pv1Input = getNumber(state, 'dc_input_1_power') ?? getNumber(state, 'pv1_power') ?? getNumber(state, 'dc_input_power1') ?? 0;
   const pv2Input = getNumber(state, 'dc_input_2_power') ?? getNumber(state, 'pv2_power') ?? getNumber(state, 'dc_input_power2') ?? 0;
   const splitDcInput = pv1Input + pv2Input;
@@ -283,7 +302,7 @@ function Hero({ model, state, highestInputToday }: { model: string; state: Devic
   const powerDigits = 0;
 
   const inputSummary = describeInputMix(dcInput, acInput);
-  const outputSummary = describeOutputMix(acOutput, dcOutput);
+  const outputSummary = formatOutputPeakSummary(outputPeaksToday);
   const inputStatus = dcInput > 0 && acInput > 0
     ? 'Solar + grid active'
     : dcInput > 0
@@ -476,6 +495,7 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
   const packCount = getNumber(state, 'pack_num_max');
   const liveInput = getCurrentSolarInputWatts(state);
   const inputPeakWindow = getDailyInputPeakWindow();
+  const outputPeakWindow = getTodayWindow();
   const liveInputPeakRef = useRef<{ windowSince: string; value: number | null }>({
     windowSince: inputPeakWindow.since,
     value: null,
@@ -500,6 +520,19 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
     liveInputPeakRef.current.value ?? liveInput,
     inputPeakWindow.containsNow,
   );
+  const outputHistoryQuery = useQuery({
+    queryKey: ['overview-output-highest-today', deviceId, outputPeakWindow.since, outputPeakWindow.until],
+    enabled: Boolean(deviceId),
+    staleTime: 60_000,
+    refetchOnMount: 'always',
+    queryFn: () => fetchOutputMax(deviceId, { since: outputPeakWindow.since, until: outputPeakWindow.until }),
+  });
+  const outputPeaksToday = outputHistoryQuery.data
+    ? {
+        ac: Math.max(outputHistoryQuery.data.ac ?? 0, getNumber(state, 'ac_output_power') ?? 0),
+        dc: Math.max(outputHistoryQuery.data.dc ?? 0, getNumber(state, 'dc_output_power') ?? 0),
+      }
+    : null;
 
   const topCards = [
     {
@@ -645,7 +678,7 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
         </div>
       </div>
 
-      <Hero model={model} state={state} highestInputToday={highestInputToday} />
+      <Hero model={model} state={state} highestInputToday={highestInputToday} outputPeaksToday={outputPeaksToday} />
 
       <div className="tile-grid tile-grid--fit">
         {topCards.map((card) => (

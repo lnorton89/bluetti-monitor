@@ -109,3 +109,26 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
 
   return api.get<{ value: number | null }>(`/stats/${device}/input-max`, { params: options }).then((r) => r.data);
 };
+
+export const fetchOutputMax = async (
+  device: string,
+  options: Pick<FetchHistoryOptions, 'since' | 'until'> = {},
+) => {
+  const history = await fetchHistoryBundle(device, ['ac_output_power', 'dc_output_power'], {
+    limit: 100_000,
+    ...options,
+  });
+
+  const maxForField = (field: string) => {
+    const values = (history[field] ?? [])
+      .map((point) => Number.parseFloat(point.value))
+      .filter((value) => Number.isFinite(value));
+
+    return values.length > 0 ? Math.max(...values) : null;
+  };
+
+  return {
+    ac: maxForField('ac_output_power'),
+    dc: maxForField('dc_output_power'),
+  };
+};
