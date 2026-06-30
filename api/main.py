@@ -27,6 +27,7 @@ INPUT_MAX_FIELDS = (
     *PV1_INPUT_FIELDS,
     *PV2_INPUT_FIELDS,
 )
+GENERATION_FIELD = "power_generation"
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
@@ -259,6 +260,8 @@ def get_input_max(
     short telemetry bursts as the day's meaningful solar high.
     """
     placeholders = ",".join("?" for _ in INPUT_MAX_FIELDS)
+    stats_fields = (*INPUT_MAX_FIELDS, GENERATION_FIELD)
+    stats_placeholders = ",".join("?" for _ in stats_fields)
 
     state: dict[str, float] = {}
     if since:
@@ -288,7 +291,7 @@ def get_input_max(
             except (TypeError, ValueError):
                 continue
 
-    params: list[object] = [device, *INPUT_MAX_FIELDS]
+    params: list[object] = [device, *stats_fields]
     window_clauses = []
     if since:
         window_clauses.append("AND ts>=?")
@@ -304,7 +307,7 @@ def get_input_max(
             SELECT field, value, ts
             FROM readings
             WHERE device=?
-              AND field IN ({placeholders})
+              AND field IN ({stats_placeholders})
               {window_clause}
             ORDER BY ts ASC
             """,
@@ -317,6 +320,9 @@ def get_input_max(
     bucket_seconds_value = bucket_seconds if isinstance(bucket_seconds, int) else 60
     buckets: dict[int, list[float]] = {}
     for row in rows:
+        if row["field"] == GENERATION_FIELD:
+            continue
+
         try:
             value = float(row["value"])
         except (TypeError, ValueError):
@@ -331,12 +337,42 @@ def get_input_max(
         bucket = int(timestamp.timestamp() // bucket_seconds_value)
         buckets.setdefault(bucket, []).append(total)
 
-    peak = None
+    sustained_peak = None
     for values in buckets.values():
         if not values:
             continue
         average = sum(values) / len(values)
-        peak = average if peak is None else max(peak, average)
+        sustained_peak = average if sustained_peak is None else max(sustained_peak, average)
+
+    generation_points: list[tuple[datetime, float]] = []
+    previous_generation: float | None = None
+    for row in rows:
+        if row["field"] != GENERATION_FIELD:
+            continue
+
+        try:
+            value = float(row["value"])
+            timestamp = datetime.fromisoformat(row["ts"])
+        except (TypeError, ValueError):
+            continue
+
+        if previous_generation is None or value != previous_generation:
+            generation_points.append((timestamp, value))
+            previous_generation = value
+
+    generation_peak = None
+    for (previous_ts, previous_value), (current_ts, current_value) in zip(generation_points, generation_points[1:]):
+        delta_kwh = current_value - previous_value
+        elapsed_hours = (current_ts - previous_ts).total_seconds() / 3600
+        if delta_kwh <= 0 or elapsed_hours <= 0:
+            continue
+
+        watts = delta_kwh * 1000 / elapsed_hours
+        generation_peak = watts if generation_peak is None else max(generation_peak, watts)
+
+    peak = sustained_peak
+    if peak is not None and generation_peak is not None:
+        peak = min(peak, generation_peak)
 
     return {"value": peak}
 

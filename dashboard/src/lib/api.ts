@@ -83,6 +83,7 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
       ...TOTAL_SOLAR_INPUT_FIELDS,
       ...PV1_INPUT_FIELDS,
       ...PV2_INPUT_FIELDS,
+      'power_generation',
     ];
     const history = Object.fromEntries(
       fields.map((field) => [field, getMockHistory(field, { limit: 100_000, since: options.since, until: options.until })]),
@@ -99,6 +100,10 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
     const buckets = new Map<number, number[]>();
 
     for (const event of events) {
+      if (event.field === 'power_generation') {
+        continue;
+      }
+
       state[event.field] = { value: String(event.value), ts: new Date(event.ts).toISOString() };
       const total = getCurrentSolarInputWatts(state);
       const bucket = Math.floor(event.ts / 60_000);
@@ -108,7 +113,24 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
     const averages = [...buckets.values()]
       .filter((values) => values.length > 0)
       .map((values) => values.reduce((sum, value) => sum + value, 0) / values.length);
-    const peak = averages.length > 0 ? Math.max(...averages) : null;
+    const sustainedPeak = averages.length > 0 ? Math.max(...averages) : null;
+    const generationPoints = (history.power_generation ?? [])
+      .map((point) => ({ ts: Date.parse(point.ts), value: Number.parseFloat(point.value) }))
+      .filter((point) => Number.isFinite(point.ts) && Number.isFinite(point.value))
+      .sort((left, right) => left.ts - right.ts)
+      .filter((point, index, points) => index === 0 || point.value !== points[index - 1].value);
+    const generationRates = generationPoints.slice(1)
+      .map((point, index) => {
+        const previous = generationPoints[index];
+        const elapsedHours = (point.ts - previous.ts) / 3_600_000;
+        const deltaKwh = point.value - previous.value;
+        return deltaKwh > 0 && elapsedHours > 0 ? (deltaKwh * 1000) / elapsedHours : null;
+      })
+      .filter((value): value is number => value !== null);
+    const generationPeak = generationRates.length > 0 ? Math.max(...generationRates) : null;
+    const peak = sustainedPeak !== null && generationPeak !== null
+      ? Math.min(sustainedPeak, generationPeak)
+      : sustainedPeak;
 
     return Promise.resolve({ value: peak });
   }

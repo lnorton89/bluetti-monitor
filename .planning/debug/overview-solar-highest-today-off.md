@@ -38,6 +38,8 @@ updated: 2026-06-29
   observation: The reported `2,217 W` value is a real raw telemetry maximum from today's 06:00-18:00 local window; both aggregate and split input fields spike around 21:43 UTC.
 - timestamp: 2026-06-30T00:05:00Z
   observation: Raw sample max is too sensitive for the Overview headline. Against today's local DB, a 60-second bucketed peak lowers the value from `2,217 W` to about `1,826 W`.
+- timestamp: 2026-06-30T00:15:00Z
+  observation: The cumulative `power_generation` counter only supports a peak generation rate of about `964 W` for today's window, so even the 60-second raw input average is too high for the solar headline.
 
 ## Eliminated
 
@@ -46,7 +48,7 @@ updated: 2026-06-29
 
 ## Resolution
 
-- root_cause: The overview solar peak path first preferred split PV/DC fields over the aggregate `dc_input_power` total, and then still surfaced the highest raw telemetry sample as the headline value. On the AC500 local telemetry, those raw samples can include short bursts that are real readings but misleading as "Highest today."
-- fix: Prefer aggregate solar total fields (`dc_input_power`, `pv_input_power`, `solar_power`) when available, use split PV/DC fields only as a fallback, and report the highest 60-second bucket average for the Overview/API solar peak instead of the raw maximum sample. Overview now refreshes the sustained peak once per minute during the daylight window instead of merging instantaneous live spikes.
-- verification: `bun test dashboard/test-unit/power.test.ts dashboard/test-unit/notifications.test.ts dashboard/test-unit/daily-input-window.test.ts`; `api/.venv/Scripts/python.exe api/test_input_max.py`; `npm --prefix dashboard run build`; `python -m py_compile api/main.py`; local DB simulation returned about `1,826 W` for the same window that had raw max `2,217 W`.
+- root_cause: The overview solar peak path first preferred split PV/DC fields over the aggregate `dc_input_power` total, and then still trusted raw input-power telemetry too directly. On the AC500 local telemetry, those raw input readings can include short bursts or inflated register values that are not supported by the cumulative generated-energy counter.
+- fix: Prefer aggregate solar total fields (`dc_input_power`, `pv_input_power`, `solar_power`) when available, use split PV/DC fields only as a fallback, report the highest 60-second bucket average for the raw input stream, and cap that result with the generation-rate peak derived from `power_generation` when the counter provides enough movement. Overview refreshes the capped sustained peak once per minute during the daylight window instead of merging instantaneous live spikes.
+- verification: `bun test dashboard/test-unit/power.test.ts dashboard/test-unit/notifications.test.ts dashboard/test-unit/daily-input-window.test.ts`; `api/.venv/Scripts/python.exe api/test_input_max.py`; `npm --prefix dashboard run build`; `python -m py_compile api/main.py`; local DB simulation returned about `964 W` for the same window that had raw max `2,217 W`.
 - files_changed: api/main.py, api/test_input_max.py, dashboard/src/lib/api.ts, dashboard/src/lib/power.ts, dashboard/src/pages/Overview.tsx, dashboard/test-unit/power.test.ts, dashboard/test-unit/notifications.test.ts

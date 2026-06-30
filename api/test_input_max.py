@@ -31,6 +31,9 @@ class InputMaxStatsTest(unittest.TestCase):
             )
             conn.commit()
 
+    def insert_generation(self, value: float, ts: str):
+        self.insert("power_generation", value, ts)
+
     def test_input_max_uses_bounded_daylight_window_with_baseline_state(self):
         self.insert("ac_input_power", 50, "2026-06-16T05:59:00.000000+00:00")
         self.insert("dc_input_1_power", 300, "2026-06-16T05:59:00.000000+00:00")
@@ -103,6 +106,21 @@ class InputMaxStatsTest(unittest.TestCase):
         )
 
         self.assertEqual(result, {"value": 1300.0})
+
+    def test_input_max_caps_solar_peak_with_generation_rate_when_available(self):
+        self.insert("dc_input_power", 2100, "2026-06-16T06:01:00.000000+00:00")
+        self.insert("dc_input_power", 2100, "2026-06-16T06:01:20.000000+00:00")
+        self.insert("dc_input_power", 2100, "2026-06-16T06:01:40.000000+00:00")
+        self.insert_generation(100.0, "2026-06-16T06:00:00.000000+00:00")
+        self.insert_generation(100.1, "2026-06-16T06:10:00.000000+00:00")
+
+        result = main.get_input_max(
+            "AC500",
+            since="2026-06-16T06:00:00.000000+00:00",
+            until="2026-06-16T18:00:00.000000+00:00",
+        )
+
+        self.assertAlmostEqual(result["value"], 600.0)
 
 
 if __name__ == "__main__":
