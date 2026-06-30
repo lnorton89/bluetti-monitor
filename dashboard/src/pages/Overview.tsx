@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowDownRight,
@@ -25,7 +25,7 @@ import { useTelemetryState } from '../hooks/useTelemetryState';
 import { formatRelativeTime } from '../lib/time';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
 import { fetchInputMax, fetchOutputMax } from '../lib/api';
-import { accumulateLiveInputPeak, getDailyInputPeakWindow, resolveDailyInputPeakValue } from '../lib/daily-input-window';
+import { getDailyInputPeakWindow } from '../lib/daily-input-window';
 import { getCurrentSolarInputWatts } from '../lib/power';
 
 type FieldValue = { value: string; ts: string };
@@ -488,33 +488,17 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
   const batteryRangeEnd = getNumber(state, 'battery_range_end');
   const selectedPack = getNumber(state, 'pack_num');
   const packCount = getNumber(state, 'pack_num_max');
-  const liveInput = getCurrentSolarInputWatts(state);
   const inputPeakWindow = getDailyInputPeakWindow();
   const outputPeakWindow = getTodayWindow();
-  const liveInputPeakRef = useRef<{ windowSince: string; value: number | null }>({
-    windowSince: inputPeakWindow.since,
-    value: null,
-  });
-  if (liveInputPeakRef.current.windowSince !== inputPeakWindow.since) {
-    liveInputPeakRef.current = { windowSince: inputPeakWindow.since, value: null };
-  }
-  liveInputPeakRef.current.value = accumulateLiveInputPeak(
-    liveInputPeakRef.current.value,
-    liveInput,
-    inputPeakWindow.containsNow,
-  );
   const inputHistoryQuery = useQuery({
     queryKey: ['overview-input-highest-today', deviceId, inputPeakWindow.since, inputPeakWindow.until],
     enabled: Boolean(deviceId) && inputPeakWindow.hasStarted,
     staleTime: 60_000,
+    refetchInterval: inputPeakWindow.containsNow ? 60_000 : false,
     refetchOnMount: 'always',
     queryFn: () => fetchInputMax(deviceId, { since: inputPeakWindow.since, until: inputPeakWindow.until }),
   });
-  const highestInputToday = resolveDailyInputPeakValue(
-    inputHistoryQuery.data?.value,
-    liveInputPeakRef.current.value ?? liveInput,
-    inputPeakWindow.containsNow,
-  );
+  const highestInputToday = inputHistoryQuery.data?.value ?? null;
   const outputHistoryQuery = useQuery({
     queryKey: ['overview-output-highest-today', deviceId, outputPeakWindow.since, outputPeakWindow.until],
     enabled: Boolean(deviceId),

@@ -96,18 +96,29 @@ export const fetchInputMax = (device: string, options: Pick<FetchHistoryOptions,
       .filter((event) => Number.isFinite(event.ts) && Number.isFinite(event.value))
       .sort((left, right) => left.ts - right.ts);
     const state: DeviceState = {};
-    let peak: number | null = null;
+    const buckets = new Map<number, number[]>();
 
     for (const event of events) {
       state[event.field] = { value: String(event.value), ts: new Date(event.ts).toISOString() };
       const total = getCurrentSolarInputWatts(state);
-      peak = peak === null ? total : Math.max(peak, total);
+      const bucket = Math.floor(event.ts / 60_000);
+      buckets.set(bucket, [...(buckets.get(bucket) ?? []), total]);
     }
+
+    const averages = [...buckets.values()]
+      .filter((values) => values.length > 0)
+      .map((values) => values.reduce((sum, value) => sum + value, 0) / values.length);
+    const peak = averages.length > 0 ? Math.max(...averages) : null;
 
     return Promise.resolve({ value: peak });
   }
 
-  return api.get<{ value: number | null }>(`/stats/${device}/input-max`, { params: options }).then((r) => r.data);
+  return api.get<{ value: number | null }>(`/stats/${device}/input-max`, {
+    params: {
+      ...options,
+      bucket_seconds: 60,
+    },
+  }).then((r) => r.data);
 };
 
 export const fetchOutputMax = async (

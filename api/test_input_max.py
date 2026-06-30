@@ -89,6 +89,21 @@ class InputMaxStatsTest(unittest.TestCase):
 
         self.assertEqual(result, {"value": 650.0})
 
+    def test_input_max_reports_sustained_bucket_peak_not_raw_burst(self):
+        self.insert("dc_input_power", 900, "2026-06-16T06:01:00.000000+00:00")
+        self.insert("dc_input_power", 2100, "2026-06-16T06:01:10.000000+00:00")
+        self.insert("dc_input_power", 900, "2026-06-16T06:01:20.000000+00:00")
+        self.insert("dc_input_power", 1200, "2026-06-16T06:02:00.000000+00:00")
+        self.insert("dc_input_power", 1200, "2026-06-16T06:02:20.000000+00:00")
+
+        result = main.get_input_max(
+            "AC500",
+            since="2026-06-16T06:00:00.000000+00:00",
+            until="2026-06-16T18:00:00.000000+00:00",
+        )
+
+        self.assertEqual(result, {"value": 1300.0})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -249,11 +249,14 @@ def get_input_max(
     device: str,
     since: Optional[str] = Query(default=None, description="ISO8601 timestamp"),
     until: Optional[str] = Query(default=None, description="Exclusive ISO8601 timestamp"),
+    bucket_seconds: int = Query(default=60, ge=1, le=3600),
 ):
     """
-    Highest solar/DC input watts for a device in the requested timestamp window.
+    Highest sustained solar/DC input watts for a device in the requested timestamp window.
     Seeds state from the latest value before the window, then walks only the
     bounded field stream so split input fields are reconstructed coherently.
+    The reported peak is the highest bucket average, which avoids promoting
+    short telemetry bursts as the day's meaningful solar high.
     """
     placeholders = ",".join("?" for _ in INPUT_MAX_FIELDS)
 
@@ -311,7 +314,8 @@ def get_input_max(
     # Baseline values reconstruct the complete input state when the first
     # in-window field arrives, but readings before `since` are not themselves
     # candidates for the bounded window's peak.
-    peak: float | None = None
+    bucket_seconds_value = bucket_seconds if isinstance(bucket_seconds, int) else 60
+    buckets: dict[int, list[float]] = {}
     for row in rows:
         try:
             value = float(row["value"])
@@ -320,7 +324,19 @@ def get_input_max(
 
         state[row["field"]] = value
         total = current_solar_input_watts(state)
-        peak = total if peak is None else max(peak, total)
+        try:
+            timestamp = datetime.fromisoformat(row["ts"])
+        except (TypeError, ValueError):
+            continue
+        bucket = int(timestamp.timestamp() // bucket_seconds_value)
+        buckets.setdefault(bucket, []).append(total)
+
+    peak = None
+    for values in buckets.values():
+        if not values:
+            continue
+        average = sum(values) / len(values)
+        peak = average if peak is None else max(peak, average)
 
     return {"value": peak}
 
