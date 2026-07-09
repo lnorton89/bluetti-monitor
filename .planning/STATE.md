@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 verified against live AC500 telemetry
-Last activity: 2026-07-09 - Completed quick task 260709-0fi: Refactor device files into data-driven definitions
+Last activity: 2026-07-09 - Completed quick task 260709-ecd: rename bluetti-mqtt-node MQTT module to broker
 
 ## Accumulated Context
 
@@ -55,6 +55,10 @@ Decisions are logged in PROJECT.md.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260709-ecd | rename bluetti-mqtt-node MQTT module to broker and remove postbuild workaround | 2026-07-09 | working tree | [260709-ecd-rename-bluetti-mqtt-node-mqtt-module-to-](./quick/260709-ecd-rename-bluetti-mqtt-node-mqtt-module-to-/) |
+| 260709-e89 | implement optional MQTT TLS support in bluetti-mqtt-node | 2026-07-09 | working tree | [260709-e89-implement-optional-mqtt-tls-support-in-b](./quick/260709-e89-implement-optional-mqtt-tls-support-in-b/) |
+| 260709-dzt | improve test coverage in bluetti-mqtt-node submodule | 2026-07-09 | working tree | [260709-dzt-improve-test-coverage-in-bluetti-mqtt-no](./quick/260709-dzt-improve-test-coverage-in-bluetti-mqtt-no/) |
+| 260709-dtn | implement c8 library in the submodule | 2026-07-09 | working tree | [260709-dtn-implement-c8-library-in-the-submodule](./quick/260709-dtn-implement-c8-library-in-the-submodule/) |
 | 260708-vig | Recover bluetti-mqtt-node in-process after Windows GATT link loss | 2026-07-09 | 4dba3f6 | [260708-vig-make-bluetti-mqtt-node-recover-in-proces](./quick/260708-vig-make-bluetti-mqtt-node-recover-in-proces/) |
 | 260606-euj | Make analytics web app polished and mobile friendly using Playwright verification | 2026-06-06 | af8c148 | [260606-euj-make-analytics-web-app-polished-and-mobi](./quick/260606-euj-make-analytics-web-app-polished-and-mobi/) |
 | 260629-naw | Remove AC-side demand copy and add highest today AC/DC output | 2026-06-29 | 2125525 | [260629-naw-remove-the-current-demand-is-mostly-on-t](./quick/260629-naw-remove-the-current-demand-is-mostly-on-t/) |
