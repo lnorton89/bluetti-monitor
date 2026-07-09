@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 verified against live AC500 telemetry
-Last activity: 2026-07-09 - Completed quick task 260708-vig: recover bluetti-mqtt-node in-process after Windows GATT link loss
+Last activity: 2026-07-09 - Completed quick task 260709-0fi: Refactor device files into data-driven definitions
 
 ## Accumulated Context
 
