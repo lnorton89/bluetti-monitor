@@ -12,8 +12,10 @@ import {
 } from "./shared.mjs";
 
 const DASHBOARD_READY_MARKER = "<!doctype html>";
+const BRIDGE_RESTART_DELAY_MS = 5_000;
 
 let bridgeProcess = null;
+let stopping = false;
 
 async function main() {
   console.log("[monitor] Starting Docker-backed services...");
@@ -26,16 +28,7 @@ async function main() {
   const bridgeBin = getBinPath("bluetti-mqtt-node");
   console.log(`[monitor] Starting bluetti-mqtt-node via package CLI for ${device.mac}...`);
 
-  bridgeProcess = spawnCommand(bridgeBin, ["--broker", BROKER_URL, device.mac], {
-    env: { ...process.env },
-  });
-
-  bridgeProcess.once("close", (exitCode) => {
-    if (exitCode !== 0) {
-      console.error(`[monitor] bluetti-mqtt-node exited with code ${exitCode}.`);
-      process.exitCode = exitCode ?? 1;
-    }
-  });
+  startBridge(bridgeBin, device.mac);
 
   printDashboardUrls();
   console.log(`[monitor] API: ${API_URL}`);
@@ -44,6 +37,7 @@ async function main() {
 }
 
 installSignalHandlers(async () => {
+  stopping = true;
   if (bridgeProcess && !bridgeProcess.killed) {
     bridgeProcess.kill();
   }
@@ -53,3 +47,20 @@ main().catch((error) => {
   console.error("[monitor] Failed to start monitor:", error);
   process.exit(1);
 });
+
+function startBridge(bridgeBin, deviceAddress) {
+  if (stopping) return;
+
+  bridgeProcess = spawnCommand(bridgeBin, ["--broker", BROKER_URL, deviceAddress], {
+    env: { ...process.env },
+  });
+
+  bridgeProcess.once("close", (exitCode) => {
+    if (stopping) return;
+
+    console.error(
+      `[monitor] bluetti-mqtt-node exited with code ${exitCode}; restarting in ${BRIDGE_RESTART_DELAY_MS}ms.`,
+    );
+    setTimeout(() => startBridge(bridgeBin, deviceAddress), BRIDGE_RESTART_DELAY_MS);
+  });
+}

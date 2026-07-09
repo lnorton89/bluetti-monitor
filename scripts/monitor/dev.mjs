@@ -19,8 +19,10 @@ import {
 import { resolve } from "node:path";
 
 const DASHBOARD_READY_MARKER = '<div id="root"></div>';
+const BRIDGE_RESTART_DELAY_MS = 5_000;
 
 const childProcesses = [];
+let stopping = false;
 
 async function main() {
   console.log("[monitor:dev] Starting local development monitor stack...");
@@ -63,13 +65,11 @@ async function main() {
   const device = await resolveDeviceAddress();
   const bridgeBin = getBinPath("bluetti-mqtt-node");
   console.log(`[monitor:dev] Starting bluetti-mqtt-node via package CLI for ${device.mac}...`);
-  const bridgeProcess = spawnAttachedCommand(bridgeBin, ["--broker", BROKER_URL, device.mac], {
-    env: { ...process.env },
-    label: "monitor:bridge",
-  });
-  childProcesses.push({ child: bridgeProcess, label: "bridge" });
+  startBridge(bridgeBin, device.mac);
 
   for (const { child, label } of childProcesses) {
+    if (label === "bridge") continue;
+
     child.once("close", (exitCode) => {
       if (exitCode !== 0) {
         console.error(`[monitor:dev] ${label} exited with code ${exitCode}.`);
@@ -95,7 +95,27 @@ main().catch((error) => {
 });
 
 function stopChildProcesses() {
+  stopping = true;
   for (const { child, label } of childProcesses.toReversed()) {
     stopProcess(child, label);
   }
+}
+
+function startBridge(bridgeBin, deviceAddress) {
+  if (stopping) return;
+
+  const bridgeProcess = spawnAttachedCommand(bridgeBin, ["--broker", BROKER_URL, deviceAddress], {
+    env: { ...process.env },
+    label: "monitor:bridge",
+  });
+  childProcesses.push({ child: bridgeProcess, label: "bridge" });
+
+  bridgeProcess.once("close", (exitCode) => {
+    if (stopping) return;
+
+    console.error(
+      `[monitor:dev] bridge exited with code ${exitCode}; restarting in ${BRIDGE_RESTART_DELAY_MS}ms.`,
+    );
+    setTimeout(() => startBridge(bridgeBin, deviceAddress), BRIDGE_RESTART_DELAY_MS);
+  });
 }

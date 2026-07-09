@@ -10,6 +10,7 @@
  * - isPartial: Some fields missing from expected data
  */
 
+import { useEffect, useState } from 'react';
 import { useWsStore } from '../store/ws';
 
 const STALE_THRESHOLD_MS = 30000; // 30 seconds
@@ -91,6 +92,17 @@ function getStateLabel(
 
 export function useTelemetryState(): TelemetryState {
   const { connected, lastUpdate, state, connect } = useWsStore();
+  const [, setClockTick] = useState(0);
+
+  useEffect(() => {
+    if (!lastUpdate) return;
+
+    const timer = window.setInterval(() => {
+      setClockTick((tick) => tick + 1);
+    }, 1_000);
+
+    return () => window.clearInterval(timer);
+  }, [lastUpdate]);
 
   // Get list of devices from current state
   const devices = getDevices(state);

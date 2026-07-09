@@ -475,7 +475,17 @@ function Hero({
   );
 }
 
-function DeviceOverview({ deviceId, state, connected }: { deviceId: string; state: DeviceState; connected: boolean }) {
+function DeviceOverview({
+  deviceId,
+  state,
+  connected,
+  telemetryActive,
+}: {
+  deviceId: string;
+  state: DeviceState;
+  connected: boolean;
+  telemetryActive: boolean;
+}) {
   const latest = latestTimestamp(state);
   const model = modelName(state, deviceId);
   const serial = deviceSerial(state, deviceId);
@@ -492,16 +502,16 @@ function DeviceOverview({ deviceId, state, connected }: { deviceId: string; stat
   const outputPeakWindow = getTodayWindow();
   const inputHistoryQuery = useQuery({
     queryKey: ['overview-input-highest-today', deviceId, inputPeakWindow.since, inputPeakWindow.until],
-    enabled: Boolean(deviceId) && inputPeakWindow.hasStarted,
+    enabled: Boolean(deviceId) && inputPeakWindow.hasStarted && telemetryActive,
     staleTime: 60_000,
-    refetchInterval: inputPeakWindow.containsNow ? 60_000 : false,
+    refetchInterval: inputPeakWindow.containsNow && telemetryActive ? 60_000 : false,
     refetchOnMount: 'always',
     queryFn: () => fetchInputMax(deviceId, { since: inputPeakWindow.since, until: inputPeakWindow.until }),
   });
   const highestInputToday = inputHistoryQuery.data?.value ?? null;
   const outputHistoryQuery = useQuery({
     queryKey: ['overview-output-highest-today', deviceId, outputPeakWindow.since, outputPeakWindow.until],
-    enabled: Boolean(deviceId),
+    enabled: Boolean(deviceId) && telemetryActive,
     staleTime: 60_000,
     refetchOnMount: 'always',
     queryFn: () => fetchOutputMax(deviceId, { since: outputPeakWindow.since, until: outputPeakWindow.until }),
@@ -807,6 +817,7 @@ export default function Overview() {
             deviceId={deviceId}
             state={wsState[deviceId]}
             connected={connected}
+            telemetryActive={connected && !isStale}
           />
         ))
       )}

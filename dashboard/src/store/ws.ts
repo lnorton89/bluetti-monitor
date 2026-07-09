@@ -29,6 +29,20 @@ let reconnectTimer: number | null = null;
 let flushTimer: number | null = null;
 const pendingUpdates = new Map<string, LiveUpdate>();
 
+function latestStateTimestamp(state: AllState): string | null {
+  let latest: string | null = null;
+
+  for (const fields of Object.values(state)) {
+    for (const field of Object.values(fields)) {
+      if (latest === null || field.ts > latest) {
+        latest = field.ts;
+      }
+    }
+  }
+
+  return latest;
+}
+
 function clearFlushTimer() {
   if (flushTimer !== null) {
     window.clearTimeout(flushTimer);
@@ -106,7 +120,10 @@ export const useWsStore = create<WsStore>((set, get) => ({
       if (msg.type === 'snapshot') {
         pendingUpdates.clear();
         clearFlushTimer();
-        set({ state: msg.data });
+        set({
+          state: msg.data,
+          lastUpdate: latestStateTimestamp(msg.data),
+        });
         return;
       }
 
