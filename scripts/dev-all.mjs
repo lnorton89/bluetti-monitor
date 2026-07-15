@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const workspaceRoot = resolve(__dirname, "..");
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const localDashboardUrl = "http://127.0.0.1:5173";
+const localDashboardUrl = "http://127.0.0.1:5400";
 const children = new Set();
 let shuttingDown = false;
 

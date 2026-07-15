@@ -172,9 +172,9 @@ For the old "start both while developing" convenience flow, run:
 npm run dev:all
 ```
 
-`dev:all` starts the monitor dev supervisor and launches the desktop with `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5173` unless you already set a different dashboard URL.
+`dev:all` starts the monitor dev supervisor and launches the desktop with `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5400` unless you already set a different dashboard URL.
 
-By default the desktop shell loads `http://localhost:8540`. Set `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5173` before `npm run desktop:dev` when you want the native window to attach to the Vite dashboard.
+By default the desktop shell loads `http://localhost:8540`. Set `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5400` before `npm run desktop:dev` when you want the native window to attach to the Vite dashboard.
 
 ---
 
@@ -405,7 +405,7 @@ docker compose down -v
 - Normal monitoring uses `npm run monitor:start`.
 - That command targets the Docker-backed dashboard at `http://localhost:8540`.
 - The host bridge still runs on Windows, but it is launched for you through the linked `bluetti-mqtt-node` CLI instead of a separate manual host-poller step.
-- Local API/dashboard development uses `npm run monitor:dev`, which starts Mosquitto, the local FastAPI server, the Vite dashboard at `http://127.0.0.1:5173`, and the host bridge.
+- Local API/dashboard development uses `npm run monitor:dev`, which starts Mosquitto, the local FastAPI server, the Vite dashboard at `http://127.0.0.1:5400`, and the host bridge.
 - The desktop shell is optional local tooling and attaches to `BLUETTI_DASHBOARD_URL` or `http://localhost:8540` by default.
 
 ### Dashboard
@@ -416,7 +416,7 @@ npm install
 npm run dev
 ```
 
-Vite dev server runs on `http://localhost:5173` with proxy to `localhost:8000`.
+Vite dev server runs on `http://localhost:5400` with proxy to `localhost:8000`.
 
 To run the Playwright suite from the repo root:
 
