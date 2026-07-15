@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5120",
+    "dev": "vite --host 0.0.0.0 --port 5300",
     "build": "tsc -b && vite build",
     "export:production-data": "node scripts/export-static-data.mjs",
     "build:production": "npm run export:production-data && tsc -b && vite build --mode static",

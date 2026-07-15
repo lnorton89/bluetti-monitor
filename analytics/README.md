@@ -25,7 +25,7 @@ npm install
 npm run dev
 ```
 
-The dev server runs on `http://localhost:5120`.
+The dev server runs on `http://localhost:5300`.
 
 ## Scripts
 
@@ -33,7 +33,7 @@ The dev server runs on `http://localhost:5120`.
 npm run dev
 ```
 
-Starts the Vite dev server on `0.0.0.0:5120`. In dev, `/api/*` is proxied to `http://localhost:8000/*` and `/ws` is proxied to the API WebSocket.
+Starts the Vite dev server on `0.0.0.0:5300`. In dev, `/api/*` is proxied to `http://localhost:8000/*` and `/ws` is proxied to the API WebSocket.
 
 ```powershell
 npm run build
@@ -71,7 +71,7 @@ The app reads these optional Vite environment variables:
 Mock mode can also be enabled in the browser with:
 
 ```text
-http://localhost:5120/?mock=1
+http://localhost:5300/?mock=1
 ```
 
 PowerShell example:

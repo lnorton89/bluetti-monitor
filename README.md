@@ -11,7 +11,7 @@ Full monitoring stack for the Bluetti AC500 power station with a real-time deskt
 | `mosquitto` | MQTT broker | 1883 |
 | `api` | FastAPI REST + WebSocket server | 8000 |
 | `dashboard` | React monitoring UI | 8540 |
-| `analytics` | Standalone React analytics workspace | 5120 |
+| `analytics` | Standalone React analytics workspace | 5300 |
 
 ### Component Ownership
 
@@ -219,10 +219,10 @@ npm run dev
 Analytics dev URL:
 
 ```text
-http://localhost:5120
+http://localhost:5300
 ```
 
-In development, Vite proxies `/api/*` to the FastAPI service at `http://localhost:8000/*` and proxies `/ws` to the API WebSocket. Mock mode is available with `VITE_MOCK_DATA=1` or `http://localhost:5120/?mock=1`.
+In development, Vite proxies `/api/*` to the FastAPI service at `http://localhost:8000/*` and proxies `/ws` to the API WebSocket. Mock mode is available with `VITE_MOCK_DATA=1` or `http://localhost:5300/?mock=1`.
 
 See [analytics/README.md](analytics/README.md) for the app-specific setup, API expectations, source map, and development notes.
 
@@ -442,7 +442,7 @@ npm install
 npm run dev
 ```
 
-Vite dev server runs on `http://localhost:5120` with proxy to `localhost:8000`.
+Vite dev server runs on `http://localhost:5300` with proxy to `localhost:8000`.
 
 For mock data:
 

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.ANALYTICS_PERF_URL ?? 'http://127.0.0.1:5120/?mock=1';
+const baseURL = process.env.ANALYTICS_PERF_URL ?? 'http://127.0.0.1:5300/?mock=1';
 
 export default defineConfig({
   testDir: './tests',
@@ -21,6 +21,6 @@ export default defineConfig({
         command: 'npm run dev -- --host 127.0.0.1',
         reuseExistingServer: true,
         timeout: 20_000,
-        url: 'http://127.0.0.1:5120/?mock=1',
+        url: 'http://127.0.0.1:5300/?mock=1',
       },
 });
