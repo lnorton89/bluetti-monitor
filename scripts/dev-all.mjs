@@ -1,55 +1,86 @@
 import { spawn, spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createDevSessionLogger, pipeProcessOutput } from "./dev-session.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const workspaceRoot = resolve(__dirname, "..");
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const localDashboardUrl = "http://127.0.0.1:5400";
+const sessionLogPath = resolve(workspaceRoot, ".dev-data", "logs", "dev-all.log");
+const logger = createDevSessionLogger({ logPath: sessionLogPath });
 const children = new Set();
 let shuttingDown = false;
 
 process.once("SIGINT", () => {
+  logger.event("supervisor", "received signal", { signal: "SIGINT" });
   shutdownChildren();
   process.exit(0);
 });
 
 process.once("SIGTERM", () => {
+  logger.event("supervisor", "received signal", { signal: "SIGTERM" });
   shutdownChildren();
   process.exit(0);
 });
 
-const monitor = spawnManaged("monitor:dev");
-const analytics = spawnManaged("analytics:dev");
-const desktop = spawnManaged("desktop:dev", {
+logger.event("supervisor", "session starting", {
+  logPath: sessionLogPath,
+  pid: process.pid,
+});
+
+const monitor = spawnManaged("monitor", "monitor:dev");
+const analytics = spawnManaged("analytics", "analytics:dev");
+const desktop = spawnManaged("desktop", "desktop:dev", {
   BLUETTI_DASHBOARD_URL: process.env.BLUETTI_DASHBOARD_URL || localDashboardUrl,
 });
 
 const exitCode = await Promise.race([monitor.exitCode, analytics.exitCode, desktop.exitCode]);
+logger.event("supervisor", "essential child exited", { exitCode });
 shutdownChildren();
 process.exit(typeof exitCode === "number" ? exitCode : 0);
 
-function spawnManaged(scriptName, env = {}) {
+function spawnManaged(label, scriptName, env = {}) {
   const child = spawn(npmCommand, ["run", scriptName], {
     cwd: workspaceRoot,
     env: { ...process.env, ...env },
-    stdio: "inherit",
+    stdio: ["inherit", "pipe", "pipe"],
     shell: process.platform === "win32",
   });
 
+  logger.event(label, "spawned", {
+    pid: child.pid,
+    command: npmCommand,
+    args: ["run", scriptName],
+  });
+  pipeProcessOutput(child.stdout, { component: label, streamName: "stdout", logger });
+  pipeProcessOutput(child.stderr, { component: label, streamName: "stderr", logger });
+
   children.add(child);
-  child.once("exit", () => {
+  child.once("exit", (code, signal) => {
     children.delete(child);
+    logger.event(label, "exited", { code, signal });
   });
   child.once("error", (error) => {
-    console.error(`[dev:all] Failed to start ${scriptName}:`, error);
+    logger.event(label, "failed to start", {
+      name: error.name,
+      message: error.message,
+    });
   });
 
   return {
     exitCode: new Promise((resolvePromise) => {
+      let settled = false;
       child.once("exit", (code) => {
+        if (settled) return;
+        settled = true;
         resolvePromise(code ?? 0);
+      });
+      child.once("error", () => {
+        if (settled) return;
+        settled = true;
+        resolvePromise(1);
       });
     }),
   };
@@ -61,6 +92,7 @@ function shutdownChildren() {
   }
 
   shuttingDown = true;
+  logger.event("supervisor", "stopping children", { childCount: children.size });
 
   for (const child of children) {
     if (child.exitCode !== null || child.killed) {
@@ -68,6 +100,7 @@ function shutdownChildren() {
     }
 
     if (process.platform === "win32" && child.pid) {
+      logger.event("supervisor", "terminating Windows child tree", { pid: child.pid });
       spawnSync("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], {
         stdio: "ignore",
         windowsHide: true,

@@ -12,6 +12,7 @@
     "desktop:start": "node ./scripts/dev-desktop.mjs",
     "analytics:dev": "npm --prefix analytics run dev",
     "dev:all": "node ./scripts/dev-all.mjs",
+    "dev:supervisor:test": "node --test ./scripts/tests/*.test.mjs",
     "dashboard:test": "npm --prefix dashboard run test:e2e",
     "monitor:dev": "node ./scripts/monitor/dev.mjs",
     "monitor:start": "node ./scripts/monitor/start.mjs",
