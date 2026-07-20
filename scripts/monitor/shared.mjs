@@ -62,11 +62,12 @@ export function spawnCommand(command, args, options = {}) {
 }
 
 export function spawnAttachedCommand(command, args, options = {}) {
-  const { label = command, ...spawnOptions } = options;
+  const { label = command, isolateSignals = false, ...spawnOptions } = options;
   const child = spawn(command, args, {
     cwd: getWorkspaceRoot(),
     stdio: ["inherit", "pipe", "pipe"],
     shell: shouldUseShell(command),
+    ...getSignalIsolationOptions(isolateSignals),
     ...spawnOptions,
   });
 
@@ -77,6 +78,12 @@ export function spawnAttachedCommand(command, args, options = {}) {
   });
 
   return child;
+}
+
+export function getSignalIsolationOptions(isolateSignals, platform = process.platform) {
+  return isolateSignals && platform === "win32"
+    ? { detached: true, windowsHide: true }
+    : {};
 }
 
 export async function runAttachedCommand(command, args, options = {}) {

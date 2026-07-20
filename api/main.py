@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sqlite3
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
@@ -98,6 +99,25 @@ def db_list_fields(device: str) -> list[str]:
         """, (device, device)).fetchall()
     return [row["field"] for row in rows]
 
+def db_load_latest() -> dict:
+    """Load the newest recorded value for every device field."""
+    snapshot: dict = {}
+    with db_connect() as conn:
+        for device in db_list_devices():
+            fields: dict = {}
+            for field in db_list_fields(device):
+                row = conn.execute(
+                    "SELECT value, ts FROM readings "
+                    "WHERE device=? AND field=? "
+                    "ORDER BY ts DESC, id DESC LIMIT 1",
+                    (device, field),
+                ).fetchone()
+                if row is not None:
+                    fields[field] = {"value": row["value"], "ts": row["ts"]}
+            if fields:
+                snapshot[device] = fields
+    return snapshot
+
 def first_numeric_value(state: dict[str, float], fields: tuple[str, ...]) -> float | None:
     for field in fields:
         if field in state:
@@ -183,6 +203,16 @@ async def mqtt_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db_init()
+    hydrate_started = time.perf_counter()
+    latest.clear()
+    latest.update(db_load_latest())
+    field_count = sum(len(fields) for fields in latest.values())
+    log.info(
+        "Hydrated latest telemetry snapshot from SQLite: %d devices, %d fields in %.0fms",
+        len(latest),
+        field_count,
+        (time.perf_counter() - hydrate_started) * 1000,
+    )
     task = asyncio.create_task(mqtt_loop())
     yield
     task.cancel()

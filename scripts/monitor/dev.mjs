@@ -42,6 +42,7 @@ async function main() {
         DB_PATH: resolve(getDevDataRoot(), "bluetti-dev.db"),
       },
       label: "monitor:api",
+      isolateSignals: true,
     },
   );
   childProcesses.push({ child: apiProcess, label: "api" });
