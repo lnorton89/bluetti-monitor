@@ -26,6 +26,9 @@ async function main() {
   console.log("[monitor:dev] Starting local development monitor stack...");
   await ensureDevBroker();
 
+  bridgeSupervisor = createBridgeDevSupervisor();
+  await bridgeSupervisor.start();
+
   const apiPython = await ensureApiVenv();
   const apiProcess = spawnAttachedCommand(
     apiPython,
@@ -42,7 +45,7 @@ async function main() {
     },
   );
   childProcesses.push({ child: apiProcess, label: "api" });
-  await waitForUrl(`${API_URL}/devices`, "api");
+  await waitForUrl(`${API_URL}/status`, "api");
 
   const dashboardProcess = spawnAttachedCommand(
     getNpmCommand(),
@@ -59,9 +62,6 @@ async function main() {
   );
   childProcesses.push({ child: dashboardProcess, label: "dashboard" });
   await waitForUrl(LOCAL_DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
-
-  bridgeSupervisor = createBridgeDevSupervisor();
-  await bridgeSupervisor.start();
 
   for (const { child, label } of childProcesses) {
     child.once("close", (exitCode) => {

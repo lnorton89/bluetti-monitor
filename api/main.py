@@ -60,6 +60,44 @@ def db_insert(device: str, field: str, value: str):
         conn.commit()
     return ts
 
+def db_list_devices() -> list[str]:
+    """List device keys with index seeks instead of scanning all telemetry rows."""
+    with db_connect() as conn:
+        rows = conn.execute("""
+            WITH RECURSIVE devices(device) AS (
+                SELECT MIN(device) FROM readings
+                UNION ALL
+                SELECT (
+                    SELECT MIN(device)
+                    FROM readings
+                    WHERE device > devices.device
+                )
+                FROM devices
+                WHERE device IS NOT NULL
+            )
+            SELECT device FROM devices WHERE device IS NOT NULL
+        """).fetchall()
+    return [row["device"] for row in rows]
+
+def db_list_fields(device: str) -> list[str]:
+    """List a device's field keys using the device/field index prefix."""
+    with db_connect() as conn:
+        rows = conn.execute("""
+            WITH RECURSIVE fields(field) AS (
+                SELECT MIN(field) FROM readings WHERE device=?
+                UNION ALL
+                SELECT (
+                    SELECT MIN(field)
+                    FROM readings
+                    WHERE device=? AND field > fields.field
+                )
+                FROM fields
+                WHERE field IS NOT NULL
+            )
+            SELECT field FROM fields WHERE field IS NOT NULL
+        """, (device, device)).fetchall()
+    return [row["field"] for row in rows]
+
 def first_numeric_value(state: dict[str, float], fields: tuple[str, ...]) -> float | None:
     for field in fields:
         if field in state:
@@ -379,18 +417,12 @@ def get_input_max(
 @app.get("/devices")
 def get_devices():
     """List all devices seen so far."""
-    with db_connect() as conn:
-        rows = conn.execute("SELECT DISTINCT device FROM readings").fetchall()
-    return [r["device"] for r in rows]
+    return db_list_devices()
 
 @app.get("/fields/{device}")
 def get_fields(device: str):
     """List all fields recorded for a device."""
-    with db_connect() as conn:
-        rows = conn.execute(
-            "SELECT DISTINCT field FROM readings WHERE device=?", (device,)
-        ).fetchall()
-    return [r["field"] for r in rows]
+    return db_list_fields(device)
 
 # ── WebSocket endpoint ────────────────────────────────────────────────────────
 

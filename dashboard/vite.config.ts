@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: 'auto',
       devOptions: {
-        enabled: true
+        enabled: false
       },
       includeAssets: ['favicon.svg', 'favicon.ico'],
       manifest: {

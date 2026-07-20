@@ -975,6 +975,7 @@ function configureDesktopIcons() {
   }
 
   setWindowIcon(iconPath);
+  applyWin32WindowIcon(iconPath);
   createTrayIcon(iconPath);
 
   for (const delayMs of [250, 1000, 2500]) {
@@ -1004,10 +1005,8 @@ function setWindowIcon(iconPath: string) {
       : iconPath;
     (lib.symbols as Record<string, (...args: unknown[]) => void>)["setWindowIcon"](mainWindow.ptr, cstr);
     console.log(`[desktop:icon] window icon set from ${iconPath}`);
-    applyWin32WindowIcon(iconPath);
   } catch (e) {
     console.warn("[desktop:icon] could not set window icon:", (e as Error).message);
-    applyWin32WindowIcon(iconPath);
   }
 }
 
