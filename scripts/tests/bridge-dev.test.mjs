@@ -5,10 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
+  bridgeArtifactIsStaleForChange,
   classifyBridgeChange,
   createBridgeDevSupervisor,
   getBridgeWorkspacePaths,
   inspectBridgeArtifacts,
+  probeHelperArtifact,
 } from "../monitor/bridge-dev.mjs";
 
 test("classifyBridgeChange separates JavaScript and native helper inputs", () => {
@@ -20,6 +22,38 @@ test("classifyBridgeChange separates JavaScript and native helper inputs", () =>
   );
   assert.equal(classifyBridgeChange("dist/cli/bluetti-mqtt.js"), null);
   assert.equal(classifyBridgeChange("artifacts/helper/win-x64/helper.exe"), null);
+  assert.equal(
+    classifyBridgeChange("helper/BluettiMqtt.BluetoothHelper/bin/Debug/generated.cs"),
+    null,
+  );
+  assert.equal(
+    classifyBridgeChange("helper/BluettiMqtt.BluetoothHelper/obj/project.assets.json"),
+    null,
+  );
+});
+
+test("probeHelperArtifact requires a valid ready event", async () => {
+  const ready = await probeHelperArtifact("C:/helper.exe", async () => ({
+    stdout: '{"type":"event","name":"ready","payload":{"capabilities":["scan"]}}\n',
+    stderr: "",
+  }));
+  const malformed = await probeHelperArtifact("C:/helper.exe", async () => ({
+    stdout: "not-json\n",
+    stderr: "",
+  }));
+  const crashed = await probeHelperArtifact("C:/helper.exe", async () => {
+    throw new Error("Windows BLE helper exited with code 2147516570\nmissing helper payload");
+  });
+
+  assert.deepEqual(ready, { healthy: true, reason: "ready" });
+  assert.deepEqual(malformed, {
+    healthy: false,
+    reason: "helper exited without a ready event",
+  });
+  assert.deepEqual(crashed, {
+    healthy: false,
+    reason: "Windows BLE helper exited with code 2147516570 missing helper payload",
+  });
 });
 
 test("inspectBridgeArtifacts detects missing, stale, and fresh generated outputs", () => {
@@ -55,9 +89,17 @@ test("inspectBridgeArtifacts detects missing, stale, and fresh generated outputs
     const fresh = inspectBridgeArtifacts(paths);
     assert.equal(fresh.javascriptStale, false);
     assert.equal(fresh.helperStale, false);
+    assert.equal(bridgeArtifactIsStaleForChange(paths, "helper"), false);
 
     utimesSync(sourcePath, new Date("2026-01-03T00:00:00Z"), new Date("2026-01-03T00:00:00Z"));
     assert.equal(inspectBridgeArtifacts(paths).javascriptStale, true);
+
+    utimesSync(
+      helperSourcePath,
+      new Date("2026-01-03T00:00:00Z"),
+      new Date("2026-01-03T00:00:00Z"),
+    );
+    assert.equal(bridgeArtifactIsStaleForChange(paths, "helper"), true);
   } finally {
     rmSync(workspaceRoot, { recursive: true, force: true });
   }

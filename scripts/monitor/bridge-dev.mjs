@@ -87,6 +87,8 @@ export function createBridgeDevSupervisor({
 
   function onSourceChange(changeKind, changedPath) {
     if (stopping) return;
+    if (!bridgeArtifactIsStaleForChange(paths, changeKind)) return;
+
     pendingBuildRequest[changeKind] = true;
     pendingReason = `submodule ${changeKind} change: ${relative(paths.bridgeRoot, changedPath)}`;
 
@@ -253,6 +255,13 @@ export function inspectBridgeArtifacts(paths) {
   };
 }
 
+export function bridgeArtifactIsStaleForChange(paths, changeKind) {
+  const artifacts = inspectBridgeArtifacts(paths);
+  return changeKind === "javascript"
+    ? artifacts.javascriptStale
+    : artifacts.helperStale;
+}
+
 export function classifyBridgeChange(relativePath) {
   const normalized = String(relativePath).replaceAll("\\", "/").replace(/^\.\//, "");
   if (
@@ -263,14 +272,40 @@ export function classifyBridgeChange(relativePath) {
     return "javascript";
   }
 
+  const helperPrefix = "helper/BluettiMqtt.BluetoothHelper/";
   if (
-    normalized.startsWith("helper/BluettiMqtt.BluetoothHelper/")
+    normalized.startsWith(helperPrefix)
+    && !/^(?:bin|obj)\//i.test(normalized.slice(helperPrefix.length))
     && /\.(?:cs|csproj|props|targets|json)$/i.test(normalized)
   ) {
     return "helper";
   }
 
   return null;
+}
+
+export async function probeHelperArtifact(helperArtifactPath, runCommandFn = runCommand) {
+  try {
+    const { stdout } = await runCommandFn(helperArtifactPath, [], { timeout: 5_000 });
+    for (const line of stdout.split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      try {
+        const message = JSON.parse(line);
+        if (message?.type === "event" && message?.name === "ready") {
+          return { healthy: true, reason: "ready" };
+        }
+      } catch {
+        // Ignore non-protocol output and require an explicit ready event.
+      }
+    }
+
+    return { healthy: false, reason: "helper exited without a ready event" };
+  } catch (error) {
+    return {
+      healthy: false,
+      reason: formatError(error).replace(/\s+/g, " ").trim(),
+    };
+  }
 }
 
 async function ensureBridgeWorkspaceReady({ workspaceRoot, paths, buildRequest, logger }) {
@@ -282,8 +317,18 @@ async function ensureBridgeWorkspaceReady({ workspaceRoot, paths, buildRequest, 
   await logSubmoduleRevisionState(workspaceRoot, paths.bridgeRoot, logger);
 
   const buildJavaScript = buildRequest.javascript || artifacts.javascriptStale;
-  const buildHelper = buildRequest.helper || artifacts.helperStale;
+  let buildHelper = buildRequest.helper || artifacts.helperStale;
   const npmCommand = getNpmCommand();
+
+  if (!buildHelper) {
+    const helperProbe = await probeHelperArtifact(paths.helperArtifactPath);
+    if (!helperProbe.healthy) {
+      logger.warn(
+        `[monitor:bridge] Windows BLE helper artifact is unhealthy (${helperProbe.reason}); rebuilding it.`,
+      );
+      buildHelper = true;
+    }
+  }
 
   if (buildJavaScript) {
     logger.info("[monitor:bridge] Building stale bluetti-mqtt-node JavaScript artifacts.");
@@ -302,7 +347,11 @@ async function ensureBridgeWorkspaceReady({ workspaceRoot, paths, buildRequest, 
   }
 
   const afterBuild = inspectBridgeArtifacts(paths);
-  if (afterBuild.javascriptStale || afterBuild.helperStale) {
+  const helperProbe = await probeHelperArtifact(paths.helperArtifactPath);
+  if (afterBuild.javascriptStale || afterBuild.helperStale || !helperProbe.healthy) {
+    if (!helperProbe.healthy) {
+      throw new Error(`Windows BLE helper artifact failed its ready probe: ${helperProbe.reason}`);
+    }
     throw new Error("bluetti-mqtt-node artifacts are still stale after preflight build");
   }
 }
