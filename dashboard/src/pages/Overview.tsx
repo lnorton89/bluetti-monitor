@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowDownRight,
-  ArrowRight,
   ArrowUpRight,
   Battery,
   Bluetooth,
@@ -213,11 +212,13 @@ function StatPanel({
   icon: Icon,
   items,
   state,
+  description,
 }: {
   title: string;
   icon: React.ElementType;
   items: StatItem[];
   state: DeviceState;
+  description?: string;
 }) {
   const resolved = items
     .map((item) => {
@@ -236,6 +237,7 @@ function StatPanel({
 
   return (
     <SectionPanel title={title} icon={Icon}>
+      {description ? <p className="stat-panel-note">{description}</p> : null}
       <div className="tile-grid tile-grid--cols-2">
         {resolved.map((item) => (
           <MetricTile
@@ -291,6 +293,13 @@ function Hero({
   const totalIn = dcInput + acInput;
   const totalOut = acOutput + dcOutput;
   const net = totalIn - totalOut;
+  const batteryFlow = Math.abs(net);
+  const batteryFlowLabel = net < -10
+    ? 'Supporting load'
+    : net > 10
+      ? 'Charging headroom'
+      : 'Power balanced';
+  const batteryFlowTone = net < -10 ? 'warning' : net > 10 ? 'positive' : 'neutral';
   const mode = describeActivity(totalIn, totalOut, acInput, dcInput);
   const ModeIcon = mode.icon;
   const batteryDigits = 0;
@@ -360,28 +369,29 @@ function Hero({
               />
             </div>
             <div className="hero-battery-foot">
-              <span>Net balance</span>
-              <StatHelpTooltip
-                label="Net Balance"
-                content={{
-                  summary: 'Net balance compares live input power against live output power.',
-                  dataPoints: [
-                    formatNumericFieldDetail(state, 'dc_input_power', 'W', powerDigits),
-                    formatNumericFieldDetail(state, 'ac_input_power', 'W', powerDigits),
-                    formatNumericFieldDetail(state, 'ac_output_power', 'W', powerDigits),
-                    formatNumericFieldDetail(state, 'dc_output_power', 'W', powerDigits),
-                  ],
-                  calculation: [
-                    'totalIn = dc_input_power + ac_input_power',
-                    'totalOut = ac_output_power + dc_output_power',
-                    'net balance = totalIn - totalOut',
-                  ],
-                  note: 'Positive means charging headroom. Negative means the battery is supporting load.',
-                }}
-              />
-              <strong style={{ color: net >= 0 ? 'var(--green)' : 'var(--amber)' }}>
-                {net >= 0 ? '+' : ''}
-                {formatNumber(net)} W
+              <span className="hero-battery-foot-label">
+                <span>{batteryFlowLabel}</span>
+                <StatHelpTooltip
+                  label="Battery Contribution"
+                  content={{
+                    summary: 'Battery contribution closes the live input-to-output power balance.',
+                    dataPoints: [
+                      formatNumericFieldDetail(state, 'dc_input_power', 'W', powerDigits),
+                      formatNumericFieldDetail(state, 'ac_input_power', 'W', powerDigits),
+                      formatNumericFieldDetail(state, 'ac_output_power', 'W', powerDigits),
+                      formatNumericFieldDetail(state, 'dc_output_power', 'W', powerDigits),
+                    ],
+                    calculation: [
+                      'totalIn = dc_input_power + ac_input_power',
+                      'totalOut = ac_output_power + dc_output_power',
+                      'battery contribution = absolute value of totalOut - totalIn',
+                    ],
+                    note: 'This is a load-side balance, not a direct battery-pack sensor. Conversion losses can make it differ from battery voltage multiplied by battery current.',
+                  }}
+                />
+              </span>
+              <strong style={{ color: net > 10 ? 'var(--green)' : net < -10 ? 'var(--amber)' : 'var(--text-dim)' }}>
+                {formatNumber(batteryFlow)} W
               </strong>
             </div>
           </div>
@@ -411,7 +421,7 @@ function Hero({
               <span className="power-node-kicker">Source side</span>
             </div>
             <div className="power-node-total">{formatNumber(totalIn)} W</div>
-            <div className="power-node-note">{inputStatus}</div>
+            <div className="power-node-note" data-tone={totalIn > 0 ? 'positive' : 'neutral'}>{inputStatus}</div>
             <div className="power-node-split">
               <span>DC input</span>
               <strong>{formatNumber(dcInput)} W</strong>
@@ -429,8 +439,37 @@ function Hero({
             </div>
           </div>
 
-          <div className="power-flow-arrow">
-            <ArrowRight size={24} />
+          <div className="power-node battery power-node--balance" data-testid="battery-flow-node">
+            <div className="power-node-head">
+              <div className="power-node-label">
+                <Battery size={16} />
+                Battery
+                <StatHelpTooltip
+                  label="Battery Flow"
+                  content={{
+                    summary: 'Battery flow is the live input/output difference that the battery is covering or receiving.',
+                    dataPoints: [
+                      formatNumericFieldDetail(state, 'dc_input_power', 'W'),
+                      formatNumericFieldDetail(state, 'ac_input_power', 'W'),
+                      formatNumericFieldDetail(state, 'ac_output_power', 'W'),
+                      formatNumericFieldDetail(state, 'dc_output_power', 'W'),
+                    ],
+                    calculation: [
+                      'total input = DC input + AC input',
+                      'total output = AC output + DC output',
+                      'battery flow = absolute value of total output - total input',
+                    ],
+                    note: 'Supporting load means output is greater than input. Charging headroom means input is greater than output.',
+                  }}
+                />
+              </div>
+              <span className="power-node-kicker">Balance</span>
+            </div>
+            <div className="power-node-total">{formatNumber(batteryFlow)} W</div>
+            <div className="power-node-note" data-tone={batteryFlowTone}>{batteryFlowLabel}</div>
+            <div className="power-node-foot">
+              <span>{net < -10 ? 'Input + battery support = load' : net > 10 ? 'Input surplus is available to charge' : 'Input and output are nearly even'}</span>
+            </div>
           </div>
 
           <div className="power-node output">
@@ -456,7 +495,7 @@ function Hero({
               <span className="power-node-kicker">Load side</span>
             </div>
             <div className="power-node-total">{formatNumber(totalOut)} W</div>
-            <div className="power-node-note">{outputStatus}</div>
+            <div className="power-node-note" data-tone={totalOut > 0 ? 'warning' : 'neutral'}>{outputStatus}</div>
             <div className="power-node-split">
               <span>AC load</span>
               <strong>{formatNumber(acOutput)} W</strong>
@@ -496,8 +535,6 @@ function DeviceOverview({
   const splitMode = getText(state, 'split_phase_machine_mode');
   const batteryRangeStart = getNumber(state, 'battery_range_start');
   const batteryRangeEnd = getNumber(state, 'battery_range_end');
-  const selectedPack = getNumber(state, 'pack_num');
-  const packCount = getNumber(state, 'pack_num_max');
   const inputPeakWindow = getDailyInputPeakWindow();
   const outputPeakWindow = getTodayWindow();
   const inputHistoryQuery = useQuery({
@@ -572,23 +609,6 @@ function DeviceOverview({
         ],
       },
     },
-    {
-      label: 'Selected Pack',
-      value: selectedPack !== null ? `Pack ${selectedPack}` : null,
-      detail: packCount !== null ? `${packCount} pack slots reported` : null,
-      accent: 'var(--cat-system)',
-      tooltip: {
-        summary: 'Selected Pack shows the currently addressed battery pack slot plus the reported slot count.',
-        dataPoints: [
-          formatNumericFieldDetail(state, 'pack_num'),
-          formatNumericFieldDetail(state, 'pack_num_max'),
-        ],
-        calculation: [
-          'Read pack_num as the active pack identifier.',
-          'Read pack_num_max and show it as detail when the device reports available slots.',
-        ],
-      },
-    },
   ].reduce<Array<MetricDefinition & { value: string }>>((cards, item) => {
     if (!item.value) {
       return cards;
@@ -612,25 +632,24 @@ function DeviceOverview({
     { label: 'Model', value: model },
     { label: 'Serial', value: serial },
     ...(firmware ? [{ label: 'Firmware', value: firmware }] : []),
-    ...(selectedPack !== null ? [{ label: 'Current Pack', value: String(selectedPack) }] : []),
   ];
 
   const internalBusRows = [
     hasField(state, 'internal_power_one') || hasField(state, 'internal_current_one')
       ? {
-          label: 'Channel One',
+          label: 'AC Sensor 1',
           value: `${formatMetric(getNumber(state, 'internal_power_one'), ' W') ?? '--'} / ${formatMetric(getNumber(state, 'internal_current_one'), ' A', 1) ?? '--'}`,
         }
       : null,
     hasField(state, 'internal_power_two') || hasField(state, 'internal_current_two')
       ? {
-          label: 'Channel Two',
+          label: 'AC Sensor 2',
           value: `${formatMetric(getNumber(state, 'internal_power_two'), ' W') ?? '--'} / ${formatMetric(getNumber(state, 'internal_current_two'), ' A', 1) ?? '--'}`,
         }
       : null,
     hasField(state, 'internal_power_three') || hasField(state, 'internal_current_three')
       ? {
-          label: 'Channel Three',
+          label: 'AC Sensor 3',
           value: `${formatMetric(getNumber(state, 'internal_power_three'), ' W') ?? '--'} / ${formatMetric(getNumber(state, 'internal_current_three'), ' A', 1) ?? '--'}`,
         }
       : null,
@@ -700,13 +719,13 @@ function DeviceOverview({
             state={state}
             items={[
               { label: 'DC Input Total', field: 'dc_input_power', unit: 'W', accent: 'var(--cat-input)' },
-              { label: '  DC1', field: 'dc_input_1_power', unit: 'W' },
-              { label: '  DC2', field: 'dc_input_2_power', unit: 'W' },
+              { label: 'PV1 Power', field: 'dc_input_1_power', unit: 'W' },
+              { label: 'PV2 Power', field: 'dc_input_2_power', unit: 'W' },
               { label: 'AC Input', field: 'ac_input_power', unit: 'W', accent: 'var(--cat-input)' },
               { label: 'AC Voltage', field: 'ac_input_voltage', unit: 'V' },
               { label: 'AC Frequency', field: 'ac_input_frequency', unit: 'Hz' },
-              { label: 'DC1 Voltage', field: 'dc_input_1_voltage', unit: 'V' },
-              { label: 'DC2 Voltage', field: 'dc_input_2_voltage', unit: 'V' },
+              { label: 'PV1 MPPT Voltage', field: 'dc_input_1_voltage', unit: 'V' },
+              { label: 'PV2 MPPT Voltage', field: 'dc_input_2_voltage', unit: 'V' },
             ]}
           />
 
@@ -723,16 +742,17 @@ function DeviceOverview({
           />
 
           <StatPanel
-            title="Internal Channels"
+            title="AC Sensor Channels"
             icon={Zap}
             state={state}
+            description="Diagnostic AC-side sensor registers. Treat each channel independently; their powers are not battery-pack readings and should not be summed into AC Output."
             items={[
-              { label: 'Power One', field: 'internal_power_one', unit: 'W' },
-              { label: 'Current One', field: 'internal_current_one', unit: 'A' },
-              { label: 'Power Two', field: 'internal_power_two', unit: 'W' },
-              { label: 'Current Two', field: 'internal_current_two', unit: 'A' },
-              { label: 'Power Three', field: 'internal_power_three', unit: 'W' },
-              { label: 'Current Three', field: 'internal_current_three', unit: 'A' },
+              { label: 'Sensor 1 Power', field: 'internal_power_one', unit: 'W' },
+              { label: 'Sensor 1 Current', field: 'internal_current_one', unit: 'A' },
+              { label: 'Sensor 2 Power', field: 'internal_power_two', unit: 'W' },
+              { label: 'Sensor 2 Current', field: 'internal_current_two', unit: 'A' },
+              { label: 'Sensor 3 Power', field: 'internal_power_three', unit: 'W' },
+              { label: 'Sensor 3 Current', field: 'internal_current_three', unit: 'A' },
             ]}
           />
         </div>
@@ -746,7 +766,7 @@ function DeviceOverview({
         <div className="detail-grid overview-detail-grid overview-detail-grid--context">
           <InfoTable title="Mode and Limits" icon={ShieldCheck} rows={modeRows} />
           <InfoTable title="Identity" icon={Info} rows={identityRows} />
-          <InfoTable title="Internal Bus Pairing" icon={Cpu} rows={internalBusRows} />
+          <InfoTable title="AC Sensor Pairing" icon={Cpu} rows={internalBusRows} />
         </div>
       </section>
 

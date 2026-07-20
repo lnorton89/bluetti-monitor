@@ -73,7 +73,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               {connected ? 'LIVE' : 'OFFLINE'}
             </span>
           </div>
-          {lastUpdate && <div className="sidebar-status-time">{formatTime(lastUpdate)}</div>}
+          {lastUpdate && <div className="sidebar-status-time">Telemetry {formatTime(lastUpdate)}</div>}
         </div>
       </aside>
     </>

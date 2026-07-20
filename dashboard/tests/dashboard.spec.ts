@@ -8,6 +8,10 @@ test('renders overview cleanly in mock mode', async ({ page }) => {
   await expect(page.locator('.device-header').filter({ hasText: 'AC500' })).toBeVisible();
   await expect(page.getByText('Input Bus')).toBeVisible();
   await expect(page.locator('.hero-battery').filter({ hasText: 'Battery Reserve' })).toContainText('67%');
+  await expect(page.getByTestId('battery-flow-node')).toContainText('Charging headroom');
+  await expect(page.getByText('AC Sensor Channels')).toBeVisible();
+  await expect(page.getByText('PV1 MPPT Voltage')).toBeVisible();
+  await expect(page.getByText('Selected Pack')).toHaveCount(0);
 
   await page.getByTestId('sidebar-route-solar').click();
   await expect(page.getByTestId('shell-title')).toHaveText('Solar');

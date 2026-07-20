@@ -46,6 +46,7 @@ function Layout() {
   const devices = Object.keys(wsState);
   const primaryDevice = devices[0] ? wsState[devices[0]] : null;
   const batteryPercent = primaryDevice?.total_battery_percent?.value ?? null;
+  const batteryFullThreshold = primaryDevice?.battery_range_end?.value ?? '100';
   const BrowserNotificationIcon = browserNotificationPermission === 'granted'
     ? BellRing
     : browserNotificationPermission === 'denied'
@@ -53,18 +54,18 @@ function Layout() {
       : Bell;
   const showBrowserNotificationControl = browserNotificationPermission !== 'unsupported';
   const browserNotificationLabel = !browserBatteryFullEnabled
-    ? 'Browser alerts off'
+    ? 'Browser full off'
     : browserNotificationPermission === 'granted'
-      ? 'Browser alerts armed'
+      ? `Browser full · ${batteryFullThreshold}%`
       : browserNotificationPermission === 'denied'
-        ? 'Browser alerts blocked'
-        : 'Enable browser alerts';
+        ? `Browser ${batteryFullThreshold}% blocked`
+        : `Enable ${batteryFullThreshold}% full alert`;
   const showBrowserNotificationButton =
     browserBatteryFullEnabled && browserNotificationPermission === 'default';
   const DesktopNotificationIcon = desktopBatteryFullEnabled ? BellRing : BellOff;
   const desktopNotificationLabel = desktopBatteryFullEnabled
-    ? 'Desktop alerts armed'
-    : 'Desktop alerts off';
+    ? `Desktop full · ${batteryFullThreshold}%`
+    : 'Desktop full off';
 
   const routeMeta = getRouteMeta(location.pathname);
   const routeSignalValue = shellRouteId === routeMeta.id && shellSignalValue
@@ -132,7 +133,7 @@ function Layout() {
                     void requestBrowserNotifications();
                   }}
                   className="top-bar-metric"
-                  aria-label="Enable browser alerts"
+                  aria-label={`Enable browser battery-full alert at ${batteryFullThreshold}%`}
                   data-testid="shell-status-notifications"
                 >
                   <Bell size={14} />
@@ -162,8 +163,10 @@ function Layout() {
                       ? 'var(--amber)'
                       : undefined
                 }}
+                title={`Latest telemetry: ${new Date(lastUpdate).toLocaleString()}`}
+                aria-label={`Latest telemetry ${formatRelativeTime(lastUpdate)}`}
               >
-                <span>{isStale && staleSeverity === 'stale' ? 'Stale: ' : ''}{formatRelativeTime(lastUpdate)}</span>
+                <span>{isStale && staleSeverity === 'stale' ? 'Stale: ' : 'Updated '}{formatRelativeTime(lastUpdate)}</span>
               </div>
             ) : null}
           </div>

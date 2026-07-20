@@ -15,10 +15,10 @@ export type Category = typeof CATEGORIES[number];
 const FIELDS: Record<string, FieldMeta> = {
   // ── INPUT: Solar ────────────────────────────────────────────────────────────
   dc_input_power:        { label: 'DC Input Power',    unit: 'W',  category: 'Input', numeric: true },
-  dc_input_1_power:      { label: 'DC1 Power',         unit: 'W',  category: 'Input', numeric: true },
-  dc_input_2_power:      { label: 'DC2 Power',         unit: 'W',  category: 'Input', numeric: true },
-  dc_input_1_voltage:    { label: 'DC1 Voltage',       unit: 'V',  category: 'Input', numeric: true },
-  dc_input_2_voltage:    { label: 'DC2 Voltage',       unit: 'V',  category: 'Input', numeric: true },
+  dc_input_1_power:      { label: 'PV1 Power',         unit: 'W',  category: 'Input', numeric: true },
+  dc_input_2_power:      { label: 'PV2 Power',         unit: 'W',  category: 'Input', numeric: true },
+  dc_input_1_voltage:    { label: 'PV1 MPPT Voltage',  unit: 'V',  category: 'Input', numeric: true },
+  dc_input_2_voltage:    { label: 'PV2 MPPT Voltage',  unit: 'V',  category: 'Input', numeric: true },
   dc_input_power1:       { label: 'DC Input Power 1',  unit: 'W',  category: 'Input', numeric: true },
   pv1_power:             { label: 'PV1 Power',         unit: 'W',  category: 'Input', numeric: true },
   pv2_power:             { label: 'PV2 Power',         unit: 'W',  category: 'Input', numeric: true },
@@ -82,7 +82,7 @@ const FIELDS: Record<string, FieldMeta> = {
   soc:                   { label: 'State of Charge',   unit: '%',  category: 'Battery', numeric: true },
 
   // ── BATTERY: Pack Info ──────────────────────────────────────────────────────
-  pack_num_max:          { label: 'Max Packs',         unit: '',   category: 'Battery', numeric: true },
+  pack_num_max:          { label: 'Supported Pack Addresses',unit: '',category: 'Battery', numeric: true },
   pack_count:            { label: 'Pack Count',        unit: '',   category: 'Battery', numeric: true },
   pack_battery_level:    { label: 'Pack Battery Level',unit: '%',  category: 'Battery', numeric: true },
   pack_voltage:          { label: 'Pack Voltage',      unit: 'V',  category: 'Battery', numeric: true },
@@ -143,12 +143,12 @@ const FIELDS: Record<string, FieldMeta> = {
   internal_ac_voltage:   { label: 'Internal AC Voltage',unit: 'V', category: 'System', numeric: true },
   internal_ac_frequency: { label: 'Internal AC Frequency',unit: 'Hz',category: 'System', numeric: true },
   internal_voltage:      { label: 'Internal Voltage',  unit: 'V',  category: 'System', numeric: true },
-  internal_current_one:  { label: 'Internal Current 1',unit: 'A',  category: 'System', numeric: true },
-  internal_current_two:  { label: 'Internal Current 2',unit: 'A',  category: 'System', numeric: true },
-  internal_current_three:{ label: 'Internal Current 3',unit: 'A',  category: 'System', numeric: true },
-  internal_power_one:    { label: 'Internal Power 1',  unit: 'W',  category: 'System', numeric: true },
-  internal_power_two:    { label: 'Internal Power 2',  unit: 'W',  category: 'System', numeric: true },
-  internal_power_three:  { label: 'Internal Power 3',  unit: 'W',  category: 'System', numeric: true },
+  internal_current_one:  { label: 'AC Sensor 1 Current',unit: 'A', category: 'System', numeric: true },
+  internal_current_two:  { label: 'AC Sensor 2 Current',unit: 'A', category: 'System', numeric: true },
+  internal_current_three:{ label: 'AC Sensor 3 Current',unit: 'A', category: 'System', numeric: true },
+  internal_power_one:    { label: 'AC Sensor 1 Power', unit: 'W',  category: 'System', numeric: true },
+  internal_power_two:    { label: 'AC Sensor 2 Power', unit: 'W',  category: 'System', numeric: true },
+  internal_power_three:  { label: 'AC Sensor 3 Power', unit: 'W',  category: 'System', numeric: true },
 
   // ── SYSTEM: Fan & Misc ──────────────────────────────────────────────────────
   fan_speed:             { label: 'Fan Speed',         unit: 'RPM',category: 'System', numeric: true },
