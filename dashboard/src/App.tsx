@@ -53,24 +53,33 @@ function Layout() {
       ? BellOff
       : Bell;
   const showBrowserNotificationControl = browserNotificationPermission !== 'unsupported';
-  const browserNotificationLabel = !browserBatteryFullEnabled
-    ? 'Browser full off'
-    : browserNotificationPermission === 'granted'
-      ? `Browser full · ${batteryFullThreshold}%`
-      : browserNotificationPermission === 'denied'
-        ? `Browser ${batteryFullThreshold}% blocked`
-        : `Enable ${batteryFullThreshold}% full alert`;
-  const showBrowserNotificationButton =
-    browserBatteryFullEnabled && browserNotificationPermission === 'default';
-  const DesktopNotificationIcon = desktopBatteryFullEnabled ? BellRing : BellOff;
-  const desktopNotificationLabel = desktopBatteryFullEnabled
-    ? `Desktop full · ${batteryFullThreshold}%`
-    : 'Desktop full off';
+  const desktopAlertActive = desktopNotificationsAvailable && desktopBatteryFullEnabled;
+  const browserAlertActive = showBrowserNotificationControl
+    && browserBatteryFullEnabled
+    && browserNotificationPermission === 'granted';
+  const batteryFullAlertActive = desktopAlertActive || browserAlertActive;
+  const browserAlertBlocked = browserBatteryFullEnabled && browserNotificationPermission === 'denied';
+  const showNotificationButton = !batteryFullAlertActive
+    && browserBatteryFullEnabled
+    && browserNotificationPermission === 'default';
+  const NotificationIcon = batteryFullAlertActive
+    ? BellRing
+    : browserAlertBlocked
+      ? BellOff
+      : BrowserNotificationIcon;
+  const notificationLabel = batteryFullAlertActive
+    ? `Full alert · ${batteryFullThreshold}%`
+    : browserAlertBlocked
+      ? 'Full alert blocked'
+      : showNotificationButton
+        ? `Enable ${batteryFullThreshold}% alert`
+        : 'Full alert off';
 
   const routeMeta = getRouteMeta(location.pathname);
   const routeSignalValue = shellRouteId === routeMeta.id && shellSignalValue
     ? shellSignalValue
     : '--';
+  const isOverview = routeMeta.id === 'overview';
 
   useEffect(() => {
     connect();
@@ -115,38 +124,34 @@ function Layout() {
               <Radio size={14} />
               <span>{connected ? 'Live' : 'Offline'}</span>
             </div>
-            <div className="top-bar-metric" data-testid="shell-status-devices">
-              <Cpu size={14} />
-              <span>{devices.length} device{devices.length === 1 ? '' : 's'}</span>
-            </div>
-            {desktopNotificationsAvailable ? (
-              <div className="top-bar-metric" data-testid="shell-status-notifications">
-                <DesktopNotificationIcon size={14} />
-                <span>{desktopNotificationLabel}</span>
+            {devices.length > 1 ? (
+              <div className="top-bar-metric" data-testid="shell-status-devices">
+                <Cpu size={14} />
+                <span>{devices.length} devices</span>
               </div>
             ) : null}
-            {showBrowserNotificationControl ? (
-              showBrowserNotificationButton ? (
+            {desktopNotificationsAvailable || showBrowserNotificationControl ? (
+              showNotificationButton ? (
                 <button
                   type="button"
                   onClick={() => {
                     void requestBrowserNotifications();
                   }}
                   className="top-bar-metric"
-                  aria-label={`Enable browser battery-full alert at ${batteryFullThreshold}%`}
+                  aria-label={`Enable battery-full alert at ${batteryFullThreshold}%`}
                   data-testid="shell-status-notifications"
                 >
                   <Bell size={14} />
-                  <span>{browserNotificationLabel}</span>
+                  <span>{notificationLabel}</span>
                 </button>
               ) : (
                 <div className="top-bar-metric" data-testid="shell-status-notifications">
-                  <BrowserNotificationIcon size={14} />
-                  <span>{browserNotificationLabel}</span>
+                  <NotificationIcon size={14} />
+                  <span>{notificationLabel}</span>
                 </div>
               )
             ) : null}
-            {batteryPercent !== null ? (
+            {!isOverview && batteryPercent !== null ? (
               <div className="top-bar-metric" data-testid="shell-status-battery">
                 <Battery size={14} />
                 <span>{batteryPercent}% battery</span>

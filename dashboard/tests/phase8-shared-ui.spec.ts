@@ -5,7 +5,7 @@ test('phase 08 shared surfaces stay consistent across overview and raw data', as
 
   await expect(page.locator('.surface-card').first()).toBeVisible();
   await expect(page.locator('.metric-tile').first()).toBeVisible();
-  await expect(page.locator('.chip').first()).toBeVisible();
+  await expect(page.locator('.hero-mode-pill')).toBeVisible();
   await expect(page.getByText('Input Bus')).toBeVisible();
 
   await page.getByTestId('sidebar-route-raw').click();

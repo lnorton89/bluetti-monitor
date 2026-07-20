@@ -7,7 +7,7 @@ test('phone-sized shell keeps overview and raw data usable', async ({ page }) =>
   await expect(page.getByTestId('shell-title')).toHaveText('Overview');
   await expect(page.getByTestId('shell-route-signal')).toContainText('Battery');
   await expect(page.locator('.device-overview-header').first()).toBeVisible();
-  await expect(page.locator('.hero-battery').first()).toContainText('Battery Reserve');
+  await expect(page.locator('.live-power-battery').first()).toContainText('Battery reserve');
   await expect(page.locator('.overview-report-section')).toHaveCount(3);
   await expect(page.getByRole('heading', { name: 'System essentials' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Power channels' })).toBeVisible();
@@ -41,12 +41,31 @@ test('phone-sized shell keeps overview and raw data usable', async ({ page }) =>
   await expect(page.locator('.data-table-scroll')).toBeHidden();
 });
 
-test('desktop overview uses intentional three-column report groups', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
+test('default Electrobun viewport keeps the live flow and shell composed', async ({ page }) => {
+  await page.setViewportSize({ width: 1500, height: 920 });
   await page.goto('/?mock=1');
 
   await expect(page.getByText('Live power flow, battery reserve, and system state from your AC500.')).toBeVisible();
-  await expect(page.getByText('Telemetry live')).toBeVisible();
+  await expect(page.getByTestId('shell-status-connection')).toContainText('Live');
+  await expect(page.locator('.live-power-map')).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const topBar = document.querySelector<HTMLElement>('.top-bar')!.getBoundingClientRect();
+    const title = document.querySelector<HTMLElement>('.top-bar-title')!.getBoundingClientRect();
+    const map = document.querySelector<HTMLElement>('.live-power-map')!;
+    return {
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      topBarHeight: Math.round(topBar.height),
+      titleWidth: Math.round(title.width),
+      flowColumns: getComputedStyle(map).gridTemplateColumns.split(' ').length,
+    };
+  });
+
+  expect(layout.documentWidth).toBe(layout.viewportWidth);
+  expect(layout.topBarHeight).toBeLessThan(90);
+  expect(layout.titleWidth).toBeGreaterThan(70);
+  expect(layout.flowColumns).toBe(5);
 
   const columnCounts = await page.locator('.overview-detail-grid').evaluateAll((grids) => grids.map((grid) => (
     getComputedStyle(grid).gridTemplateColumns.split(' ').length

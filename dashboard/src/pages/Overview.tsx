@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -18,13 +17,10 @@ import {
 import { useWsStore } from '../store/ws';
 import { useShellStore } from '../store/shell';
 import { useAppSettingsStore } from '../store/settings';
-import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, StatusChip, EmptyState, StatHelpTooltip, type StatHelpContent } from '../components/ui';
+import { BoolBadge, Card, SectionPanel, MetricTile, InfoRow, EmptyState, StatHelpTooltip, type StatHelpContent } from '../components/ui';
 import { SkeletonCard } from '../components/SkeletonCard';
 import { useTelemetryState } from '../hooks/useTelemetryState';
-import { formatRelativeTime } from '../lib/time';
 import { getDeviceModel, getDeviceSerial } from '../lib/device-meta';
-import { fetchInputMax, fetchOutputMax } from '../lib/api';
-import { getDailyInputPeakWindow } from '../lib/daily-input-window';
 import { getCurrentSolarInputWatts } from '../lib/power';
 
 type FieldValue = { value: string; ts: string };
@@ -43,11 +39,6 @@ type MetricDefinition = {
   detail?: string | null;
   accent?: string;
   tooltip: StatHelpContent;
-};
-
-type OutputPeaks = {
-  ac: number | null;
-  dc: number | null;
 };
 
 function getNumber(state: DeviceState, field: string) {
@@ -75,26 +66,6 @@ function formatNumber(value: number, digits = 0) {
 function formatMetric(value: number | null, unit = '', digits = 0) {
   if (value === null) return null;
   return `${formatNumber(value, digits)}${unit}`;
-}
-
-function getTodayWindow(now = new Date()) {
-  const since = new Date(now);
-  since.setHours(0, 0, 0, 0);
-  const until = new Date(since);
-  until.setDate(until.getDate() + 1);
-
-  return {
-    since: since.toISOString(),
-    until: until.toISOString(),
-  };
-}
-
-function formatOutputPeakSummary(peaks: OutputPeaks | null) {
-  if (!peaks) {
-    return 'Highest today AC -- / DC --';
-  }
-
-  return `Highest today AC ${peaks.ac === null ? '--' : `${formatNumber(peaks.ac)} W`} / DC ${peaks.dc === null ? '--' : `${formatNumber(peaks.dc)} W`}`;
 }
 
 function formatNumericFieldDetail(state: DeviceState, field: string, unit = '', digits = 0) {
@@ -130,16 +101,6 @@ function rawNumericTooltip(
   };
 }
 
-function latestTimestamp(state: DeviceState) {
-  let latest: string | null = null;
-  for (const field of Object.values(state)) {
-    if (latest === null || field.ts > latest) {
-      latest = field.ts;
-    }
-  }
-  return latest;
-}
-
 function batteryTone(percent: number | null) {
   if (percent === null) return 'var(--text-dim)';
   if (percent >= 60) return 'var(--green)';
@@ -147,27 +108,11 @@ function batteryTone(percent: number | null) {
   return 'var(--red)';
 }
 
-function describeInputMix(dcInput: number, acInput: number) {
-  if (dcInput > 0 && acInput > 0) {
-    return 'Solar plus grid assist are both active right now.';
-  }
-
-  if (dcInput > 0) {
-    return 'Solar-side DC input is feeding the system right now.';
-  }
-
-  if (acInput > 0) {
-    return 'AC shore or grid input is carrying the incoming power right now.';
-  }
-
-  return 'No meaningful incoming power is being reported right now.';
-}
-
 function describeActivity(totalIn: number, totalOut: number, gridIn: number, solarIn: number) {
   if (totalIn === 0 && totalOut === 0) {
     return {
       label: 'Idle',
-      description: 'The inverter is standing by without meaningful input or load.',
+      description: 'Power flow is quiet',
       tone: 'var(--text-dim)',
       icon: MoonStar,
     };
@@ -176,7 +121,7 @@ function describeActivity(totalIn: number, totalOut: number, gridIn: number, sol
   if (gridIn > 0) {
     return {
       label: 'Grid Assist',
-      description: 'AC shore or grid input is active and supporting the current load.',
+      description: 'Grid input is supporting the load',
       tone: 'var(--blue)',
       icon: Plug,
     };
@@ -185,7 +130,7 @@ function describeActivity(totalIn: number, totalOut: number, gridIn: number, sol
   if (solarIn > 0 && totalIn >= totalOut) {
     return {
       label: 'Solar Harvest',
-      description: 'DC input is covering the present demand and feeding the battery path.',
+      description: 'Solar is covering the current demand',
       tone: 'var(--green)',
       icon: ArrowDownRight,
     };
@@ -193,7 +138,7 @@ function describeActivity(totalIn: number, totalOut: number, gridIn: number, sol
 
   return {
     label: 'Supplying Load',
-    description: 'The device is discharging to support connected loads.',
+    description: 'Battery is supporting the load',
     tone: 'var(--amber)',
     icon: ArrowUpRight,
   };
@@ -273,22 +218,11 @@ function InfoTable({
   );
 }
 
-function Hero({
-  model,
-  state,
-  highestInputToday,
-  outputPeaksToday,
-}: {
-  model: string;
-  state: DeviceState;
-  highestInputToday: number | null;
-  outputPeaksToday: OutputPeaks | null;
-}) {
+function Hero({ model, state }: { model: string; state: DeviceState }) {
   const dcInput = getCurrentSolarInputWatts(state);
   const acInput = getNumber(state, 'ac_input_power') ?? getNumber(state, 'grid_charge_power') ?? 0;
   const acOutput = getNumber(state, 'ac_output_power') ?? 0;
   const dcOutput = getNumber(state, 'dc_output_power') ?? 0;
-  const generation = getNumber(state, 'power_generation');
   const battery = getNumber(state, 'total_battery_percent');
   const totalIn = dcInput + acInput;
   const totalOut = acOutput + dcOutput;
@@ -304,9 +238,12 @@ function Hero({
   const ModeIcon = mode.icon;
   const batteryDigits = 0;
   const powerDigits = 0;
-
-  const inputSummary = describeInputMix(dcInput, acInput);
-  const outputSummary = formatOutputPeakSummary(outputPeaksToday);
+  const flowDirection = net < -10 ? 'discharging' : net > 10 ? 'charging' : 'balanced';
+  const balanceStatement = net < -10
+    ? `${formatNumber(totalIn)} W input + ${formatNumber(batteryFlow)} W battery = ${formatNumber(totalOut)} W load`
+    : net > 10
+      ? `${formatNumber(totalIn)} W input covers ${formatNumber(totalOut)} W load with ${formatNumber(batteryFlow)} W available to charge`
+      : `${formatNumber(totalIn)} W input is closely matched to ${formatNumber(totalOut)} W load`;
   const inputStatus = dcInput > 0 && acInput > 0
     ? 'Solar + grid active'
     : dcInput > 0
@@ -323,179 +260,103 @@ function Hero({
         : 'No active load';
 
   return (
-    <Card className="hero-card">
-      <div className="hero-grid">
-        <div className="hero-copy">
-          <div className="hero-kicker">{model} Live Snapshot</div>
-          <div className="hero-mode-row">
-            <div className="hero-mode-pill" style={{ color: mode.tone, borderColor: mode.tone }}>
-              <ModeIcon size={16} />
-              <span>{mode.label}</span>
+    <Card className="hero-card live-power-card">
+      <div className="live-power-header">
+        <div className="live-power-heading">
+          <div className="hero-kicker">{model} · Live power</div>
+          <div className="live-power-title-row">
+            <span className="live-power-mode-icon" style={{ color: mode.tone }}><ModeIcon size={20} /></span>
+            <div>
+              <h2>{mode.description}</h2>
+              <p>{balanceStatement}</p>
             </div>
-            <div className="hero-mode-text">{mode.description}</div>
           </div>
+        </div>
+        <div className="hero-mode-pill" style={{ color: mode.tone, borderColor: mode.tone }}>
+          <ModeIcon size={15} />
+          <span>{mode.label}</span>
+        </div>
+      </div>
 
-          <div className="hero-battery">
-            <div className="hero-battery-top">
-              <div className="hero-battery-label">
-                <Battery size={18} />
-                <span>Battery Reserve</span>
-                <StatHelpTooltip
-                  label="Battery Reserve"
-                  content={{
-                    summary: 'This is the current battery state of charge shown in the hero card.',
-                    dataPoints: [
-                      formatNumericFieldDetail(state, 'total_battery_percent', '%', batteryDigits),
-                    ],
-                    calculation: [
-                      'Read total_battery_percent from the live device state.',
-                      'Display the current percentage and use the same value to size the battery bar.',
-                    ],
-                    note: 'If the field is missing, the hero falls back to an empty display.',
-                  }}
-                />
-              </div>
-              <div className="hero-battery-value" style={{ color: batteryTone(battery) }}>
-                {battery === null ? '--' : `${formatNumber(battery)}%`}
-              </div>
-            </div>
-            <div className="hero-battery-bar">
-              <div
-                className="hero-battery-fill"
-                style={{
-                  width: `${Math.max(0, Math.min(100, battery ?? 0))}%`,
-                  background: batteryTone(battery),
+      <div className="live-power-map" data-flow={flowDirection}>
+        <div className="power-node input live-power-source">
+          <div className="power-node-head">
+            <div className="power-node-label">
+              <Sun size={17} />
+              Power in
+              <StatHelpTooltip
+                label="Power in"
+                content={{
+                  summary: 'Power in is the live power entering the selected device from DC and AC sources.',
+                  dataPoints: [
+                    formatNumericFieldDetail(state, 'dc_input_power', 'W'),
+                    formatNumericFieldDetail(state, 'ac_input_power', 'W'),
+                  ],
+                  calculation: [
+                    'total input = dc_input_power + ac_input_power',
+                    'The split rows beneath the total show those same two contributors.',
+                  ],
                 }}
               />
             </div>
-            <div className="hero-battery-foot">
-              <span className="hero-battery-foot-label">
-                <span>{batteryFlowLabel}</span>
-                <StatHelpTooltip
-                  label="Battery Contribution"
-                  content={{
-                    summary: 'Battery contribution closes the live input-to-output power balance.',
-                    dataPoints: [
-                      formatNumericFieldDetail(state, 'dc_input_power', 'W', powerDigits),
-                      formatNumericFieldDetail(state, 'ac_input_power', 'W', powerDigits),
-                      formatNumericFieldDetail(state, 'ac_output_power', 'W', powerDigits),
-                      formatNumericFieldDetail(state, 'dc_output_power', 'W', powerDigits),
-                    ],
-                    calculation: [
-                      'totalIn = dc_input_power + ac_input_power',
-                      'totalOut = ac_output_power + dc_output_power',
-                      'battery contribution = absolute value of totalOut - totalIn',
-                    ],
-                    note: 'This is a load-side balance, not a direct battery-pack sensor. Conversion losses can make it differ from battery voltage multiplied by battery current.',
-                  }}
-                />
-              </span>
-              <strong style={{ color: net > 10 ? 'var(--green)' : net < -10 ? 'var(--amber)' : 'var(--text-dim)' }}>
-                {formatNumber(batteryFlow)} W
-              </strong>
+            <span className="power-node-kicker">Sources</span>
+          </div>
+          <div className="power-node-total">{formatNumber(totalIn)} <small>W</small></div>
+          <div className="power-node-note" data-tone={totalIn > 0 ? 'positive' : 'neutral'}>{inputStatus}</div>
+          <div className="power-node-splits">
+            <div className="power-node-split">
+              <span>Solar / DC</span>
+              <strong>{formatNumber(dcInput)} W</strong>
+            </div>
+            <div className="power-node-split">
+              <span>Grid / AC</span>
+              <strong>{formatNumber(acInput)} W</strong>
             </div>
           </div>
         </div>
 
-        <div className="power-flow-panel">
-          <div className="power-node input">
-            <div className="power-node-head">
-              <div className="power-node-label">
-                <Sun size={16} />
-                Input
-                <StatHelpTooltip
-                  label="Input"
-                  content={{
-                    summary: 'Input is the live power entering the selected device from DC and AC sources.',
-                    dataPoints: [
-                      formatNumericFieldDetail(state, 'dc_input_power', 'W'),
-                      formatNumericFieldDetail(state, 'ac_input_power', 'W'),
-                    ],
-                    calculation: [
-                      'total input = dc_input_power + ac_input_power',
-                      'The split rows beneath the total show those same two contributors.',
-                    ],
-                  }}
-                />
-              </div>
-              <span className="power-node-kicker">Source side</span>
-            </div>
-            <div className="power-node-total">{formatNumber(totalIn)} W</div>
-            <div className="power-node-note" data-tone={totalIn > 0 ? 'positive' : 'neutral'}>{inputStatus}</div>
-            <div className="power-node-split">
-              <span>DC input</span>
-              <strong>{formatNumber(dcInput)} W</strong>
-            </div>
-            <div className="power-node-split">
-              <span>AC input</span>
-              <strong>{formatNumber(acInput)} W</strong>
-            </div>
-            <div className="power-node-split">
-              <span>Highest today</span>
-              <strong>{highestInputToday === null ? '--' : `${formatNumber(highestInputToday)} W`}</strong>
-            </div>
-            <div className="power-node-foot">
-              <span>{generation !== null ? `Generated ${formatNumber(generation, 1)} kWh` : inputSummary}</span>
-            </div>
-          </div>
+        <div className="live-flow-link live-flow-link--input" aria-hidden="true">
+          <span>into system</span>
+          <i />
+        </div>
 
-          <div className="power-node battery power-node--balance" data-testid="battery-flow-node">
-            <div className="power-node-head">
-              <div className="power-node-label">
-                <Battery size={16} />
-                Battery
-                <StatHelpTooltip
-                  label="Battery Flow"
-                  content={{
-                    summary: 'Battery flow is the live input/output difference that the battery is covering or receiving.',
-                    dataPoints: [
-                      formatNumericFieldDetail(state, 'dc_input_power', 'W'),
-                      formatNumericFieldDetail(state, 'ac_input_power', 'W'),
-                      formatNumericFieldDetail(state, 'ac_output_power', 'W'),
-                      formatNumericFieldDetail(state, 'dc_output_power', 'W'),
-                    ],
-                    calculation: [
-                      'total input = DC input + AC input',
-                      'total output = AC output + DC output',
-                      'battery flow = absolute value of total output - total input',
-                    ],
-                    note: 'Supporting load means output is greater than input. Charging headroom means input is greater than output.',
-                  }}
-                />
-              </div>
-              <span className="power-node-kicker">Balance</span>
-            </div>
-            <div className="power-node-total">{formatNumber(batteryFlow)} W</div>
-            <div className="power-node-note" data-tone={batteryFlowTone}>{batteryFlowLabel}</div>
-            <div className="power-node-foot">
-              <span>{net < -10 ? 'Input + battery support = load' : net > 10 ? 'Input surplus is available to charge' : 'Input and output are nearly even'}</span>
-            </div>
-          </div>
+        <div className="power-node live-power-hub">
+          <div className="live-power-hub-icon"><Zap size={24} /></div>
+          <span className="power-node-kicker">Power hub</span>
+          <strong>{model}</strong>
+          <span className="live-power-hub-state">Balancing live demand</span>
+        </div>
 
-          <div className="power-node output">
-            <div className="power-node-head">
-              <div className="power-node-label">
-                <Plug size={16} />
-                Output
-                <StatHelpTooltip
-                  label="Output"
-                  content={{
-                    summary: 'Output is the live load the selected device is serving right now.',
-                    dataPoints: [
-                      formatNumericFieldDetail(state, 'ac_output_power', 'W'),
-                      formatNumericFieldDetail(state, 'dc_output_power', 'W'),
-                    ],
-                    calculation: [
-                      'total output = ac_output_power + dc_output_power',
-                      'The split rows beneath the total show the AC and DC load components.',
-                    ],
-                  }}
-                />
-              </div>
-              <span className="power-node-kicker">Load side</span>
+        <div className="live-flow-link live-flow-link--output" aria-hidden="true">
+          <span>to loads</span>
+          <i />
+        </div>
+
+        <div className="power-node output live-power-output">
+          <div className="power-node-head">
+            <div className="power-node-label">
+              <Plug size={17} />
+              Power out
+              <StatHelpTooltip
+                label="Power out"
+                content={{
+                  summary: 'Power out is the live load the selected device is serving right now.',
+                  dataPoints: [
+                    formatNumericFieldDetail(state, 'ac_output_power', 'W'),
+                    formatNumericFieldDetail(state, 'dc_output_power', 'W'),
+                  ],
+                  calculation: [
+                    'total output = ac_output_power + dc_output_power',
+                    'The split rows beneath the total show the AC and DC load components.',
+                  ],
+                }}
+              />
             </div>
-            <div className="power-node-total">{formatNumber(totalOut)} W</div>
-            <div className="power-node-note" data-tone={totalOut > 0 ? 'warning' : 'neutral'}>{outputStatus}</div>
+            <span className="power-node-kicker">Loads</span>
+          </div>
+          <div className="power-node-total">{formatNumber(totalOut)} <small>W</small></div>
+          <div className="power-node-note" data-tone={totalOut > 0 ? 'warning' : 'neutral'}>{outputStatus}</div>
+          <div className="power-node-splits">
             <div className="power-node-split">
               <span>AC load</span>
               <strong>{formatNumber(acOutput)} W</strong>
@@ -504,9 +365,69 @@ function Hero({
               <span>DC load</span>
               <strong>{formatNumber(dcOutput)} W</strong>
             </div>
-            <div className="power-node-foot">
-              <span>{outputSummary}</span>
+          </div>
+        </div>
+
+        <div className="live-battery-link" aria-hidden="true"><i /></div>
+
+        <div className="power-node battery live-power-battery" data-testid="battery-flow-node">
+          <div className="live-battery-main">
+            <div className="live-battery-reserve">
+              <div className="power-node-label">
+                <Battery size={17} />
+                Battery reserve
+                <StatHelpTooltip
+                  label="Battery Reserve"
+                  content={{
+                    summary: 'This is the current battery state of charge reported by the device.',
+                    dataPoints: [formatNumericFieldDetail(state, 'total_battery_percent', '%', batteryDigits)],
+                    calculation: [
+                      'Read total_battery_percent from the live device state.',
+                      'Use the same percentage to size the reserve bar.',
+                    ],
+                    note: 'If the field is missing, the reserve displays as unavailable.',
+                  }}
+                />
+              </div>
+              <div className="live-battery-value" style={{ color: batteryTone(battery) }}>
+                {battery === null ? '--' : `${formatNumber(battery)}%`}
+              </div>
+              <div className="live-battery-bar">
+                <div
+                  className="live-battery-fill"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, battery ?? 0))}%`,
+                    background: batteryTone(battery),
+                  }}
+                />
+              </div>
             </div>
+            <div className="live-battery-flow">
+              <span className="power-node-kicker">Battery balance</span>
+              <strong>{formatNumber(batteryFlow)} <small>W</small></strong>
+              <div className="power-node-note" data-tone={batteryFlowTone}>{batteryFlowLabel}</div>
+            </div>
+          </div>
+          <div className="live-battery-note">
+            <span>{net < -10 ? 'Battery is flowing into the AC500' : net > 10 ? 'Surplus power is flowing into the battery' : 'Battery flow is near neutral'}</span>
+            <StatHelpTooltip
+              label="Battery Balance"
+              content={{
+                summary: 'Battery balance closes the live input-to-output power equation.',
+                dataPoints: [
+                  formatNumericFieldDetail(state, 'dc_input_power', 'W', powerDigits),
+                  formatNumericFieldDetail(state, 'ac_input_power', 'W', powerDigits),
+                  formatNumericFieldDetail(state, 'ac_output_power', 'W', powerDigits),
+                  formatNumericFieldDetail(state, 'dc_output_power', 'W', powerDigits),
+                ],
+                calculation: [
+                  'total input = DC input + AC input',
+                  'total output = AC output + DC output',
+                  'battery balance = absolute value of total output - total input',
+                ],
+                note: 'This is a calculated load-side balance, not a direct battery-pack sensor. Conversion losses can make it differ from battery voltage multiplied by battery current.',
+              }}
+            />
           </div>
         </div>
       </div>
@@ -517,15 +438,10 @@ function Hero({
 function DeviceOverview({
   deviceId,
   state,
-  connected,
-  telemetryActive,
 }: {
   deviceId: string;
   state: DeviceState;
-  connected: boolean;
-  telemetryActive: boolean;
 }) {
-  const latest = latestTimestamp(state);
   const model = modelName(state, deviceId);
   const serial = deviceSerial(state, deviceId);
   const firmware = [getText(state, 'arm_version'), getText(state, 'dsp_version')].filter(Boolean).join(' / ');
@@ -535,31 +451,6 @@ function DeviceOverview({
   const splitMode = getText(state, 'split_phase_machine_mode');
   const batteryRangeStart = getNumber(state, 'battery_range_start');
   const batteryRangeEnd = getNumber(state, 'battery_range_end');
-  const inputPeakWindow = getDailyInputPeakWindow();
-  const outputPeakWindow = getTodayWindow();
-  const inputHistoryQuery = useQuery({
-    queryKey: ['overview-input-highest-today', deviceId, inputPeakWindow.since, inputPeakWindow.until],
-    enabled: Boolean(deviceId) && inputPeakWindow.hasStarted && telemetryActive,
-    staleTime: 60_000,
-    refetchInterval: inputPeakWindow.containsNow && telemetryActive ? 60_000 : false,
-    refetchOnMount: 'always',
-    queryFn: () => fetchInputMax(deviceId, { since: inputPeakWindow.since, until: inputPeakWindow.until }),
-  });
-  const highestInputToday = inputHistoryQuery.data?.value ?? null;
-  const outputHistoryQuery = useQuery({
-    queryKey: ['overview-output-highest-today', deviceId, outputPeakWindow.since, outputPeakWindow.until],
-    enabled: Boolean(deviceId) && telemetryActive,
-    staleTime: 60_000,
-    refetchOnMount: 'always',
-    queryFn: () => fetchOutputMax(deviceId, { since: outputPeakWindow.since, until: outputPeakWindow.until }),
-  });
-  const outputPeaksToday = outputHistoryQuery.data
-    ? {
-        ac: Math.max(outputHistoryQuery.data.ac ?? 0, getNumber(state, 'ac_output_power') ?? 0),
-        dc: Math.max(outputHistoryQuery.data.dc ?? 0, getNumber(state, 'dc_output_power') ?? 0),
-      }
-    : null;
-
   const topCards = [
     {
       label: 'Battery Voltage',
@@ -677,16 +568,9 @@ function DeviceOverview({
           </div>
         </div>
 
-        <div className="device-status-strip">
-          <StatusChip
-            label={connected ? 'Telemetry live' : 'Telemetry offline'}
-            variant={connected ? 'active' : 'error'}
-          />
-          {latest ? <div className="device-status-time">Updated {formatRelativeTime(latest)}</div> : null}
-        </div>
       </div>
 
-      <Hero model={model} state={state} highestInputToday={highestInputToday} outputPeaksToday={outputPeaksToday} />
+      <Hero model={model} state={state} />
 
       <section className="overview-report-section overview-report-section--essentials" aria-labelledby={`${deviceId}-essentials-title`}>
         <div className="overview-section-heading">
@@ -788,7 +672,6 @@ function DeviceOverview({
 
 export default function Overview() {
   const wsState = useWsStore((s) => s.state);
-  const connected = useWsStore((s) => s.connected);
   const setRouteSignal = useShellStore((s) => s.setRouteSignal);
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
   const showFreshness = useAppSettingsStore((s) => s.dashboard.showFreshness);
@@ -856,8 +739,6 @@ export default function Overview() {
             key={deviceId}
             deviceId={deviceId}
             state={wsState[deviceId]}
-            connected={connected}
-            telemetryActive={connected && !isStale}
           />
         ))
       )}
