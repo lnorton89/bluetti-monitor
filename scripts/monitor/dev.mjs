@@ -1,28 +1,26 @@
 import {
   API_URL,
-  BROKER_URL,
   LOCAL_DASHBOARD_PORT,
   LOCAL_DASHBOARD_URL,
   ensureApiVenv,
   ensureDevBroker,
   getApiRoot,
-  getBinPath,
   getDashboardRoot,
   getDevDataRoot,
   getNpmCommand,
   installSignalHandlers,
-  resolveDeviceAddress,
   spawnAttachedCommand,
   stopProcess,
   waitForUrl,
 } from "./shared.mjs";
 import { resolve } from "node:path";
+import { createBridgeDevSupervisor } from "./bridge-dev.mjs";
 
 const DASHBOARD_READY_MARKER = '<div id="root"></div>';
-const BRIDGE_RESTART_DELAY_MS = 5_000;
 
 const childProcesses = [];
 let stopping = false;
+let bridgeSupervisor = null;
 
 async function main() {
   console.log("[monitor:dev] Starting local development monitor stack...");
@@ -62,14 +60,10 @@ async function main() {
   childProcesses.push({ child: dashboardProcess, label: "dashboard" });
   await waitForUrl(LOCAL_DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
 
-  const device = await resolveDeviceAddress();
-  const bridgeBin = getBinPath("bluetti-mqtt-node");
-  console.log(`[monitor:dev] Starting bluetti-mqtt-node via package CLI for ${device.mac}...`);
-  startBridge(bridgeBin, device.mac);
+  bridgeSupervisor = createBridgeDevSupervisor();
+  await bridgeSupervisor.start();
 
   for (const { child, label } of childProcesses) {
-    if (label === "bridge") continue;
-
     child.once("close", (exitCode) => {
       if (exitCode !== 0) {
         console.error(`[monitor:dev] ${label} exited with code ${exitCode}.`);
@@ -80,42 +74,28 @@ async function main() {
 
   console.log(`[monitor:dev] Dashboard: ${LOCAL_DASHBOARD_URL}`);
   console.log(`[monitor:dev] API: ${API_URL}`);
-  console.log(`[monitor:dev] Device source: ${device.source}`);
+  console.log("[monitor:dev] Real AC500 bridge discovery/reconnect runs continuously in the background.");
   console.log("[monitor:dev] Press Ctrl+C to stop local API, dashboard, and bridge processes.");
 }
 
 installSignalHandlers(async () => {
-  stopChildProcesses();
+  await stopChildProcesses();
 });
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error("[monitor:dev] Failed to start local development monitor stack:", error);
-  stopChildProcesses();
+  await stopChildProcesses();
   process.exit(1);
 });
 
-function stopChildProcesses() {
-  stopping = true;
-  for (const { child, label } of childProcesses.toReversed()) {
-    stopProcess(child, label);
-  }
-}
-
-function startBridge(bridgeBin, deviceAddress) {
+async function stopChildProcesses() {
   if (stopping) return;
-
-  const bridgeProcess = spawnAttachedCommand(bridgeBin, ["--broker", BROKER_URL, deviceAddress], {
-    env: { ...process.env },
-    label: "monitor:bridge",
-  });
-  childProcesses.push({ child: bridgeProcess, label: "bridge" });
-
-  bridgeProcess.once("close", (exitCode) => {
-    if (stopping) return;
-
-    console.error(
-      `[monitor:dev] bridge exited with code ${exitCode}; restarting in ${BRIDGE_RESTART_DELAY_MS}ms.`,
-    );
-    setTimeout(() => startBridge(bridgeBin, deviceAddress), BRIDGE_RESTART_DELAY_MS);
-  });
+  stopping = true;
+  await bridgeSupervisor?.stop();
+  bridgeSupervisor = null;
+  const stops = [];
+  for (const { child, label } of childProcesses.toReversed()) {
+    stops.push(stopProcess(child, label));
+  }
+  await Promise.allSettled(stops);
 }

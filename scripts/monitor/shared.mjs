@@ -79,6 +79,19 @@ export function spawnAttachedCommand(command, args, options = {}) {
   return child;
 }
 
+export async function runAttachedCommand(command, args, options = {}) {
+  const child = spawnAttachedCommand(command, args, options);
+  const exitCode = await new Promise((resolvePromise, rejectPromise) => {
+    child.once("error", rejectPromise);
+    child.once("close", resolvePromise);
+  });
+
+  if (exitCode !== 0) {
+    const label = options.label ?? command;
+    throw new Error(`${label} exited with code ${exitCode}`);
+  }
+}
+
 export async function runCommand(command, args, options = {}) {
   const child = spawn(command, args, {
     cwd: getWorkspaceRoot(),
@@ -190,11 +203,13 @@ export async function ensureApiVenv() {
   return venvPythonPath;
 }
 
-export async function resolveDeviceAddress() {
-  const discoveryBin = getBinPath("bluetti-mqtt-node-discovery");
+export async function resolveDeviceAddress({
+  discoveryCommand = getBinPath("bluetti-mqtt-node-discovery"),
+  discoveryArgs = [],
+} = {}) {
 
   try {
-    const { stdout } = await runCommand(discoveryBin, [], {
+    const { stdout } = await runCommand(discoveryCommand, discoveryArgs, {
       env: { ...process.env },
       timeout: DISCOVERY_TIMEOUT_MS,
     });
@@ -271,20 +286,27 @@ export function sleep(ms) {
 
 export function stopProcess(child, label) {
   if (!child || child.killed || child.exitCode !== null) {
-    return;
+    return Promise.resolve();
   }
 
   console.log(`[monitor] Stopping ${label}...`);
 
   if (process.platform === "win32" && child.pid) {
-    spawn("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], {
-      stdio: "ignore",
-      windowsHide: true,
+    return new Promise((resolvePromise) => {
+      const killer = spawn("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], {
+        stdio: "ignore",
+        windowsHide: true,
+      });
+      killer.once("close", resolvePromise);
+      killer.once("error", resolvePromise);
     });
-    return;
   }
 
   child.kill("SIGTERM");
+  return new Promise((resolvePromise) => {
+    child.once("close", resolvePromise);
+    setTimeout(resolvePromise, 5_000).unref?.();
+  });
 }
 
 async function resolvePythonCommand(cwd) {
