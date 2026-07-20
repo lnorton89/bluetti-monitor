@@ -275,17 +275,17 @@ export default function Charts() {
         </div>
       )}
 
-      <Card className="analytics-hero-card surface-card">
+      <Card className="analytics-hero-card charts-hero-card surface-card">
         <PageHeader
           kicker="Telemetry analytics"
-          title="Charts that explain what the device has been doing"
+          title="Understand what your system has been doing"
           icon={Activity}
-          description="This workspace turns the field history you are already collecting into report-style views for power balance, charging posture, battery movement, and thermal behavior."
+          description="Turn your existing field history into clear views of power balance, charging posture, battery movement, and thermal behavior."
           meta={
             <div className="workspace-panel-meta">
               <StatusChip label={analytics?.bucketLabel ?? buildCoverageLabel(range.bucketMs)} variant="info" />
               <StatusChip label={`${timeline.length} plotted buckets`} variant="default" />
-              <StatusChip label={`${numericFields.length} numeric fields available`} variant="default" />
+              <StatusChip label={`${numericFields.length} numeric fields`} variant="default" />
             </div>
           }
         />

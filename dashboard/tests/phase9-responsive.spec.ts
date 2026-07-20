@@ -54,6 +54,51 @@ test('desktop overview uses intentional three-column report groups', async ({ pa
   expect(columnCounts).toEqual([3, 3]);
 });
 
+test('phone analytics headers keep all controls in compact touch-safe rows', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?mock=1');
+
+  const assertCompactHero = async (heroSelector: string, expectedFocusCount: number) => {
+    const result = await page.locator(heroSelector).evaluate((hero, focusCount) => {
+      const rects = (selector: string) => [...hero.querySelectorAll<HTMLElement>(selector)].map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { top: Math.round(rect.top), height: Math.round(rect.height) };
+      });
+      const heroRect = hero.getBoundingClientRect();
+      const metadata = rects('.workspace-panel-meta > *');
+      const windows = rects('[aria-label="Window"] .analytics-segment-button');
+      const focuses = rects('.analytics-focus-strip .analytics-segment-button');
+      return {
+        heroHeight: Math.round(heroRect.height),
+        metadata,
+        windows,
+        focuses,
+        expectedFocusCount: focusCount,
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    }, expectedFocusCount);
+
+    expect(result.heroHeight).toBeLessThan(560);
+    expect(result.documentWidth).toBe(result.viewportWidth);
+    expect(result.metadata).toHaveLength(3);
+    expect(new Set(result.metadata.map((item) => item.top)).size).toBe(1);
+    expect(result.windows).toHaveLength(4);
+    expect(new Set(result.windows.map((item) => item.top)).size).toBe(1);
+    expect(result.focuses).toHaveLength(result.expectedFocusCount);
+    expect(new Set(result.focuses.map((item) => item.top)).size).toBe(1);
+    expect(Math.min(...[...result.windows, ...result.focuses].map((item) => item.height))).toBeGreaterThanOrEqual(44);
+  };
+
+  await page.getByLabel('Open Navigation').click();
+  await page.getByTestId('sidebar-route-charts').click();
+  await assertCompactHero('.charts-hero-card', 4);
+
+  await page.getByLabel('Open Navigation').click();
+  await page.getByTestId('sidebar-route-solar').click();
+  await assertCompactHero('.solar-hero-card', 3);
+});
+
 test('phone-sized charts and solar controls keep their report flow', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 932 });
   await page.goto('/?mock=1');

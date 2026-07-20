@@ -256,14 +256,14 @@ export default function Solar() {
       <Card className="analytics-hero-card solar-hero-card surface-card">
         <PageHeader
           kicker="Solar workspace"
-          title="One place to track both solar inputs and charging progress"
+          title="Track solar input and charging progress"
           icon={Sun}
-          description="This page is centered on the device's solar-side telemetry: total harvest, per-input string behavior, output coverage, and battery movement tied back to the fields your stack actually receives."
+          description="Follow total harvest, per-input performance, output coverage, and battery movement from the solar telemetry your AC500 reports."
           meta={
             <div className="workspace-panel-meta">
               <StatusChip label={solarQuery.data?.bucketLabel ?? buildCoverageLabel(range.bucketMs)} variant="info" />
               <StatusChip label={`${timeline.length} plotted buckets`} variant="default" />
-              <StatusChip label={`${countResolvedFields(resolved)} mapped solar fields`} variant="default" />
+              <StatusChip label={`${countResolvedFields(resolved)} mapped fields`} variant="default" />
             </div>
           }
         />

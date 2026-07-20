@@ -3442,6 +3442,62 @@ input:focus-visible,
     width: 100%;
   }
 
+  .analytics-hero-card {
+    gap: 12px;
+  }
+
+  .analytics-hero-card .section-header {
+    gap: 10px;
+  }
+
+  .analytics-hero-card .workspace-panel-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .analytics-hero-card .workspace-panel-meta span,
+  .analytics-hero-card .workspace-panel-meta .chip {
+    width: auto;
+    min-height: 44px;
+    justify-content: center;
+    padding: 6px 7px;
+    font-size: 11px;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .analytics-hero-card .analytics-toolbar {
+    display: grid;
+    gap: 8px;
+  }
+
+  .analytics-hero-card .analytics-segmented {
+    display: grid;
+    gap: 5px;
+  }
+
+  .analytics-hero-card [aria-label="Window"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .charts-hero-card .analytics-focus-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .solar-hero-card .analytics-focus-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .analytics-hero-card .analytics-segment-button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px 5px;
+    gap: 4px;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
   .chart-card-title {
     font-size: 16px;
   }
