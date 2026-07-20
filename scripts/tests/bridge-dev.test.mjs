@@ -106,6 +106,41 @@ test("supervisor keeps the stack alive while discovery retries", async () => {
   await supervisor.stop();
 });
 
+test("supervisor reuses the discovered AC500 address after a bridge exit", async () => {
+  let discoveryAttempts = 0;
+  const children = [];
+  const supervisor = createBridgeDevSupervisor({
+    workspaceRoot: "C:/workspace",
+    retryDelayMs: 5,
+    watchSubmodule: false,
+    preflightFn: async () => {},
+    resolveDeviceAddressFn: async () => {
+      discoveryAttempts += 1;
+      return { mac: "AA:BB:CC:DD:EE:FF", source: "discovery" };
+    },
+    spawnAttachedCommandFn: () => {
+      const child = new EventEmitter();
+      child.pid = 100 + children.length;
+      child.exitCode = null;
+      child.killed = false;
+      children.push(child);
+      return child;
+    },
+    stopProcessFn: async () => {},
+    logger: { info() {}, warn() {} },
+  });
+
+  await supervisor.start();
+  await waitFor(() => children.length === 1);
+  children[0].exitCode = 1;
+  children[0].emit("close", 1);
+  await waitFor(() => children.length === 2);
+
+  assert.equal(discoveryAttempts, 1);
+
+  await supervisor.stop();
+});
+
 async function waitFor(predicate) {
   const deadline = Date.now() + 500;
   while (Date.now() < deadline) {

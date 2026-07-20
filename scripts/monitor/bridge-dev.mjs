@@ -45,6 +45,7 @@ export function createBridgeDevSupervisor({
   let bridgeProcess = null;
   let retryTimer = null;
   let rebuildTimer = null;
+  let knownDevice = null;
   let pendingReason = "startup";
   let pendingBuildRequest = { javascript: false, helper: false };
   const watchers = [];
@@ -77,6 +78,7 @@ export function createBridgeDevSupervisor({
         stopping,
         attemptRunning,
         bridgePid: bridgeProcess?.pid ?? null,
+        knownDeviceMac: knownDevice?.mac ?? null,
         retryScheduled: retryTimer !== null,
         rebuildScheduled: rebuildTimer !== null,
       };
@@ -134,7 +136,10 @@ export function createBridgeDevSupervisor({
       }
       if (stopping) return;
 
-      const device = await resolveAddress();
+      const device = knownDevice
+        ? { ...knownDevice, source: "session cache" }
+        : await resolveAddress();
+      knownDevice ??= device;
       if (stopping) return;
 
       if (bridgeProcess && bridgeProcess.exitCode === null && !bridgeProcess.killed) {
