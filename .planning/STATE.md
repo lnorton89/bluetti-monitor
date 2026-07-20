@@ -29,7 +29,7 @@ Milestone: v1.3 Estimation Accuracy
 Phase: 15 - Estimation Accuracy Overhaul
 Plan: Complete
 Status: Phase 15 verified against live AC500 telemetry
-Last activity: 2026-07-15 - Completed quick task 260715-fxc: Change dashboard development port from 5173 to 5400
+Last activity: 2026-07-20 - Completed quick task 260719-phl: Build a resilient live development supervisor with unified logs, mandatory real AC500 reconnect behavior, and submodule preflight and rebuild watching
 
 ## Accumulated Context
 
@@ -55,6 +55,7 @@ Decisions are logged in PROJECT.md.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 260719-phl | Build a resilient live development supervisor with unified logs, mandatory real AC500 reconnect behavior, and submodule preflight and rebuild watching | 2026-07-20 | c30a6bc | [260719-phl-build-a-resilient-live-development-super](./quick/260719-phl-build-a-resilient-live-development-super/) |
 | 260715-fxc | Change dashboard development port from 5173 to 5400 | 2026-07-15 | 76e4185 | [260715-fxc-change-dashboard-development-port-from-5](./quick/260715-fxc-change-dashboard-development-port-from-5/) |
 | 260715-fqy | Change analytics development port from 5120 to 5300 | 2026-07-15 | d010bec | [260715-fqy-change-analytics-development-port-from-5](./quick/260715-fqy-change-analytics-development-port-from-5/) |
 | 260709-et1 | fix bluetti-mqtt-node CI line endings | 2026-07-09 | 3aecb40 | [260709-et1-fix-bluetti-mqtt-node-ci-line-endings](./quick/260709-et1-fix-bluetti-mqtt-node-ci-line-endings/) |
