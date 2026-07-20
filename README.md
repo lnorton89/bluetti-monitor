@@ -166,13 +166,22 @@ Use the monitor dev supervisor when you want the local API, Vite dashboard, and 
 npm run monitor:dev
 ```
 
-For the old "start both while developing" convenience flow, run:
+For the complete live development flow, run:
 
 ```powershell
 npm run dev:all
 ```
 
-`dev:all` starts the monitor dev supervisor and launches the desktop with `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5400` unless you already set a different dashboard URL.
+`dev:all` starts the local API, Vite dashboard, analytics app, Electrobun shell, MQTT broker, and the real AC500 bridge. It launches the desktop with `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5400` unless you already set a different dashboard URL.
+
+Every child process is labeled in the terminal and written as timestamped JSON lines to `.dev-data/logs/dev-all.log`. The log is bounded and rotates automatically, making it the primary place to correlate Electrobun, API, dashboard, analytics, discovery, and BLE bridge startup.
+
+The real AC500 is mandatory in this flow, but a temporary Bluetooth outage is not fatal. If discovery or the bridge fails, the UI services remain online while the bridge supervisor retries. During preflight, the supervisor:
+
+- reports whether the checked-out `bluetti-mqtt-node` revision matches the parent repository's gitlink
+- rebuilds stale TypeScript CLI output or the Windows BLE helper before connecting
+- watches submodule TypeScript and helper source inputs
+- rebuilds and restarts only the bridge when those inputs change; Electrobun and the web services stay running
 
 By default the desktop shell loads `http://localhost:8540`. Set `BLUETTI_DASHBOARD_URL=http://127.0.0.1:5400` before `npm run desktop:dev` when you want the native window to attach to the Vite dashboard.
 
@@ -374,6 +383,12 @@ npm run monitor:dev
 # Start local monitor dev services and the desktop shell together
 npm run dev:all
 
+# Follow the unified labeled development log
+Get-Content .dev-data\logs\dev-all.log -Wait
+
+# Run focused supervisor/preflight tests
+npm run dev:supervisor:test
+
 # Start the supported browser-first monitor flow
 npm run monitor:start
 
@@ -407,6 +422,8 @@ docker compose down -v
 - The host bridge still runs on Windows, but it is launched for you through the linked `bluetti-mqtt-node` CLI instead of a separate manual host-poller step.
 - Local API/dashboard development uses `npm run monitor:dev`, which starts Mosquitto, the local FastAPI server, the Vite dashboard at `http://127.0.0.1:5400`, and the host bridge.
 - The desktop shell is optional local tooling and attaches to `BLUETTI_DASHBOARD_URL` or `http://localhost:8540` by default.
+- `monitor:dev` consumes the compiled CLI and helper from the checked-out submodule directly. It rebuilds stale artifacts and retries real-device discovery without terminating the API or dashboard.
+- Source changes below `lib/bluetti-mqtt-node/src/` rebuild the Node CLI; relevant changes below `lib/bluetti-mqtt-node/helper/BluettiMqtt.BluetoothHelper/` republish the Windows helper. Generated `dist/` and `artifacts/` changes do not trigger rebuild loops.
 
 ### Dashboard
 
