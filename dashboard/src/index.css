@@ -57,6 +57,11 @@
   --text:       #0f172a;
   --text-dim:   #475569;
   --text-muted: #94a3b8;
+  --cat-input:  #db2777;
+  --cat-output: #d97706;
+  --cat-battery:#059669;
+  --cat-modes:  #2563eb;
+  --cat-system: #7c3aed;
   --surface-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
   --surface-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
@@ -874,6 +879,37 @@ input:focus-visible,
   gap: 18px;
 }
 
+.overview-report-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.overview-section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 2px;
+}
+
+.overview-section-kicker {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.overview-section-title {
+  color: var(--text);
+  font-family: var(--font-cond);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .device-overview-header {
   display: flex;
   align-items: flex-end;
@@ -1251,6 +1287,10 @@ input:focus-visible,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
+}
+
+.overview-detail-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .info-panel {
@@ -3085,9 +3125,12 @@ input:focus-visible,
   .info-row {
     align-items: flex-start;
     flex-direction: column;
+    gap: 6px;
   }
 
+  .info-row-label,
   .info-row-value {
+    flex: none;
     text-align: left;
     width: 100%;
   }
@@ -3137,12 +3180,30 @@ input:focus-visible,
     padding: 16px;
   }
 
-  .device-section > .tile-grid--fit {
+  .overview-report-section--essentials .tile-grid--fit {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .detail-grid {
     gap: 14px;
+  }
+
+  .overview-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-detail-grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .overview-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-detail-grid > :last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 
@@ -3397,7 +3458,17 @@ input:focus-visible,
     gap: 14px;
   }
 
-  .device-section > .tile-grid--fit {
-    grid-template-columns: 1fr;
+  .overview-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .overview-report-section--essentials .tile-grid--fit {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-report-section--essentials .metric-tile:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }

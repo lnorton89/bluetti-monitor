@@ -654,13 +654,13 @@ function DeviceOverview({
             {model}
           </div>
           <div className="device-subtitle">
-            Built around the live field set this app actually receives: input, output, internal bus, mode, and identity data.
+            Live power flow, battery reserve, and system state from your AC500.
           </div>
         </div>
 
         <div className="device-status-strip">
           <StatusChip
-            label={connected ? 'Live telemetry stream' : 'Stream offline'}
+            label={connected ? 'Telemetry live' : 'Telemetry offline'}
             variant={connected ? 'active' : 'error'}
           />
           {latest ? <div className="device-status-time">Updated {formatRelativeTime(latest)}</div> : null}
@@ -669,66 +669,86 @@ function DeviceOverview({
 
       <Hero model={model} state={state} highestInputToday={highestInputToday} outputPeaksToday={outputPeaksToday} />
 
-      <div className="tile-grid tile-grid--fit">
-        {topCards.map((card) => (
-          <MetricTile
-            key={card.label}
-            label={card.label}
-            value={card.value}
-            detail={card.detail ?? undefined}
-            accent={card.accent}
-            tooltip={card.tooltip}
+      <section className="overview-report-section overview-report-section--essentials" aria-labelledby={`${deviceId}-essentials-title`}>
+        <div className="overview-section-heading">
+          <span className="overview-section-kicker">At a glance</span>
+          <h2 id={`${deviceId}-essentials-title`} className="overview-section-title">System essentials</h2>
+        </div>
+        <div className="tile-grid tile-grid--fit">
+          {topCards.map((card) => (
+            <MetricTile
+              key={card.label}
+              label={card.label}
+              value={card.value}
+              detail={card.detail ?? undefined}
+              accent={card.accent}
+              tooltip={card.tooltip}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="overview-report-section" aria-labelledby={`${deviceId}-power-title`}>
+        <div className="overview-section-heading">
+          <span className="overview-section-kicker">Live telemetry</span>
+          <h2 id={`${deviceId}-power-title`} className="overview-section-title">Power channels</h2>
+        </div>
+        <div className="detail-grid overview-detail-grid">
+          <StatPanel
+            title="Input Bus"
+            icon={Sun}
+            state={state}
+            items={[
+              { label: 'DC Input Total', field: 'dc_input_power', unit: 'W', accent: 'var(--cat-input)' },
+              { label: '  DC1', field: 'dc_input_1_power', unit: 'W' },
+              { label: '  DC2', field: 'dc_input_2_power', unit: 'W' },
+              { label: 'AC Input', field: 'ac_input_power', unit: 'W', accent: 'var(--cat-input)' },
+              { label: 'AC Voltage', field: 'ac_input_voltage', unit: 'V' },
+              { label: 'AC Frequency', field: 'ac_input_frequency', unit: 'Hz' },
+              { label: 'DC1 Voltage', field: 'dc_input_1_voltage', unit: 'V' },
+              { label: 'DC2 Voltage', field: 'dc_input_2_voltage', unit: 'V' },
+            ]}
           />
-        ))}
-      </div>
 
-      <div className="detail-grid">
-        <StatPanel
-          title="Input Bus"
-          icon={Sun}
-          state={state}
-          items={[
-            { label: 'DC Input Total', field: 'dc_input_power', unit: 'W', accent: 'var(--cat-input)' },
-            { label: '  DC1', field: 'dc_input_1_power', unit: 'W' },
-            { label: '  DC2', field: 'dc_input_2_power', unit: 'W' },
-            { label: 'AC Input', field: 'ac_input_power', unit: 'W', accent: 'var(--cat-input)' },
-            { label: 'AC Voltage', field: 'ac_input_voltage', unit: 'V' },
-            { label: 'AC Frequency', field: 'ac_input_frequency', unit: 'Hz' },
-            { label: 'DC1 Voltage', field: 'dc_input_1_voltage', unit: 'V' },
-            { label: 'DC2 Voltage', field: 'dc_input_2_voltage', unit: 'V' },
-          ]}
-        />
+          <StatPanel
+            title="Output Bus"
+            icon={Plug}
+            state={state}
+            items={[
+              { label: 'AC Output', field: 'ac_output_power', unit: 'W', accent: 'var(--cat-output)' },
+              { label: 'DC Output', field: 'dc_output_power', unit: 'W', accent: 'var(--cat-output)' },
+              { label: 'Internal AC', field: 'internal_ac_voltage', unit: 'V' },
+              { label: 'AC Frequency', field: 'internal_ac_frequency', unit: 'Hz' },
+            ]}
+          />
 
-        <StatPanel
-          title="Output Bus"
-          icon={Plug}
-          state={state}
-          items={[
-            { label: 'AC Output', field: 'ac_output_power', unit: 'W', accent: 'var(--cat-output)' },
-            { label: 'DC Output', field: 'dc_output_power', unit: 'W', accent: 'var(--cat-output)' },
-            { label: 'Internal AC', field: 'internal_ac_voltage', unit: 'V' },
-            { label: 'AC Frequency', field: 'internal_ac_frequency', unit: 'Hz' },
-          ]}
-        />
+          <StatPanel
+            title="Internal Channels"
+            icon={Zap}
+            state={state}
+            items={[
+              { label: 'Power One', field: 'internal_power_one', unit: 'W' },
+              { label: 'Current One', field: 'internal_current_one', unit: 'A' },
+              { label: 'Power Two', field: 'internal_power_two', unit: 'W' },
+              { label: 'Current Two', field: 'internal_current_two', unit: 'A' },
+              { label: 'Power Three', field: 'internal_power_three', unit: 'W' },
+              { label: 'Current Three', field: 'internal_current_three', unit: 'A' },
+            ]}
+          />
+        </div>
+      </section>
 
-        <StatPanel
-          title="Internal Channels"
-          icon={Zap}
-          state={state}
-          items={[
-            { label: 'Power One', field: 'internal_power_one', unit: 'W' },
-            { label: 'Current One', field: 'internal_current_one', unit: 'A' },
-            { label: 'Power Two', field: 'internal_power_two', unit: 'W' },
-            { label: 'Current Two', field: 'internal_current_two', unit: 'A' },
-            { label: 'Power Three', field: 'internal_power_three', unit: 'W' },
-            { label: 'Current Three', field: 'internal_current_three', unit: 'A' },
-          ]}
-        />
-
-        <InfoTable title="Mode and Limits" icon={ShieldCheck} rows={modeRows} />
-        <InfoTable title="Identity" icon={Info} rows={identityRows} />
-        <InfoTable title="Internal Bus Pairing" icon={Cpu} rows={internalBusRows} />
-      </div>
+      <section className="overview-report-section" aria-labelledby={`${deviceId}-configuration-title`}>
+        <div className="overview-section-heading">
+          <span className="overview-section-kicker">Device context</span>
+          <h2 id={`${deviceId}-configuration-title`} className="overview-section-title">Configuration and identity</h2>
+        </div>
+        <div className="detail-grid overview-detail-grid overview-detail-grid--context">
+          <InfoTable title="Mode and Limits" icon={ShieldCheck} rows={modeRows} />
+          <InfoTable title="Identity" icon={Info} rows={identityRows} />
+          <InfoTable title="Internal Bus Pairing" icon={Cpu} rows={internalBusRows} />
+        </div>
+      </section>
 
       {statusFlags.length > 0 ? (
         <SectionPanel title="Switchboard" icon={Bluetooth}>

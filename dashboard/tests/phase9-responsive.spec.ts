@@ -8,6 +8,20 @@ test('phone-sized shell keeps overview and raw data usable', async ({ page }) =>
   await expect(page.getByTestId('shell-route-signal')).toContainText('Battery');
   await expect(page.locator('.device-overview-header').first()).toBeVisible();
   await expect(page.locator('.hero-battery').first()).toContainText('Battery Reserve');
+  await expect(page.locator('.overview-report-section')).toHaveCount(3);
+  await expect(page.getByRole('heading', { name: 'System essentials' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Power channels' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Configuration and identity' })).toBeVisible();
+
+  const overviewLayout = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    documentHeight: document.documentElement.scrollHeight,
+    infoRowHeights: [...document.querySelectorAll<HTMLElement>('.info-row')].map((row) => row.getBoundingClientRect().height),
+  }));
+  expect(overviewLayout.documentWidth).toBe(overviewLayout.viewportWidth);
+  expect(Math.max(...overviewLayout.infoRowHeights)).toBeLessThan(100);
+  expect(overviewLayout.documentHeight).toBeLessThan(5200);
 
   await page.getByLabel('Open Navigation').click();
   await page.getByTestId('sidebar-route-raw').click();
@@ -25,6 +39,19 @@ test('phone-sized shell keeps overview and raw data usable', async ({ page }) =>
   await expect(page.locator('.raw-field-card').filter({ hasText: 'total_battery_percent' }).first()).toBeVisible();
   await expect(page.locator('.raw-field-card').first()).toBeVisible();
   await expect(page.locator('.data-table-scroll')).toBeHidden();
+});
+
+test('desktop overview uses intentional three-column report groups', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/?mock=1');
+
+  await expect(page.getByText('Live power flow, battery reserve, and system state from your AC500.')).toBeVisible();
+  await expect(page.getByText('Telemetry live')).toBeVisible();
+
+  const columnCounts = await page.locator('.overview-detail-grid').evaluateAll((grids) => grids.map((grid) => (
+    getComputedStyle(grid).gridTemplateColumns.split(' ').length
+  )));
+  expect(columnCounts).toEqual([3, 3]);
 });
 
 test('phone-sized charts and solar controls keep their report flow', async ({ page }) => {
