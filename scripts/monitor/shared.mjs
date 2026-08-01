@@ -38,6 +38,18 @@ export function getBinPath(binName) {
   return join(getWorkspaceRoot(), "node_modules", ".bin", `${binName}${extension}`);
 }
 
+export function getLocalBinScriptPath(packageRoot, packageName, binName = packageName) {
+  const packageJsonPath = join(packageRoot, "node_modules", packageName, "package.json");
+  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+  const binField = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.[binName];
+
+  if (!binField) {
+    throw new Error(`No "${binName}" bin entry found in ${packageJsonPath}`);
+  }
+
+  return join(packageRoot, "node_modules", packageName, binField);
+}
+
 export function getNpmCommand() {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
@@ -62,12 +74,12 @@ export function spawnCommand(command, args, options = {}) {
 }
 
 export function spawnAttachedCommand(command, args, options = {}) {
-  const { label = command, isolateSignals = false, ...spawnOptions } = options;
+  const { label = command, ...spawnOptions } = options;
   const child = spawn(command, args, {
     cwd: getWorkspaceRoot(),
     stdio: ["inherit", "pipe", "pipe"],
     shell: shouldUseShell(command),
-    ...getSignalIsolationOptions(isolateSignals),
+    windowsHide: true,
     ...spawnOptions,
   });
 
@@ -78,12 +90,6 @@ export function spawnAttachedCommand(command, args, options = {}) {
   });
 
   return child;
-}
-
-export function getSignalIsolationOptions(isolateSignals, platform = process.platform) {
-  return isolateSignals && platform === "win32"
-    ? { detached: true, windowsHide: true }
-    : {};
 }
 
 export async function runAttachedCommand(command, args, options = {}) {
@@ -104,6 +110,7 @@ export async function runCommand(command, args, options = {}) {
     cwd: getWorkspaceRoot(),
     stdio: ["ignore", "pipe", "pipe"],
     shell: shouldUseShell(command),
+    windowsHide: true,
     ...options,
   });
 

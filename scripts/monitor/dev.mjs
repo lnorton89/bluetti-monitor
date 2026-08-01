@@ -7,7 +7,7 @@ import {
   getApiRoot,
   getDashboardRoot,
   getDevDataRoot,
-  getNpmCommand,
+  getLocalBinScriptPath,
   installSignalHandlers,
   spawnAttachedCommand,
   stopProcess,
@@ -30,9 +30,12 @@ async function main() {
   await bridgeSupervisor.start();
 
   const apiPython = await ensureApiVenv();
+  const apiArgs = process.platform === "win32"
+    ? [resolve(getApiRoot(), "dev_server.py")]
+    : ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"];
   const apiProcess = spawnAttachedCommand(
     apiPython,
-    ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
+    apiArgs,
     {
       cwd: getApiRoot(),
       env: {
@@ -42,15 +45,17 @@ async function main() {
         DB_PATH: resolve(getDevDataRoot(), "bluetti-dev.db"),
       },
       label: "monitor:api",
-      isolateSignals: true,
     },
   );
   childProcesses.push({ child: apiProcess, label: "api" });
   await waitForUrl(`${API_URL}/status`, "api");
 
   const dashboardProcess = spawnAttachedCommand(
-    getNpmCommand(),
-    ["run", "dev", "--", "--host", "127.0.0.1", "--port", String(LOCAL_DASHBOARD_PORT)],
+    process.execPath,
+    [
+      getLocalBinScriptPath(getDashboardRoot(), "vite"),
+      "--host", "127.0.0.1", "--port", String(LOCAL_DASHBOARD_PORT),
+    ],
     {
       cwd: getDashboardRoot(),
       env: {

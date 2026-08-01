@@ -57,6 +57,7 @@ function spawnManaged(command, args, label) {
     cwd: workspaceRoot,
     stdio: ["inherit", "pipe", "pipe"],
     shell: shouldUseShell(command),
+    windowsHide: true,
   });
 
   logDevEvent(`${label} spawned`, {
@@ -154,6 +155,7 @@ function spawnRestartingDesktop(command, args, label) {
       cwd: workspaceRoot,
       stdio: ["inherit", "pipe", "pipe"],
       shell: shouldUseShell(command),
+      windowsHide: true,
     });
 
     currentChild = child;

@@ -2,11 +2,13 @@ import { spawn, spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDevSessionLogger, pipeProcessOutput } from "./dev-session.mjs";
+import { getLocalBinScriptPath } from "./monitor/shared.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const workspaceRoot = resolve(__dirname, "..");
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const analyticsRoot = resolve(workspaceRoot, "analytics");
+const viteScript = getLocalBinScriptPath(analyticsRoot, "vite");
 const localDashboardUrl = "http://127.0.0.1:5400";
 const sessionLogPath = resolve(workspaceRoot, ".dev-data", "logs", "dev-all.log");
 const logger = createDevSessionLogger({ logPath: sessionLogPath });
@@ -30,29 +32,37 @@ logger.event("supervisor", "session starting", {
   pid: process.pid,
 });
 
-const monitor = spawnManaged("monitor", "monitor:dev");
-const analytics = spawnManaged("analytics", "analytics:dev");
-const desktop = spawnManaged("desktop", "desktop:dev", {
-  BLUETTI_DASHBOARD_URL: process.env.BLUETTI_DASHBOARD_URL || localDashboardUrl,
+const monitor = spawnManaged("monitor", process.execPath, [resolve(workspaceRoot, "scripts", "monitor", "dev.mjs")]);
+const analytics = spawnManaged("analytics", process.execPath, [viteScript, "--host", "0.0.0.0", "--port", "5300"], {
+  cwd: analyticsRoot,
 });
+const desktop = spawnManaged(
+  "desktop",
+  process.execPath,
+  [resolve(workspaceRoot, "scripts", "dev-desktop.mjs"), "--watch-electrobun"],
+  {
+    env: { BLUETTI_DASHBOARD_URL: process.env.BLUETTI_DASHBOARD_URL || localDashboardUrl },
+  },
+);
 
 const exitCode = await Promise.race([monitor.exitCode, analytics.exitCode, desktop.exitCode]);
 logger.event("supervisor", "essential child exited", { exitCode });
 shutdownChildren();
 process.exit(typeof exitCode === "number" ? exitCode : 0);
 
-function spawnManaged(label, scriptName, env = {}) {
-  const child = spawn(npmCommand, ["run", scriptName], {
-    cwd: workspaceRoot,
+function spawnManaged(label, command, args, { cwd = workspaceRoot, env = {}, shell = false } = {}) {
+  const child = spawn(command, args, {
+    cwd,
     env: { ...process.env, ...env },
     stdio: ["inherit", "pipe", "pipe"],
-    shell: process.platform === "win32",
+    shell,
+    windowsHide: true,
   });
 
   logger.event(label, "spawned", {
     pid: child.pid,
-    command: npmCommand,
-    args: ["run", scriptName],
+    command,
+    args,
   });
   pipeProcessOutput(child.stdout, { component: label, streamName: "stdout", logger });
   pipeProcessOutput(child.stderr, { component: label, streamName: "stderr", logger });

@@ -335,6 +335,7 @@ async function ensureBridgeWorkspaceReady({ workspaceRoot, paths, buildRequest, 
     await runAttachedCommand(npmCommand, ["--prefix", paths.bridgeRoot, "run", "build"], {
       cwd: workspaceRoot,
       label: "monitor:bridge-build",
+      windowsHide: true,
     });
   }
 
@@ -343,6 +344,7 @@ async function ensureBridgeWorkspaceReady({ workspaceRoot, paths, buildRequest, 
     await runAttachedCommand(npmCommand, ["--prefix", paths.bridgeRoot, "run", "helper:publish"], {
       cwd: workspaceRoot,
       label: "monitor:helper-build",
+      windowsHide: true,
     });
   }
 
