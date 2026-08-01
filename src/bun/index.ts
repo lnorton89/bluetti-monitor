@@ -17,6 +17,7 @@ const TITLEBAR_ERROR_LOG_INTERVAL_MS = 30_000;
 const LOG_DIR_NAME = "logs";
 const DESKTOP_LOG_FILE_NAME = "desktop.log";
 const DESKTOP_SETTINGS_FILE_NAME = "desktop-settings.json";
+const APP_SETTINGS_FILE_NAME = "app-settings.json";
 const LOG_TRUNCATE_BYTES_OPTIONS = [512 * 1024, 1_024 * 1_024, 5 * 1_024 * 1_024, 10 * 1_024 * 1_024] as const;
 const LOG_RETAIN_BYTES_OPTIONS = [128 * 1_024, 256 * 1_024, 512 * 1_024, 1_024 * 1_024] as const;
 const ANSI_ESCAPE_PATTERN = /\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\u0007]*(?:\u0007|\u001B\\))/g;
@@ -28,6 +29,7 @@ const devDataRoot = resolve(appRoot, ".dev-data");
 const logDir = resolve(devDataRoot, LOG_DIR_NAME);
 const desktopLogPath = resolve(logDir, DESKTOP_LOG_FILE_NAME);
 const desktopSettingsPath = resolve(devDataRoot, DESKTOP_SETTINGS_FILE_NAME);
+const appSettingsPath = resolve(devDataRoot, APP_SETTINGS_FILE_NAME);
 
 let titlebarSocket: WebSocket | null = null;
 let titlebarState: AllState = {};
@@ -85,6 +87,11 @@ type DesktopLogSettingsHostMessage = {
   type?: string;
 };
 
+type AppSettingsHostMessage = {
+  settings?: unknown;
+  type?: string;
+};
+
 const DEFAULT_DESKTOP_LOG_SETTINGS: DesktopLogSettings = {
   enabled: true,
   truncateAtBytes: 1_024 * 1_024,
@@ -104,10 +111,15 @@ desktopHostEvents.on("host-message", (event: { data?: { detail?: unknown } }) =>
     return;
   }
 
-  const message = detail as DesktopAlertHostMessage | DesktopLogSettingsHostMessage;
+  const message = detail as DesktopAlertHostMessage | DesktopLogSettingsHostMessage | AppSettingsHostMessage;
 
   if (message.type === "desktop-log-settings") {
     updateDesktopLogSettings(message);
+    return;
+  }
+
+  if (message.type === "app-settings") {
+    saveAppSettings((message as AppSettingsHostMessage).settings);
     return;
   }
 
@@ -696,8 +708,33 @@ function updateDesktopLogSettings(message: DesktopLogSettingsHostMessage) {
   }
 }
 
+function loadAppSettings(): unknown {
+  try {
+    if (!existsSync(appSettingsPath)) {
+      return null;
+    }
+
+    return JSON.parse(readFileSync(appSettingsPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function saveAppSettings(settings: unknown) {
+  if (typeof settings !== "object" || settings === null) {
+    return;
+  }
+
+  try {
+    mkdirSync(devDataRoot, { recursive: true });
+    writeFileSync(appSettingsPath, JSON.stringify(settings, null, 2), "utf8");
+  } catch (error) {
+    originalConsole.error("[desktop:settings] failed to save app settings", error);
+  }
+}
+
 function isDesktopAlertHostMessage(
-  message: DesktopAlertHostMessage | DesktopLogSettingsHostMessage,
+  message: DesktopAlertHostMessage | DesktopLogSettingsHostMessage | AppSettingsHostMessage,
 ): message is DesktopAlertHostMessage & { title: string; type: "battery-full" | "low-battery" } {
   return (
     (message.type === "battery-full" || message.type === "low-battery")
@@ -813,12 +850,22 @@ function showErrorState(error: unknown) {
   mainWindow.webview.loadHTML(html);
 }
 
+function buildDashboardBootstrapUrl(baseUrl: string) {
+  const savedSettings = loadAppSettings();
+
+  if (savedSettings === null) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}#bootstrap-settings=${encodeURIComponent(JSON.stringify(savedSettings))}`;
+}
+
 async function bootstrap() {
   try {
     await waitForDashboardUrl(DASHBOARD_URL);
 
     connectTitlebarTelemetry();
-    mainWindow.webview.loadURL(DASHBOARD_URL);
+    mainWindow.webview.loadURL(buildDashboardBootstrapUrl(DASHBOARD_URL));
     scheduleWebviewNudges();
   } catch (error) {
     console.error("[desktop] dashboard is not ready", error);
