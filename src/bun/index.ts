@@ -11,7 +11,9 @@ const DASHBOARD_URL = Bun.env["BLUETTI_DASHBOARD_URL"]?.trim() || "http://localh
 const DASHBOARD_READY_TIMEOUT_MS = Number(Bun.env["BLUETTI_DASHBOARD_READY_TIMEOUT_MS"] ?? 90_000);
 const DASHBOARD_POLL_INTERVAL_MS = 1_000;
 const DESKTOP_NOTIFICATION_SUBTITLE = "Bluetti Monitor";
-const TITLEBAR_RECONNECT_DELAY_MS = 1_500;
+const TITLEBAR_RECONNECT_BASE_DELAY_MS = 1_500;
+const TITLEBAR_RECONNECT_MAX_DELAY_MS = 30_000;
+const TITLEBAR_ERROR_LOG_INTERVAL_MS = 30_000;
 const LOG_DIR_NAME = "logs";
 const DESKTOP_LOG_FILE_NAME = "desktop.log";
 const DESKTOP_SETTINGS_FILE_NAME = "desktop-settings.json";
@@ -30,6 +32,8 @@ const desktopSettingsPath = resolve(devDataRoot, DESKTOP_SETTINGS_FILE_NAME);
 let titlebarSocket: WebSocket | null = null;
 let titlebarState: AllState = {};
 let isShuttingDown = false;
+let titlebarReconnectDelayMs = TITLEBAR_RECONNECT_BASE_DELAY_MS;
+let titlebarLastErrorLogAt = 0;
 const originalConsole = {
   log: console.log.bind(console),
   info: console.info.bind(console),
@@ -840,6 +844,14 @@ function connectTitlebarTelemetry() {
   const socket = new WebSocket(getApiWebSocketUrl(API_URL));
   titlebarSocket = socket;
 
+  socket.addEventListener("open", () => {
+    if (titlebarReconnectDelayMs !== TITLEBAR_RECONNECT_BASE_DELAY_MS) {
+      console.log("[desktop:titlebar] telemetry websocket reconnected");
+    }
+    titlebarReconnectDelayMs = TITLEBAR_RECONNECT_BASE_DELAY_MS;
+    titlebarLastErrorLogAt = 0;
+  });
+
   socket.addEventListener("message", (event) => {
     const payload = parseSocketPayload(event.data);
 
@@ -858,7 +870,13 @@ function connectTitlebarTelemetry() {
   });
 
   socket.addEventListener("error", (event) => {
-    console.warn("[desktop:titlebar] telemetry websocket error", event);
+    if (Date.now() - titlebarLastErrorLogAt >= TITLEBAR_ERROR_LOG_INTERVAL_MS) {
+      console.warn(
+        `[desktop:titlebar] telemetry websocket error (${getApiWebSocketUrl(API_URL)})`,
+        event,
+      );
+      titlebarLastErrorLogAt = Date.now();
+    }
   });
 
   socket.addEventListener("close", () => {
@@ -872,11 +890,16 @@ function connectTitlebarTelemetry() {
       return;
     }
 
+    const delay = titlebarReconnectDelayMs;
+    titlebarReconnectDelayMs = Math.min(
+      titlebarReconnectDelayMs * 2,
+      TITLEBAR_RECONNECT_MAX_DELAY_MS,
+    );
     setTimeout(() => {
       if (!isShuttingDown) {
         connectTitlebarTelemetry();
       }
-    }, TITLEBAR_RECONNECT_DELAY_MS);
+    }, delay);
   });
 }
 
