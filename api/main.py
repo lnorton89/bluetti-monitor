@@ -5,7 +5,7 @@ import os
 import sqlite3
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import aiomqtt
@@ -19,6 +19,12 @@ MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DB_PATH = os.getenv("DB_PATH", "/data/bluetti.db")
 MAX_HISTORY_ROWS = 100_000
+# Devices whose newest reading is older than this window are treated as gone and
+# excluded from live snapshots. Persisted telemetry rebuilds the snapshot from
+# SQLite, so a device that reports once (e.g. a simulated/mock fleet) would
+# otherwise linger forever and duplicate real devices in the UI. Set to 0 to
+# disable filtering.
+DEVICE_ACTIVE_WINDOW_SECONDS = int(os.getenv("DEVICE_ACTIVE_WINDOW_SECONDS", "900"))
 GRID_INPUT_FIELDS = ("ac_input_power", "grid_charge_power")
 TOTAL_SOLAR_INPUT_FIELDS = ("dc_input_power", "pv_input_power", "solar_power")
 PV1_INPUT_FIELDS = ("dc_input_1_power", "pv1_power", "dc_input_power1")
@@ -118,6 +124,40 @@ def db_load_latest() -> dict:
                 snapshot[device] = fields
     return snapshot
 
+def _device_latest_ts(fields: dict) -> Optional[datetime]:
+    """Newest reading timestamp across a device's fields, or None if unparseable."""
+    newest: Optional[datetime] = None
+    for entry in fields.values():
+        raw = entry.get("ts")
+        if not raw:
+            continue
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except ValueError:
+            continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        if newest is None or parsed > newest:
+            newest = parsed
+    return newest
+
+def active_devices(source: dict, window_seconds: int = DEVICE_ACTIVE_WINDOW_SECONDS) -> dict:
+    """Drop devices whose newest reading is older than the active window.
+
+    Keeps devices that are still reporting (their timestamps keep advancing) and
+    sheds ones that have gone silent, so a device published once never lingers in
+    the snapshot alongside live hardware.
+    """
+    if window_seconds <= 0:
+        return source
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=window_seconds)
+    result: dict = {}
+    for device, fields in source.items():
+        newest = _device_latest_ts(fields)
+        if newest is not None and newest >= cutoff:
+            result[device] = fields
+    return result
+
 def first_numeric_value(state: dict[str, float], fields: tuple[str, ...]) -> float | None:
     for field in fields:
         if field in state:
@@ -205,7 +245,7 @@ async def lifespan(app: FastAPI):
     db_init()
     hydrate_started = time.perf_counter()
     latest.clear()
-    latest.update(db_load_latest())
+    latest.update(active_devices(db_load_latest()))
     field_count = sum(len(fields) for fields in latest.values())
     log.info(
         "Hydrated latest telemetry snapshot from SQLite: %d devices, %d fields in %.0fms",
@@ -229,8 +269,8 @@ app.add_middleware(
 
 @app.get("/status")
 def get_status():
-    """Latest value for every field on every device."""
-    return latest
+    """Latest value for every field on every active device."""
+    return active_devices(latest)
 
 @app.get("/status/{device}")
 def get_device_status(device: str):
@@ -465,7 +505,7 @@ async def websocket_endpoint(ws: WebSocket):
     """
     await manager.connect(ws)
     try:
-        await ws.send_json({"type": "snapshot", "data": latest})
+        await ws.send_json({"type": "snapshot", "data": active_devices(latest)})
         while True:
             await ws.receive_text()   # keep connection alive, ignore client messages
     except WebSocketDisconnect:
