@@ -60,7 +60,7 @@ const mainWindow = new BrowserWindow({
   },
 });
 
-type BatteryFullHostMessage = {
+type DesktopAlertHostMessage = {
   body?: string;
   silent?: boolean;
   subtitle?: string;
@@ -100,14 +100,14 @@ desktopHostEvents.on("host-message", (event: { data?: { detail?: unknown } }) =>
     return;
   }
 
-  const message = detail as BatteryFullHostMessage | DesktopLogSettingsHostMessage;
+  const message = detail as DesktopAlertHostMessage | DesktopLogSettingsHostMessage;
 
   if (message.type === "desktop-log-settings") {
     updateDesktopLogSettings(message);
     return;
   }
 
-  if (!isBatteryFullHostMessage(message)) {
+  if (!isDesktopAlertHostMessage(message)) {
     return;
   }
 
@@ -692,10 +692,14 @@ function updateDesktopLogSettings(message: DesktopLogSettingsHostMessage) {
   }
 }
 
-function isBatteryFullHostMessage(
-  message: BatteryFullHostMessage | DesktopLogSettingsHostMessage,
-): message is BatteryFullHostMessage & { title: string; type: "battery-full" } {
-  return message.type === "battery-full" && "title" in message && typeof message.title === "string";
+function isDesktopAlertHostMessage(
+  message: DesktopAlertHostMessage | DesktopLogSettingsHostMessage,
+): message is DesktopAlertHostMessage & { title: string; type: "battery-full" | "low-battery" } {
+  return (
+    (message.type === "battery-full" || message.type === "low-battery")
+    && "title" in message
+    && typeof message.title === "string"
+  );
 }
 
 async function isUrlReady(url: string, expectedText?: string) {

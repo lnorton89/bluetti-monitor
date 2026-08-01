@@ -9,6 +9,13 @@ export interface AppSettings {
   alerts: {
     batteryFullBrowser: boolean;
     batteryFullDesktop: boolean;
+    lowBatteryBrowser: boolean;
+    lowBatteryDesktop: boolean;
+    lowBatteryDurationSeconds: number;
+    lowBatteryEnabled: boolean;
+    lowBatteryRepeatMinutes: number;
+    lowBatteryThresholdPercent: number;
+    lowBatteryVolume: number;
     ntfyEnabled: boolean;
     ntfyIntervalMinutes: number;
     ntfyServer: string;
@@ -31,6 +38,13 @@ interface AppSettingsStore extends AppSettings {
   setThemeMode: (themeMode: ThemePreference) => void;
   setBatteryFullBrowser: (enabled: boolean) => void;
   setBatteryFullDesktop: (enabled: boolean) => void;
+  setLowBatteryBrowser: (enabled: boolean) => void;
+  setLowBatteryDesktop: (enabled: boolean) => void;
+  setLowBatteryDurationSeconds: (seconds: number) => void;
+  setLowBatteryEnabled: (enabled: boolean) => void;
+  setLowBatteryRepeatMinutes: (minutes: number) => void;
+  setLowBatteryThresholdPercent: (percent: number) => void;
+  setLowBatteryVolume: (volume: number) => void;
   setNtfyEnabled: (enabled: boolean) => void;
   setNtfyIntervalMinutes: (minutes: number) => void;
   setNtfyServer: (server: string) => void;
@@ -45,6 +59,10 @@ interface AppSettingsStore extends AppSettings {
 
 const STORAGE_KEY = 'bluetti-monitor:settings';
 export const NTFY_INTERVAL_MINUTES_OPTIONS = [5, 15, 30, 60] as const;
+export const LOW_BATTERY_DURATION_SECONDS_OPTIONS = [1, 2, 3, 5] as const;
+export const LOW_BATTERY_REPEAT_MINUTES_OPTIONS = [0, 5, 15, 30, 60] as const;
+const LOW_BATTERY_THRESHOLD_MIN_PERCENT = 1;
+const LOW_BATTERY_THRESHOLD_MAX_PERCENT = 90;
 const LOG_TRUNCATE_BYTES_OPTIONS = [512 * 1024, 1024 * 1024, 5 * 1024 * 1024, 10 * 1024 * 1024] as const;
 const LOG_RETAIN_BYTES_OPTIONS = [128 * 1024, 256 * 1024, 512 * 1024, 1024 * 1024] as const;
 
@@ -55,6 +73,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   alerts: {
     batteryFullBrowser: true,
     batteryFullDesktop: true,
+    lowBatteryBrowser: true,
+    lowBatteryDesktop: true,
+    lowBatteryDurationSeconds: 2,
+    lowBatteryEnabled: true,
+    lowBatteryRepeatMinutes: 15,
+    lowBatteryThresholdPercent: 20,
+    lowBatteryVolume: 70,
     ntfyEnabled: false,
     ntfyIntervalMinutes: 15,
     ntfyServer: 'https://ntfy.sh',
@@ -159,6 +184,40 @@ function sanitizeSettings(candidate: unknown): AppSettings {
       batteryFullDesktop: sanitizeBoolean(
         alerts.batteryFullDesktop,
         DEFAULT_SETTINGS.alerts.batteryFullDesktop,
+      ),
+      lowBatteryBrowser: sanitizeBoolean(
+        alerts.lowBatteryBrowser,
+        DEFAULT_SETTINGS.alerts.lowBatteryBrowser,
+      ),
+      lowBatteryDesktop: sanitizeBoolean(
+        alerts.lowBatteryDesktop,
+        DEFAULT_SETTINGS.alerts.lowBatteryDesktop,
+      ),
+      lowBatteryDurationSeconds: sanitizeOptionValue(
+        alerts.lowBatteryDurationSeconds,
+        LOW_BATTERY_DURATION_SECONDS_OPTIONS,
+        DEFAULT_SETTINGS.alerts.lowBatteryDurationSeconds,
+      ),
+      lowBatteryEnabled: sanitizeBoolean(
+        alerts.lowBatteryEnabled,
+        DEFAULT_SETTINGS.alerts.lowBatteryEnabled,
+      ),
+      lowBatteryRepeatMinutes: sanitizeOptionValue(
+        alerts.lowBatteryRepeatMinutes,
+        LOW_BATTERY_REPEAT_MINUTES_OPTIONS,
+        DEFAULT_SETTINGS.alerts.lowBatteryRepeatMinutes,
+      ),
+      lowBatteryThresholdPercent: sanitizeNumber(
+        alerts.lowBatteryThresholdPercent,
+        LOW_BATTERY_THRESHOLD_MIN_PERCENT,
+        LOW_BATTERY_THRESHOLD_MAX_PERCENT,
+        DEFAULT_SETTINGS.alerts.lowBatteryThresholdPercent,
+      ),
+      lowBatteryVolume: sanitizeNumber(
+        alerts.lowBatteryVolume,
+        0,
+        100,
+        DEFAULT_SETTINGS.alerts.lowBatteryVolume,
       ),
       ntfyEnabled: sanitizeBoolean(
         alerts.ntfyEnabled,
@@ -283,6 +342,117 @@ export const useAppSettingsStore = create<AppSettingsStore>((set) => ({
         alerts: {
           ...state.alerts,
           batteryFullDesktop: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryBrowser(enabled) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryBrowser: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryDesktop(enabled) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryDesktop: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryDurationSeconds(seconds) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryDurationSeconds: sanitizeOptionValue(
+            seconds,
+            LOW_BATTERY_DURATION_SECONDS_OPTIONS,
+            state.alerts.lowBatteryDurationSeconds,
+          ),
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryEnabled(enabled) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryEnabled: enabled,
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryRepeatMinutes(minutes) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryRepeatMinutes: sanitizeOptionValue(
+            minutes,
+            LOW_BATTERY_REPEAT_MINUTES_OPTIONS,
+            state.alerts.lowBatteryRepeatMinutes,
+          ),
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryThresholdPercent(percent) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryThresholdPercent: sanitizeNumber(
+            percent,
+            LOW_BATTERY_THRESHOLD_MIN_PERCENT,
+            LOW_BATTERY_THRESHOLD_MAX_PERCENT,
+            state.alerts.lowBatteryThresholdPercent,
+          ),
+        },
+      };
+      persistSettings(toPersistedSettings(nextState));
+      return nextState;
+    });
+  },
+
+  setLowBatteryVolume(volume) {
+    set((state) => {
+      const nextState: AppSettingsStore = {
+        ...state,
+        alerts: {
+          ...state.alerts,
+          lowBatteryVolume: sanitizeNumber(volume, 0, 100, state.alerts.lowBatteryVolume),
         },
       };
       persistSettings(toPersistedSettings(nextState));

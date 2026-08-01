@@ -138,11 +138,6 @@ input:focus-visible,
   z-index: 9999;
 }
 
-@keyframes pulse-amber {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
-}
-
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -2092,6 +2087,26 @@ input:focus-visible,
 .settings-number-input:focus {
   outline: none;
   border-color: var(--text-dim);
+}
+
+.settings-range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-range-input {
+  flex: 1 1 auto;
+  min-width: 120px;
+  accent-color: var(--amber);
+}
+
+.settings-range-value {
+  min-width: 40px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
 }
 
 .settings-input-unit {

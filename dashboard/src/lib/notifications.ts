@@ -17,17 +17,29 @@ type BatterySnapshot = {
   percent: number;
 };
 
-type BatteryFullNotificationPayload = {
+type DesktopAlertPayload = {
   body: string;
-  ceiling: number;
   deviceId: string;
-  inputWatts: number;
-  outputWatts: number;
-  percent: number;
   silent: boolean;
   subtitle: string;
   title: string;
+  type: string;
+};
+
+type BatteryFullNotificationPayload = DesktopAlertPayload & {
+  ceiling: number;
+  inputWatts: number;
+  outputWatts: number;
+  percent: number;
   type: 'battery-full';
+};
+
+type LowBatteryNotificationPayload = DesktopAlertPayload & {
+  inputWatts: number;
+  outputWatts: number;
+  percent: number;
+  threshold: number;
+  type: 'low-battery';
 };
 
 type StatusNotificationPayload = {
@@ -78,6 +90,18 @@ export function shouldNotifyBatteryFull(
   return previousPercent < ceiling && currentPercent >= ceiling;
 }
 
+export function shouldNotifyLowBattery(
+  previousPercent: number | null,
+  currentPercent: number | null,
+  threshold: number,
+) {
+  if (previousPercent === null || currentPercent === null) {
+    return false;
+  }
+
+  return previousPercent > threshold && currentPercent <= threshold;
+}
+
 function getBrowserNotificationPermission(): BrowserNotificationPermissionState {
   if (typeof window === 'undefined' || typeof window.Notification === 'undefined') {
     return 'unsupported';
@@ -117,7 +141,101 @@ function buildBatteryFullNotification(
   };
 }
 
-function showBrowserNotification(payload: BatteryFullNotificationPayload) {
+function buildLowBatteryNotification(
+  deviceId: string,
+  state: DeviceState,
+  percent: number,
+  threshold: number,
+): LowBatteryNotificationPayload {
+  const roundedPercent = Math.round(percent);
+  const roundedThreshold = Math.round(threshold);
+  const inputWatts = getCurrentInputWatts(state);
+  const outputWatts = getCurrentOutputWatts(state);
+  const telemetryLine = `Input ${Math.round(inputWatts)} W - Output ${Math.round(outputWatts)} W - SOC ${roundedPercent}%`;
+
+  return {
+    type: 'low-battery',
+    deviceId,
+    inputWatts,
+    outputWatts,
+    percent,
+    threshold,
+    silent: false,
+    subtitle: 'Bluetti Monitor',
+    title: `${deviceId} battery is low`,
+    body: `Battery dropped to ${roundedPercent}%, at or below the ${roundedThreshold}% alert threshold. ${telemetryLine}.`,
+  };
+}
+
+const LOW_BATTERY_BEEP_ON_MS = 220;
+const LOW_BATTERY_BEEP_OFF_MS = 160;
+const LOW_BATTERY_BEEP_FREQUENCY_HZ = 880;
+const LOW_BATTERY_BEEP_RAMP_SECONDS = 0.015;
+
+let lowBatteryAudioContext: AudioContext | null = null;
+
+function getLowBatteryAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const AudioContextCtor = window.AudioContext
+    ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+  if (!AudioContextCtor) {
+    return null;
+  }
+
+  if (!lowBatteryAudioContext) {
+    lowBatteryAudioContext = new AudioContextCtor();
+  }
+
+  if (lowBatteryAudioContext.state === 'suspended') {
+    void lowBatteryAudioContext.resume();
+  }
+
+  return lowBatteryAudioContext;
+}
+
+export function playLowBatteryTone(volumePercent: number, durationSeconds: number) {
+  const context = getLowBatteryAudioContext();
+
+  if (!context) {
+    return;
+  }
+
+  const gainPeak = Math.max(0, Math.min(100, volumePercent)) / 100;
+
+  if (gainPeak <= 0) {
+    return;
+  }
+
+  const onSeconds = LOW_BATTERY_BEEP_ON_MS / 1000;
+  const cycleSeconds = (LOW_BATTERY_BEEP_ON_MS + LOW_BATTERY_BEEP_OFF_MS) / 1000;
+  const beepCount = Math.max(1, Math.round(Math.max(1, durationSeconds) / cycleSeconds));
+
+  for (let i = 0; i < beepCount; i += 1) {
+    const startTime = context.currentTime + i * cycleSeconds;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(LOW_BATTERY_BEEP_FREQUENCY_HZ, startTime);
+
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(gainPeak, startTime + LOW_BATTERY_BEEP_RAMP_SECONDS);
+    gain.gain.setValueAtTime(gainPeak, startTime + onSeconds - LOW_BATTERY_BEEP_RAMP_SECONDS);
+    gain.gain.linearRampToValueAtTime(0, startTime + onSeconds);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    oscillator.start(startTime);
+    oscillator.stop(startTime + onSeconds);
+  }
+}
+
+function showBrowserNotification(payload: DesktopAlertPayload) {
   if (typeof window === 'undefined' || typeof window.Notification === 'undefined') {
     return;
   }
@@ -128,13 +246,13 @@ function showBrowserNotification(payload: BatteryFullNotificationPayload) {
 
   const notification = new window.Notification(payload.title, {
     body: payload.body,
-    tag: `battery-full-${payload.deviceId}`,
+    tag: `${payload.type}-${payload.deviceId}`,
   });
 
   window.setTimeout(() => notification.close(), 15_000);
 }
 
-function sendDesktopNotification(payload: BatteryFullNotificationPayload) {
+function sendDesktopNotification(payload: DesktopAlertPayload) {
   sendToDesktopHost(payload);
 }
 
@@ -313,4 +431,69 @@ export function useBatteryFullNotifications(allState: AllState) {
     desktopNotificationsAvailable,
     requestBrowserNotifications,
   };
+}
+
+type LowBatterySnapshot = {
+  armed: boolean;
+  lastAlertAt: number;
+  percent: number;
+};
+
+const LOW_BATTERY_REARM_HYSTERESIS_PERCENT = 3;
+
+export function useLowBatteryNotifications(allState: AllState) {
+  const deviceSnapshotsRef = useRef<Record<string, LowBatterySnapshot>>({});
+  const enabled = useAppSettingsStore((s) => s.alerts.lowBatteryEnabled);
+  const thresholdPercent = useAppSettingsStore((s) => s.alerts.lowBatteryThresholdPercent);
+  const volume = useAppSettingsStore((s) => s.alerts.lowBatteryVolume);
+  const durationSeconds = useAppSettingsStore((s) => s.alerts.lowBatteryDurationSeconds);
+  const repeatMinutes = useAppSettingsStore((s) => s.alerts.lowBatteryRepeatMinutes);
+  const browserEnabled = useAppSettingsStore((s) => s.alerts.lowBatteryBrowser);
+  const desktopEnabled = useAppSettingsStore((s) => s.alerts.lowBatteryDesktop);
+
+  useEffect(() => {
+    if (!enabled) {
+      deviceSnapshotsRef.current = {};
+      return;
+    }
+
+    const now = Date.now();
+    const nextSnapshots: Record<string, LowBatterySnapshot> = {};
+    const rearmPercent = thresholdPercent + LOW_BATTERY_REARM_HYSTERESIS_PERCENT;
+    let shouldPlayTone = false;
+
+    for (const [deviceId, state] of Object.entries(allState)) {
+      const percent = getBatteryPercent(state);
+
+      if (percent === null) {
+        continue;
+      }
+
+      const previous = deviceSnapshotsRef.current[deviceId];
+      const armed = previous ? previous.armed || percent >= rearmPercent : true;
+      const isLow = percent <= thresholdPercent;
+      let lastAlertAt = previous?.lastAlertAt ?? 0;
+      const dueForRepeat = repeatMinutes > 0 && isLow && now - lastAlertAt >= repeatMinutes * 60_000;
+
+      if (isLow && (armed || dueForRepeat)) {
+        const payload = buildLowBatteryNotification(deviceId, state, percent, thresholdPercent);
+        shouldPlayTone = true;
+        if (browserEnabled) {
+          showBrowserNotification(payload);
+        }
+        if (desktopEnabled) {
+          sendDesktopNotification(payload);
+        }
+        lastAlertAt = now;
+      }
+
+      nextSnapshots[deviceId] = { percent, lastAlertAt, armed: !isLow };
+    }
+
+    deviceSnapshotsRef.current = nextSnapshots;
+
+    if (shouldPlayTone) {
+      playLowBatteryTone(volume, durationSeconds);
+    }
+  }, [allState, browserEnabled, desktopEnabled, durationSeconds, enabled, repeatMinutes, thresholdPercent, volume]);
 }

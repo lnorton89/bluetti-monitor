@@ -9,7 +9,7 @@ import Charts from './pages/Charts';
 import RawData from './pages/RawData';
 import Solar from './pages/Solar';
 import Settings from './pages/Settings';
-import { useBatteryFullNotifications } from './lib/notifications';
+import { useBatteryFullNotifications, useLowBatteryNotifications } from './lib/notifications';
 import { useShellStore } from './store/shell';
 import { useWsStore } from './store/ws';
 import { useTelemetryState } from './hooks/useTelemetryState';
@@ -42,6 +42,7 @@ function Layout() {
     desktopNotificationsAvailable,
     requestBrowserNotifications,
   } = useBatteryFullNotifications(wsState);
+  useLowBatteryNotifications(wsState);
 
   const devices = Object.keys(wsState);
   const primaryDevice = devices[0] ? wsState[devices[0]] : null;

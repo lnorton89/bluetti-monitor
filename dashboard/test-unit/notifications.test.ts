@@ -8,6 +8,7 @@ import {
   getBatteryPercent,
   getChargeCeilingPercent,
   shouldNotifyBatteryFull,
+  shouldNotifyLowBattery,
 } from '../src/lib/notifications';
 
 describe('battery full notifications', () => {
@@ -32,6 +33,13 @@ describe('battery full notifications', () => {
     expect(shouldNotifyBatteryFull(85, 85, 85)).toBe(false);
     expect(shouldNotifyBatteryFull(86, 84, 85)).toBe(false);
     expect(shouldNotifyBatteryFull(null, 85, 85)).toBe(false);
+  });
+
+  test('only notifies low battery when the battery crosses the configured threshold from above', () => {
+    expect(shouldNotifyLowBattery(21, 20, 20)).toBe(true);
+    expect(shouldNotifyLowBattery(20, 20, 20)).toBe(false);
+    expect(shouldNotifyLowBattery(19, 21, 20)).toBe(false);
+    expect(shouldNotifyLowBattery(null, 20, 20)).toBe(false);
   });
 
   test('builds ntfy topic URLs from server and topic settings', () => {

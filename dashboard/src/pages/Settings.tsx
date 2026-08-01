@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { BellRing, FileText, LaptopMinimal, Moon, Paintbrush, Settings2, Sun, Waves } from 'lucide-react';
+import { BatteryWarning, BellRing, FileText, LaptopMinimal, Moon, Paintbrush, Settings2, Sun, Waves } from 'lucide-react';
 import { PageHeader, SectionPanel, StatusChip } from '../components/ui';
 import { isDesktopHostAvailable, sendToDesktopHost } from '../lib/desktop-host';
-import { useBatteryFullNotifications } from '../lib/notifications';
+import { playLowBatteryTone, useBatteryFullNotifications } from '../lib/notifications';
 import { RANGE_PRESETS } from '../lib/shared-controls';
 import { useShellStore } from '../store/shell';
 import { useWsStore } from '../store/ws';
 import {
   getEffectiveTheme,
+  LOW_BATTERY_DURATION_SECONDS_OPTIONS,
+  LOW_BATTERY_REPEAT_MINUTES_OPTIONS,
   NTFY_INTERVAL_MINUTES_OPTIONS,
   type ThemePreference,
   useAppSettingsStore,
@@ -144,10 +146,18 @@ export default function Settings() {
   const resetRouteSignal = useShellStore((s) => s.resetRouteSignal);
   const desktopHostAvailable = isDesktopHostAvailable();
   const [capacityText, setCapacityText] = useState(String(useAppSettingsStore.getState().dashboard.batteryCapacityWh));
+  const [thresholdText, setThresholdText] = useState(String(useAppSettingsStore.getState().alerts.lowBatteryThresholdPercent));
 
   const themeMode = useAppSettingsStore((s) => s.appearance.themeMode);
   const batteryFullBrowser = useAppSettingsStore((s) => s.alerts.batteryFullBrowser);
   const batteryFullDesktop = useAppSettingsStore((s) => s.alerts.batteryFullDesktop);
+  const lowBatteryEnabled = useAppSettingsStore((s) => s.alerts.lowBatteryEnabled);
+  const lowBatteryThresholdPercent = useAppSettingsStore((s) => s.alerts.lowBatteryThresholdPercent);
+  const lowBatteryVolume = useAppSettingsStore((s) => s.alerts.lowBatteryVolume);
+  const lowBatteryDurationSeconds = useAppSettingsStore((s) => s.alerts.lowBatteryDurationSeconds);
+  const lowBatteryRepeatMinutes = useAppSettingsStore((s) => s.alerts.lowBatteryRepeatMinutes);
+  const lowBatteryBrowser = useAppSettingsStore((s) => s.alerts.lowBatteryBrowser);
+  const lowBatteryDesktop = useAppSettingsStore((s) => s.alerts.lowBatteryDesktop);
   const ntfyEnabled = useAppSettingsStore((s) => s.alerts.ntfyEnabled);
   const ntfyIntervalMinutes = useAppSettingsStore((s) => s.alerts.ntfyIntervalMinutes);
   const ntfyServer = useAppSettingsStore((s) => s.alerts.ntfyServer);
@@ -160,6 +170,13 @@ export default function Settings() {
   const setThemeMode = useAppSettingsStore((s) => s.setThemeMode);
   const setBatteryFullBrowser = useAppSettingsStore((s) => s.setBatteryFullBrowser);
   const setBatteryFullDesktop = useAppSettingsStore((s) => s.setBatteryFullDesktop);
+  const setLowBatteryEnabled = useAppSettingsStore((s) => s.setLowBatteryEnabled);
+  const setLowBatteryThresholdPercent = useAppSettingsStore((s) => s.setLowBatteryThresholdPercent);
+  const setLowBatteryVolume = useAppSettingsStore((s) => s.setLowBatteryVolume);
+  const setLowBatteryDurationSeconds = useAppSettingsStore((s) => s.setLowBatteryDurationSeconds);
+  const setLowBatteryRepeatMinutes = useAppSettingsStore((s) => s.setLowBatteryRepeatMinutes);
+  const setLowBatteryBrowser = useAppSettingsStore((s) => s.setLowBatteryBrowser);
+  const setLowBatteryDesktop = useAppSettingsStore((s) => s.setLowBatteryDesktop);
   const setNtfyEnabled = useAppSettingsStore((s) => s.setNtfyEnabled);
   const setNtfyIntervalMinutes = useAppSettingsStore((s) => s.setNtfyIntervalMinutes);
   const setNtfyServer = useAppSettingsStore((s) => s.setNtfyServer);
@@ -423,6 +440,163 @@ export default function Settings() {
               {desktopNotificationsAvailable
                 ? 'Desktop bridge is available in this session.'
                 : 'Desktop bridge is not attached in this browser session.'}
+            </div>
+          </div>
+        </SectionPanel>
+
+        <SectionPanel
+          title="Low battery alert"
+          icon={BatteryWarning}
+          kicker="Sound + notifications"
+          meta={<StatusChip label={lowBatteryEnabled ? `Alerts at ${lowBatteryThresholdPercent}%` : 'Disabled'} variant={lowBatteryEnabled ? 'active' : 'inactive'} />}
+        >
+          <div className="settings-stack">
+            <ToggleRow
+              checked={lowBatteryEnabled}
+              label="Low battery audio alert"
+              description="Play an alarm tone in this dashboard when a device's battery drops to or below the threshold below, and repeat it while it stays low."
+              impact="Immediate"
+              onChange={(checked) => setLowBatteryEnabled(checked)}
+            />
+
+            <div className={`settings-control-block${lowBatteryEnabled ? '' : ' is-disabled'}`}>
+              <div className="settings-toggle-top">
+                <div>
+                  <span className="settings-toggle-label">Alert threshold</span>
+                  <p className="settings-toggle-description">
+                    Trigger the alert once state of charge drops to or below this percentage.
+                  </p>
+                </div>
+                <span className="settings-impact-pill">Persists</span>
+              </div>
+              <div className="settings-input-block">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  disabled={!lowBatteryEnabled}
+                  value={thresholdText}
+                  onChange={(e) => setThresholdText(e.target.value)}
+                  onBlur={() => {
+                    const raw = thresholdText.replace(/\D/g, '');
+                    const next = Number.parseInt(raw, 10);
+                    if (raw.length > 0 && !Number.isNaN(next)) {
+                      const clamped = Math.min(90, Math.max(1, next));
+                      setLowBatteryThresholdPercent(clamped);
+                      setThresholdText(String(clamped));
+                    } else {
+                      setThresholdText(String(useAppSettingsStore.getState().alerts.lowBatteryThresholdPercent));
+                    }
+                  }}
+                  className="settings-number-input"
+                />
+                <span className="settings-input-unit">%</span>
+              </div>
+            </div>
+
+            <div className={`settings-control-block${lowBatteryEnabled ? '' : ' is-disabled'}`}>
+              <div className="settings-toggle-top">
+                <div>
+                  <span className="settings-toggle-label">Alert volume</span>
+                  <p className="settings-toggle-description">
+                    Controls how loud the alarm tone plays in this browser session.
+                  </p>
+                </div>
+                <span className="settings-impact-pill">Persists</span>
+              </div>
+              <div className="settings-range-row">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  disabled={!lowBatteryEnabled}
+                  value={lowBatteryVolume}
+                  className="settings-range-input"
+                  aria-label="Low battery alert volume"
+                  onChange={(e) => setLowBatteryVolume(Number(e.target.value))}
+                />
+                <span className="settings-range-value">{lowBatteryVolume}%</span>
+                <button
+                  type="button"
+                  className="ui-control-button"
+                  disabled={!lowBatteryEnabled}
+                  onClick={() => playLowBatteryTone(lowBatteryVolume, lowBatteryDurationSeconds)}
+                >
+                  Test sound
+                </button>
+              </div>
+            </div>
+
+            <div className={`settings-control-block${lowBatteryEnabled ? '' : ' is-disabled'}`}>
+              <div className="settings-toggle-top">
+                <div>
+                  <span className="settings-toggle-label">Alert length</span>
+                  <p className="settings-toggle-description">How long the alarm tone plays each time it fires.</p>
+                </div>
+                <span className="settings-impact-pill">Persists</span>
+              </div>
+              <div className="settings-segmented" role="radiogroup" aria-label="Low battery alert length">
+                {LOW_BATTERY_DURATION_SECONDS_OPTIONS.map((seconds) => (
+                  <button
+                    key={seconds}
+                    type="button"
+                    role="radio"
+                    aria-checked={lowBatteryDurationSeconds === seconds}
+                    disabled={!lowBatteryEnabled}
+                    className={`settings-segmented-button${lowBatteryDurationSeconds === seconds ? ' is-active' : ''}`}
+                    onClick={() => setLowBatteryDurationSeconds(seconds)}
+                  >
+                    {seconds}s
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`settings-control-block${lowBatteryEnabled ? '' : ' is-disabled'}`}>
+              <div className="settings-toggle-top">
+                <div>
+                  <span className="settings-toggle-label">Repeat every</span>
+                  <p className="settings-toggle-description">
+                    Re-fire the alert on this interval while the battery stays at or below the threshold. Choose Once to alert only when it first crosses the threshold.
+                  </p>
+                </div>
+                <span className="settings-impact-pill">Persists</span>
+              </div>
+              <div className="settings-segmented" role="radiogroup" aria-label="Low battery repeat interval">
+                {LOW_BATTERY_REPEAT_MINUTES_OPTIONS.map((minutes) => (
+                  <button
+                    key={minutes}
+                    type="button"
+                    role="radio"
+                    aria-checked={lowBatteryRepeatMinutes === minutes}
+                    disabled={!lowBatteryEnabled}
+                    className={`settings-segmented-button${lowBatteryRepeatMinutes === minutes ? ' is-active' : ''}`}
+                    onClick={() => setLowBatteryRepeatMinutes(minutes)}
+                  >
+                    {minutes === 0 ? 'Once' : `${minutes}m`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <ToggleRow
+              checked={lowBatteryBrowser}
+              label="Low battery browser notifications"
+              description="Also raise a browser notification when the battery crosses the threshold."
+              impact="Immediate"
+              disabled={!lowBatteryEnabled}
+              onChange={(checked) => setLowBatteryBrowser(checked)}
+            />
+            <ToggleRow
+              checked={lowBatteryDesktop}
+              label="Low battery desktop notifications"
+              description="Send the same low-battery event through the desktop shell bridge when this app is running in the desktop shell."
+              impact="Immediate"
+              disabled={!lowBatteryEnabled || !desktopNotificationsAvailable}
+              onChange={(checked) => setLowBatteryDesktop(checked)}
+            />
+            <div className="settings-footnote">
+              The audio alert plays in this browser tab while the dashboard is open. It does not require notification permission.
             </div>
           </div>
         </SectionPanel>
