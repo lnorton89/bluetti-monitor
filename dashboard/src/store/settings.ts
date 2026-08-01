@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { sendToDesktopHost } from '../lib/desktop-host';
+import { fetchAppSettings, saveAppSettingsRemote } from '../lib/api';
 
 export type ThemePreference = 'system' | 'dark' | 'light';
 
@@ -247,46 +247,9 @@ function sanitizeSettings(candidate: unknown): AppSettings {
   };
 }
 
-// The desktop shell can load this dashboard from different origins depending on how
-// it was launched (e.g. the Docker-backed http://localhost:8540 vs. a local Vite dev
-// server on http://127.0.0.1:5400). localStorage is scoped per-origin, so settings
-// saved under one origin are invisible under another and appear to "reset". The bun
-// host process persists settings to disk (origin-independent) and hands the last
-// saved value back on every launch via this URL hash, so the store hydrates from the
-// durable copy regardless of which origin actually served the page this time.
-function readBootstrapSettings(): unknown {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const match = /(?:^|[#&])bootstrap-settings=([^&]*)/.exec(window.location.hash);
-
-  if (!match) {
-    return null;
-  }
-
-  // Strip the hash immediately so an in-page reload (F5) re-reads localStorage
-  // instead of replaying this launch's now-possibly-stale bootstrap snapshot.
-  window.history.replaceState(null, '', window.location.pathname + window.location.search);
-
-  try {
-    return JSON.parse(decodeURIComponent(match[1]));
-  } catch {
-    return null;
-  }
-}
-
 function loadSettings(): AppSettings {
   if (typeof window === 'undefined') {
     return DEFAULT_SETTINGS;
-  }
-
-  const bootstrapCandidate = readBootstrapSettings();
-
-  if (bootstrapCandidate !== null) {
-    const sanitized = sanitizeSettings(bootstrapCandidate);
-    persistSettings(sanitized);
-    return sanitized;
   }
 
   try {
@@ -307,7 +270,37 @@ function persistSettings(settings: AppSettings) {
   }
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  sendToDesktopHost({ type: 'app-settings', settings });
+  void saveAppSettingsRemote(settings).catch(() => {
+    // Offline or API unreachable - localStorage still has this session's value.
+  });
+}
+
+// The desktop shell can load this dashboard from different origins depending on how
+// it was launched (e.g. the Docker-backed http://localhost:8540 vs. a local Vite dev
+// server on http://127.0.0.1:5400). localStorage is scoped per-origin, so settings
+// saved under one origin are invisible under another and appear to "reset" even
+// though nothing was lost. The API's /settings endpoint is reachable through both
+// origins' proxy config, so it's the durable, origin-independent source of truth;
+// this pulls it in once at startup and reconciles it into the live store.
+async function hydrateSettingsFromApi() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const remote = await fetchAppSettings();
+
+    if (!isRecord(remote) || Object.keys(remote).length === 0) {
+      return;
+    }
+
+    const sanitized = sanitizeSettings(remote);
+    useAppSettingsStore.setState(sanitized);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    applyTheme(sanitized.appearance.themeMode);
+  } catch {
+    // Offline or API unreachable - keep whatever loadSettings() already produced.
+  }
 }
 
 function toPersistedSettings(state: AppSettingsStore): AppSettings {
@@ -655,4 +648,6 @@ if (typeof window !== 'undefined') {
       applyTheme('system');
     }
   });
+
+  void hydrateSettingsFromApi();
 }

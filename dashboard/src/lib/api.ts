@@ -10,10 +10,12 @@ import {
 export const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 export const WS_URL =
   import.meta.env.VITE_WS_URL
-  ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`;
+  ?? (typeof window === 'undefined'
+    ? 'ws://localhost/ws'
+    : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`);
 export const IS_MOCK_MODE =
   import.meta.env.VITE_MOCK_DATA === '1' ||
-  new URLSearchParams(window.location.search).get('mock') === '1';
+  (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mock') === '1');
 
 const api = axios.create({ baseURL: API_BASE });
 
@@ -38,6 +40,12 @@ export interface FetchHistoryOptions {
 
 export const fetchStatus = () =>
   IS_MOCK_MODE ? Promise.resolve(mockState) : api.get<AllState>('/status').then((r) => r.data);
+
+export const fetchAppSettings = () =>
+  IS_MOCK_MODE ? Promise.resolve({}) : api.get<Record<string, unknown>>('/settings').then((r) => r.data);
+
+export const saveAppSettingsRemote = (settings: unknown) =>
+  IS_MOCK_MODE ? Promise.resolve() : api.post('/settings', settings).then(() => undefined);
 
 export const fetchDevices = () =>
   IS_MOCK_MODE ? Promise.resolve(getMockDevices()) : api.get<string[]>('/devices').then((r) => r.data);

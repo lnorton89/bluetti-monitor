@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import aiomqtt
-from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO)
@@ -55,6 +55,35 @@ def db_init():
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_device_field_ts ON readings(device, field, ts)")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS app_settings (
+                id    INTEGER PRIMARY KEY CHECK (id = 1),
+                value TEXT    NOT NULL
+            )
+        """)
+        conn.commit()
+
+def db_load_app_settings() -> dict:
+    with db_connect() as conn:
+        row = conn.execute("SELECT value FROM app_settings WHERE id = 1").fetchone()
+
+    if row is None:
+        return {}
+
+    try:
+        parsed = json.loads(row["value"])
+    except (TypeError, ValueError):
+        return {}
+
+    return parsed if isinstance(parsed, dict) else {}
+
+def db_save_app_settings(settings: dict) -> None:
+    with db_connect() as conn:
+        conn.execute(
+            "INSERT INTO app_settings (id, value) VALUES (1, ?) "
+            "ON CONFLICT(id) DO UPDATE SET value = excluded.value",
+            (json.dumps(settings),),
+        )
         conn.commit()
 
 def db_insert(device: str, field: str, value: str):
@@ -278,6 +307,20 @@ def get_device_status(device: str):
     if device not in latest:
         return {}
     return latest[device]
+
+@app.get("/settings")
+def get_app_settings():
+    """Persisted dashboard settings (theme, alerts, etc.), shared across whichever origin loaded it."""
+    return db_load_app_settings()
+
+@app.post("/settings")
+async def save_app_settings(request: Request):
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="settings must be a JSON object")
+
+    db_save_app_settings(body)
+    return {"ok": True}
 
 @app.get("/history/{device}/{field}")
 def get_history(
