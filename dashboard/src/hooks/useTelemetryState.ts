@@ -10,7 +10,7 @@
  * - isPartial: Some fields missing from expected data
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWsStore } from '../store/ws';
 
 const STALE_THRESHOLD_MS = 30000; // 30 seconds
@@ -93,11 +93,15 @@ function getStateLabel(
 export function useTelemetryState(): TelemetryState {
   const { connected, lastUpdate, state, connect } = useWsStore();
   const [, setClockTick] = useState(0);
+  const lastSeverityRef = useRef(calculateStaleSeverity(lastUpdate));
 
   useEffect(() => {
     if (!lastUpdate) return;
 
     const timer = window.setInterval(() => {
+      const severity = calculateStaleSeverity(lastUpdate);
+      if (severity === lastSeverityRef.current) return;
+      lastSeverityRef.current = severity;
       setClockTick((tick) => tick + 1);
     }, 1_000);
 

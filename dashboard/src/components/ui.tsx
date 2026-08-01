@@ -52,7 +52,6 @@ export function StatusDot({ ok }: { ok: boolean }) {
       borderRadius: '50%',
       background: ok ? 'var(--green)' : 'var(--red)',
       boxShadow: ok ? '0 0 6px var(--green)' : '0 0 6px var(--red)',
-      animation: ok ? 'pulse-amber 2s ease-in-out infinite' : 'none',
     }} />
   );
 }
