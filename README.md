@@ -425,6 +425,35 @@ docker compose down -v
 - `monitor:dev` consumes the compiled CLI and helper from the checked-out submodule directly. It rebuilds stale artifacts and retries real-device discovery without terminating the API or dashboard.
 - Source changes below `lib/bluetti-mqtt-node/src/` rebuild the Node CLI; relevant changes below `lib/bluetti-mqtt-node/helper/BluettiMqtt.BluetoothHelper/` republish the Windows helper. Generated `dist/` and `artifacts/` changes do not trigger rebuild loops.
 
+### Packaging A Release And Running At Boot
+
+```powershell
+npm run desktop:build
+```
+
+This produces a Windows installer in `build/stable-win-x64/`:
+
+- `Bluetti Monitor-Setup.exe` — run once to install the desktop app to `%LOCALAPPDATA%\dev.lawrence.bluetti-monitor\stable\`.
+- The same build output is also copied into the tracked `artifacts/` folder and should be committed alongside the source changes it was built from.
+
+To have the full stack (Docker services, host BLE bridge, and the desktop window) come up automatically after a reboot:
+
+1. Run `Bluetti Monitor-Setup.exe` once to install the desktop app.
+2. In Docker Desktop settings, enable **Start Docker Desktop when you sign in**.
+3. Register the startup task:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\boot\register-startup-task.ps1
+   ```
+
+   This creates a Task Scheduler task ("Bluetti Monitor Startup") that runs `npm run monitor:boot` at logon. That script waits for Docker, starts the stack the same way `monitor:start` does, then launches the installed desktop app pointed at `http://localhost:8540`. If the app isn't installed yet, it opens the dashboard in the default browser instead.
+
+To remove the scheduled task later:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\boot\unregister-startup-task.ps1
+```
+
 ### Dashboard
 
 ```powershell

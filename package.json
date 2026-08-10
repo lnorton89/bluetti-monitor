@@ -17,6 +17,7 @@
     "monitor:dev": "node ./scripts/monitor/dev.mjs",
     "monitor:start": "node ./scripts/monitor/start.mjs",
     "monitor:verify": "node ./scripts/monitor/verify.mjs",
+    "monitor:boot": "node ./scripts/boot/start-on-boot.mjs",
     "estimate:backtest": "python ./scripts/estimate_backtest.py",
     "stack:up": "docker compose up -d",
     "stack:down": "docker compose down"
