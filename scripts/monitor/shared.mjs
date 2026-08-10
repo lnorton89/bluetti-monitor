@@ -63,6 +63,7 @@ export function spawnCommand(command, args, options = {}) {
     cwd: getWorkspaceRoot(),
     stdio: "inherit",
     shell: false,
+    windowsHide: true,
     ...options,
   });
 
