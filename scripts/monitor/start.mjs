@@ -10,6 +10,7 @@ import {
   spawnCommand,
   waitForUrl,
 } from "./shared.mjs";
+import { acquireMonitorLock, releaseMonitorLock } from "../lock.mjs";
 
 const DASHBOARD_READY_MARKER = "<!doctype html>";
 const BRIDGE_RESTART_DELAY_MS = 5_000;
@@ -18,6 +19,14 @@ let bridgeProcess = null;
 let stopping = false;
 
 async function main() {
+  const lock = acquireMonitorLock("monitor:start");
+  if (!lock.acquired) {
+    console.log(
+      `[monitor] Stack already managed by pid ${lock.existing.pid} (${lock.existing.label}); not starting a second bridge.`,
+    );
+    return;
+  }
+
   console.log("[monitor] Starting Docker-backed services...");
   await ensureDockerStack();
 
@@ -41,10 +50,12 @@ installSignalHandlers(async () => {
   if (bridgeProcess && !bridgeProcess.killed) {
     bridgeProcess.kill();
   }
+  releaseMonitorLock();
 });
 
 main().catch((error) => {
   console.error("[monitor] Failed to start monitor:", error);
+  releaseMonitorLock();
   process.exit(1);
 });
 

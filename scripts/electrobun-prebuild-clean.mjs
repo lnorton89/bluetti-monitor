@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import "./electrobun-prebuild-vendor.mjs";
 
 const isWindows = process.platform === "win32";
 const isDevBuild = process.env.ELECTROBUN_BUILD_ENV === "dev";

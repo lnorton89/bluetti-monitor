@@ -16,6 +16,9 @@ build/
 *.egg-info/
 .egg
 
+# Staged vendor deps for the packaged desktop app (regenerated per build)
+.vendor/
+
 # Environment files
 .env
 .env.local

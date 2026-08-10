@@ -17,6 +17,12 @@ export default {
       "src/mainview/index.css": "views/mainview/index.css",
       "assets/icons/icon.ico": "assets/icon.ico",
       "assets/icons/icon.png": "assets/icon.png",
+      "docker-compose.yml": "docker-compose.yml",
+      "mosquitto/mosquitto.conf": "mosquitto/mosquitto.conf",
+      "scripts/lock.mjs": "scripts/lock.mjs",
+      "scripts/desktop-stack.mjs": "scripts/desktop-stack.mjs",
+      ".vendor/bridge-dist": "vendor/bridge-dist",
+      ".vendor/bridge-helper": "vendor/bridge-helper",
     },
     watchIgnore: [
       ".dev-data/**",

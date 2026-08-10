@@ -1,5 +1,6 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "fs";
+import { appendFileSync, existsSync, mkdirSync, openSync, readFileSync, statSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
+import { spawn } from "child_process";
 import { BrowserWindow } from "electrobun/bun";
 import { Tray } from "electrobun/bun";
 import { Utils } from "electrobun/bun";
@@ -797,8 +798,9 @@ function showErrorState(error: unknown) {
         <main>
           <h1>Bluetti Monitor dashboard is not available</h1>
           <p>
-            The desktop shell is running, but it no longer starts the monitor stack itself.
-            Start the monitor stack separately, then relaunch or refresh this window.
+            The packaged app self-starts Docker and the BLE bridge, but that timed out or Docker isn't
+            reachable yet. In a dev checkout, the desktop shell stays passive - start the monitor stack
+            separately, then relaunch or refresh this window.
           </p>
           <p>
             Daily use: <code>npm run monitor:start</code>
@@ -813,8 +815,87 @@ function showErrorState(error: unknown) {
   mainWindow.webview.loadHTML(html);
 }
 
+/**
+ * Locates the bundled monitor-stack starter, but only inside a genuinely
+ * packaged install (docker-compose.yml + scripts/desktop-stack.mjs + the
+ * vendored bridge dist all present). Dev checkouts are explicitly excluded
+ * (dashboard/package.json present) so `desktop:dev`/`desktop:start` keep
+ * their existing passive-viewer behavior unchanged.
+ */
+function findBundledAppRoot(): string | null {
+  const candidates = [import.meta.dir, resolve(import.meta.dir, "..")];
+
+  for (const start of candidates) {
+    const candidate = resolve(start);
+    const looksLikeDevCheckout = existsSync(resolve(candidate, "dashboard", "package.json"));
+    const hasBundledStack =
+      existsSync(resolve(candidate, "docker-compose.yml"))
+      && existsSync(resolve(candidate, "scripts", "desktop-stack.mjs"))
+      && existsSync(resolve(candidate, "vendor", "bridge-dist", "bluetti-mqtt.js"));
+
+    if (hasBundledStack && !looksLikeDevCheckout) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function getAppSupportDir(): string {
+  if (process.platform !== "win32") {
+    return devDataRoot;
+  }
+  const base = process.env["LOCALAPPDATA"] ?? resolve(process.env["USERPROFILE"] ?? ".", "AppData", "Local");
+  return resolve(base, "dev.lawrence.bluetti-monitor");
+}
+
+let selfStartAttempted = false;
+
+/**
+ * Self-starts Docker + the BLE bridge when running as a genuinely packaged
+ * install and the dashboard isn't already reachable. A no-op everywhere
+ * else: dev checkouts, or when the stack (started by monitor:start, the
+ * boot task, or a previous self-start) is already up.
+ */
+async function maybeSelfStartMonitorStack(): Promise<void> {
+  if (selfStartAttempted) {
+    return;
+  }
+  selfStartAttempted = true;
+
+  if (await isUrlReady(DASHBOARD_URL)) {
+    return;
+  }
+
+  const bundledAppRoot = findBundledAppRoot();
+  if (bundledAppRoot === null) {
+    return;
+  }
+
+  const stackScript = resolve(bundledAppRoot, "scripts", "desktop-stack.mjs");
+  const stackLogDir = resolve(getAppSupportDir(), "logs");
+  const stackLogPath = resolve(stackLogDir, "desktop-stack.log");
+
+  console.log(`[desktop] dashboard not reachable; self-starting the bundled monitor stack (${stackScript})`);
+
+  try {
+    mkdirSync(stackLogDir, { recursive: true });
+    const logFd = openSync(stackLogPath, "a");
+    const child = spawn(process.execPath, [stackScript], {
+      cwd: bundledAppRoot,
+      stdio: ["ignore", logFd, logFd],
+      detached: true,
+      windowsHide: true,
+    });
+    child.unref();
+  } catch (error) {
+    console.error("[desktop] failed to self-start the monitor stack", error);
+  }
+}
+
 async function bootstrap() {
   try {
+    await maybeSelfStartMonitorStack();
     await waitForDashboardUrl(DASHBOARD_URL);
 
     connectTitlebarTelemetry();

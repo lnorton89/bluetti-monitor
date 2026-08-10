@@ -14,6 +14,7 @@ import {
   spawnCommand,
   waitForUrl,
 } from "../monitor/shared.mjs";
+import { acquireMonitorLock, releaseMonitorLock } from "../lock.mjs";
 
 const DASHBOARD_READY_MARKER = "<!doctype html>";
 const BRIDGE_RESTART_DELAY_MS = 5_000;
@@ -29,21 +30,29 @@ let bridgeProcess = null;
 let stopping = false;
 
 async function main() {
-  console.log("[boot] Starting Docker-backed services...");
-  await ensureDockerStackWithRetry();
+  const lock = acquireMonitorLock("boot:start-on-boot");
+  if (lock.acquired) {
+    console.log("[boot] Starting Docker-backed services...");
+    await ensureDockerStackWithRetry();
 
-  await waitForUrl(`${API_URL}/devices`, "api");
-  await waitForUrl(DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
+    await waitForUrl(`${API_URL}/devices`, "api");
+    await waitForUrl(DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
 
-  const device = await resolveDeviceAddress();
-  const bridgeBin = getBinPath("bluetti-mqtt-node");
-  console.log(`[boot] Starting bluetti-mqtt-node via package CLI for ${device.mac}...`);
+    const device = await resolveDeviceAddress();
+    const bridgeBin = getBinPath("bluetti-mqtt-node");
+    console.log(`[boot] Starting bluetti-mqtt-node via package CLI for ${device.mac}...`);
 
-  startBridge(bridgeBin, device.mac);
+    startBridge(bridgeBin, device.mac);
 
-  printDashboardUrls();
-  console.log(`[boot] API: ${API_URL}`);
-  console.log(`[boot] Device source: ${device.source}`);
+    printDashboardUrls();
+    console.log(`[boot] API: ${API_URL}`);
+    console.log(`[boot] Device source: ${device.source}`);
+  } else {
+    console.log(
+      `[boot] Stack already managed by pid ${lock.existing.pid} (${lock.existing.label}); waiting for it to come up.`,
+    );
+    await waitForUrl(DASHBOARD_URL, "dashboard", DASHBOARD_READY_MARKER);
+  }
 
   launchDesktopApp();
 }
@@ -53,10 +62,12 @@ installSignalHandlers(async () => {
   if (bridgeProcess && !bridgeProcess.killed) {
     bridgeProcess.kill();
   }
+  releaseMonitorLock();
 });
 
 main().catch((error) => {
   console.error("[boot] Failed to start monitor stack:", error);
+  releaseMonitorLock();
   process.exit(1);
 });
 
