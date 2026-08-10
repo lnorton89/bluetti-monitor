@@ -140,7 +140,7 @@ function sanitizeNtfyIntervalMinutes(value: unknown, fallback = DEFAULT_SETTINGS
     : fallback;
 }
 
-function sanitizeOptionValue<T extends readonly number[]>(value: unknown, allowed: T, fallback: T[number]) {
+function sanitizeOptionValue<T extends readonly number[]>(value: unknown, allowed: T, fallback: number) {
   return typeof value === 'number' && allowed.includes(value) ? value : fallback;
 }
 
