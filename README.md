@@ -147,7 +147,9 @@ Successful verification means:
 
 ### Optional Desktop Shell For Local Development
 
-The Electrobun desktop shell is still available, but it is a local development convenience layer rather than the primary app startup path. It no longer starts Docker, the API, the dashboard, or the BLE bridge; it only attaches a native window to an already-running dashboard.
+The Electrobun desktop shell run via `npm run desktop:start`/`desktop:dev` from a dev checkout is a local development convenience layer, not the primary app startup path: it only attaches a native window to an already-running dashboard and does not start Docker, the API, the dashboard, or the BLE bridge itself.
+
+The **installed, packaged app** is different: it self-starts Docker and the bundled BLE bridge on launch if the dashboard isn't already reachable (see [Packaging A Release And Running At Boot](#packaging-a-release-and-running-at-boot)). That self-start path only activates for a genuine packaged install, not a dev checkout.
 
 ```powershell
 bun install
@@ -435,6 +437,8 @@ This produces a Windows installer in `build/stable-win-x64/`:
 
 - `Bluetti Monitor-Setup.exe` — run once to install the desktop app to `%LOCALAPPDATA%\dev.lawrence.bluetti-monitor\stable\`.
 - The same build output is also copied into the tracked `artifacts/` folder and should be committed alongside the source changes it was built from.
+
+The installed app is self-contained: it bundles the compiled bridge CLI and the BLE helper (see `scripts/electrobun-prebuild-vendor.mjs`) and self-starts Docker plus the bridge if the dashboard isn't already reachable when it launches. That self-start reuses the `bluetti-monitor-api`/`bluetti-monitor-dashboard` Docker images already built from this dev checkout (`docker compose build`) rather than rebuilding them — it does not bundle `api/`/`dashboard/` source, so those images need to exist on the machine at least once before a cold self-start can succeed.
 
 To have the full stack (Docker services, host BLE bridge, and the desktop window) come up automatically after a reboot:
 
