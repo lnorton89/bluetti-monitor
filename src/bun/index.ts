@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, openSync, readFileSync, statSync, writeFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { spawn } from "child_process";
+import Electrobun, { type ElectrobunEvent } from "electrobun/bun";
 import { BrowserWindow } from "electrobun/bun";
 import { Tray } from "electrobun/bun";
 import { Utils } from "electrobun/bun";
@@ -850,6 +851,7 @@ function getAppSupportDir(): string {
 }
 
 let selfStartAttempted = false;
+let selfStartedStackPid: number | null = null;
 
 /**
  * Self-starts Docker + the BLE bridge when running as a genuinely packaged
@@ -888,8 +890,97 @@ async function maybeSelfStartMonitorStack(): Promise<void> {
       windowsHide: true,
     });
     child.unref();
+    selfStartedStackPid = child.pid ?? null;
   } catch (error) {
     console.error("[desktop] failed to self-start the monitor stack", error);
+  }
+}
+
+const STACK_STOP_TIMEOUT_MS = 5_000;
+const STACK_STOP_POLL_INTERVAL_MS = 150;
+const STACK_STOP_GRACE_MS = 3_000;
+
+/**
+ * Tears down the monitor stack this window self-started, if any. A no-op
+ * when the dashboard was already reachable at startup (stack owned by
+ * `monitor:start`, the boot task, or a previous app instance) — those are
+ * deliberately left running, matching the cross-process lock in
+ * scripts/lock.mjs. Docker containers are untouched; `docker compose up -d`
+ * detaches them from their invoking process by design.
+ */
+function stopSelfStartedStack(): Promise<void> {
+  const pid = selfStartedStackPid;
+  selfStartedStackPid = null;
+
+  if (pid === null) {
+    return Promise.resolve();
+  }
+
+  console.log(`[desktop] stopping self-started monitor stack (pid ${pid})`);
+
+  const stopped = process.platform === "win32"
+    ? stopProcessTreeWindows(pid)
+    : stopProcessTreePosix(pid);
+
+  return Promise.race([
+    stopped.catch((error) => {
+      console.warn("[desktop] failed to stop self-started monitor stack cleanly", error);
+    }),
+    new Promise<void>((resolvePromise) => setTimeout(resolvePromise, STACK_STOP_TIMEOUT_MS)),
+  ]);
+}
+
+/**
+ * `desktop-stack.mjs` is spawned detached, so a plain kill only reaches that
+ * process, not the BLE bridge underneath it. Windows has no real signals for
+ * a graceful `SIGTERM`-style handoff between unrelated processes, so this
+ * tree-kills via taskkill instead — the same approach scripts/monitor/shared.mjs
+ * already uses for the dev-mode stack.
+ */
+function stopProcessTreeWindows(pid: number): Promise<void> {
+  return new Promise((resolvePromise) => {
+    const killer = spawn("taskkill.exe", ["/PID", String(pid), "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    killer.once("close", () => resolvePromise());
+    killer.once("error", () => resolvePromise());
+  });
+}
+
+/**
+ * `desktop-stack.mjs` is spawned detached (a new POSIX process group leader),
+ * so signaling the negated pid reaches it and the bridge child together. Real
+ * SIGTERM lets desktop-stack.mjs's own handler stop the bridge and release
+ * the monitor lock cleanly; SIGKILL is only the fallback if it doesn't exit.
+ */
+async function stopProcessTreePosix(pid: number): Promise<void> {
+  try {
+    process.kill(-pid, "SIGTERM");
+  } catch {
+    return;
+  }
+
+  const deadline = Date.now() + STACK_STOP_GRACE_MS;
+  while (Date.now() < deadline && isPidAlive(pid)) {
+    await Bun.sleep(STACK_STOP_POLL_INTERVAL_MS);
+  }
+
+  if (isPidAlive(pid)) {
+    try {
+      process.kill(-pid, "SIGKILL");
+    } catch {
+      // Already gone.
+    }
+  }
+}
+
+function isPidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -916,6 +1007,27 @@ function stopDesktopConnections() {
 process.on("beforeExit", stopDesktopConnections);
 process.on("SIGINT", stopDesktopConnections);
 process.on("SIGTERM", stopDesktopConnections);
+
+let quitCleanupStarted = false;
+
+/**
+ * Closing the window (or any other quit path — tray, OS quit) routes through
+ * Utils.quit(), which fires this cancelable event before tearing down the
+ * native event loop. Cancel the first quit attempt, stop whatever stack this
+ * window self-started, then let a second quit() through untouched so normal
+ * native shutdown (stopEventLoop/forceExit) still applies.
+ */
+Electrobun.events.on("before-quit", (event: ElectrobunEvent<{}, { allow: boolean }>) => {
+  if (quitCleanupStarted) {
+    return;
+  }
+  quitCleanupStarted = true;
+  event.response = { allow: false };
+
+  void stopSelfStartedStack().finally(() => {
+    Utils.quit();
+  });
+});
 
 void bootstrap();
 
