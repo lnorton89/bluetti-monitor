@@ -19,6 +19,17 @@ MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DB_PATH = os.getenv("DB_PATH", "/data/bluetti.db")
 MAX_HISTORY_ROWS = 100_000
+# Retention: raw per-event readings older than RAW_RETENTION_DAYS are rolled up
+# into hourly min/max/avg aggregates (readings_hourly), then deleted. Aggregates
+# older than AGGREGATE_RETENTION_DAYS are dropped outright. Keeps the readings
+# table (an EAV log, one row per field update) from growing unbounded.
+RAW_RETENTION_DAYS = int(os.getenv("RAW_RETENTION_DAYS", "30"))
+AGGREGATE_RETENTION_DAYS = int(os.getenv("AGGREGATE_RETENTION_DAYS", "365"))
+RETENTION_INTERVAL_SECONDS = int(os.getenv("RETENTION_INTERVAL_SECONDS", str(6 * 3600)))
+RETENTION_BATCH_LIMIT = 50_000
+# Raw payload dump, not surfaced anywhere in the UI (see EXCLUDED_COMPARISON_FIELDS
+# in the analytics app) — excluded from persistence entirely rather than retained.
+RETIRED_FIELDS = ("_raw",)
 # Devices whose newest reading is older than this window are treated as gone and
 # excluded from live snapshots. Persisted telemetry rebuilds the snapshot from
 # SQLite, so a device that reports once (e.g. a simulated/mock fleet) would
@@ -61,6 +72,20 @@ def db_init():
                 value TEXT    NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS readings_hourly (
+                device       TEXT    NOT NULL,
+                field        TEXT    NOT NULL,
+                hour_ts      TEXT    NOT NULL,
+                min_value    REAL,
+                max_value    REAL,
+                avg_value    REAL,
+                last_value   TEXT,
+                sample_count INTEGER NOT NULL,
+                PRIMARY KEY (device, field, hour_ts)
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_hourly_ts ON readings_hourly(hour_ts)")
         conn.commit()
 
 def db_load_app_settings() -> dict:
@@ -95,6 +120,108 @@ def db_insert(device: str, field: str, value: str):
         )
         conn.commit()
     return ts
+
+def _bucket_hour(ts: str) -> str:
+    """Truncate an ISO8601 timestamp to the start of its UTC hour."""
+    parsed = datetime.fromisoformat(ts)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.replace(minute=0, second=0, microsecond=0).isoformat()
+
+def raw_retention_cutoff() -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=RAW_RETENTION_DAYS)).isoformat()
+
+def db_rollup_older_than(cutoff_iso: str, batch_limit: int = RETENTION_BATCH_LIMIT) -> int:
+    """
+    Roll up to `batch_limit` raw readings older than `cutoff_iso` into hourly
+    min/max/avg/last-value aggregates, then delete those raw rows. Aggregates
+    merge with anything already stored for the same (device, field, hour), so
+    this is safe to call repeatedly across batches and across separate hours'
+    worth of backlog. Returns the number of raw rows processed — call again
+    while the result equals `batch_limit` to fully drain the backlog.
+    """
+    with db_connect() as conn:
+        rows = conn.execute(
+            "SELECT id, device, field, value, ts FROM readings WHERE ts < ? LIMIT ?",
+            (cutoff_iso, batch_limit),
+        ).fetchall()
+        if not rows:
+            return 0
+
+        buckets: dict[tuple[str, str, str], dict] = {}
+        ids: list[int] = []
+        for row in rows:
+            ids.append(row["id"])
+            key = (row["device"], row["field"], _bucket_hour(row["ts"]))
+            bucket = buckets.setdefault(key, {
+                "min": None, "max": None, "sum": 0.0, "numeric_count": 0,
+                "count": 0, "last_value": None, "last_ts": None,
+            })
+            bucket["count"] += 1
+            try:
+                numeric = float(row["value"])
+            except (TypeError, ValueError):
+                numeric = None
+            if numeric is not None:
+                bucket["min"] = numeric if bucket["min"] is None else min(bucket["min"], numeric)
+                bucket["max"] = numeric if bucket["max"] is None else max(bucket["max"], numeric)
+                bucket["sum"] += numeric
+                bucket["numeric_count"] += 1
+            if bucket["last_ts"] is None or row["ts"] >= bucket["last_ts"]:
+                bucket["last_ts"] = row["ts"]
+                bucket["last_value"] = row["value"]
+
+        upserts = [
+            (
+                device, field, hour,
+                bucket["min"], bucket["max"],
+                (bucket["sum"] / bucket["numeric_count"]) if bucket["numeric_count"] else None,
+                bucket["last_value"], bucket["count"],
+            )
+            for (device, field, hour), bucket in buckets.items()
+        ]
+        conn.executemany(
+            """
+            INSERT INTO readings_hourly
+                (device, field, hour_ts, min_value, max_value, avg_value, last_value, sample_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(device, field, hour_ts) DO UPDATE SET
+                min_value = CASE
+                    WHEN min_value IS NULL THEN excluded.min_value
+                    WHEN excluded.min_value IS NULL THEN min_value
+                    ELSE MIN(min_value, excluded.min_value)
+                END,
+                max_value = CASE
+                    WHEN max_value IS NULL THEN excluded.max_value
+                    WHEN excluded.max_value IS NULL THEN max_value
+                    ELSE MAX(max_value, excluded.max_value)
+                END,
+                avg_value = CASE
+                    WHEN avg_value IS NULL THEN excluded.avg_value
+                    WHEN excluded.avg_value IS NULL THEN avg_value
+                    ELSE (avg_value * sample_count + excluded.avg_value * excluded.sample_count)
+                         / (sample_count + excluded.sample_count)
+                END,
+                last_value = excluded.last_value,
+                sample_count = sample_count + excluded.sample_count
+            """,
+            upserts,
+        )
+
+        for i in range(0, len(ids), 500):
+            chunk = ids[i:i + 500]
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM readings WHERE id IN ({placeholders})", chunk)
+
+        conn.commit()
+
+    return len(ids)
+
+def db_prune_aggregates_older_than(cutoff_iso: str) -> int:
+    with db_connect() as conn:
+        cur = conn.execute("DELETE FROM readings_hourly WHERE hour_ts < ?", (cutoff_iso,))
+        conn.commit()
+        return cur.rowcount
 
 def db_list_devices() -> list[str]:
     """List device keys with index seeks instead of scanning all telemetry rows."""
@@ -251,7 +378,11 @@ async def mqtt_loop():
                     field  = parts[3]
                     value  = message.payload.decode()
 
-                    ts = db_insert(device, field, value)
+                    ts = (
+                        datetime.now(timezone.utc).isoformat()
+                        if field in RETIRED_FIELDS
+                        else db_insert(device, field, value)
+                    )
 
                     if device not in latest:
                         latest[device] = {}
@@ -266,6 +397,30 @@ async def mqtt_loop():
         except Exception as e:
             log.warning(f"MQTT connection failed: {e} — retrying in 5s")
             await asyncio.sleep(5)
+
+async def retention_loop():
+    """Periodically rolls raw readings older than RAW_RETENTION_DAYS into hourly
+    aggregates and drops aggregates older than AGGREGATE_RETENTION_DAYS."""
+    while True:
+        try:
+            cutoff = raw_retention_cutoff()
+            rolled_up = 0
+            while True:
+                rolled = await asyncio.to_thread(db_rollup_older_than, cutoff)
+                rolled_up += rolled
+                if rolled < RETENTION_BATCH_LIMIT:
+                    break
+            if rolled_up:
+                log.info("Retention: rolled up %d raw readings older than %s", rolled_up, cutoff)
+
+            agg_cutoff = (datetime.now(timezone.utc) - timedelta(days=AGGREGATE_RETENTION_DAYS)).isoformat()
+            pruned = await asyncio.to_thread(db_prune_aggregates_older_than, agg_cutoff)
+            if pruned:
+                log.info("Retention: pruned %d hourly aggregates older than %s", pruned, agg_cutoff)
+        except Exception as e:
+            log.warning(f"Retention pass failed: {e} — retrying next interval")
+
+        await asyncio.sleep(RETENTION_INTERVAL_SECONDS)
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 
@@ -282,9 +437,11 @@ async def lifespan(app: FastAPI):
         field_count,
         (time.perf_counter() - hydrate_started) * 1000,
     )
-    task = asyncio.create_task(mqtt_loop())
+    mqtt_task = asyncio.create_task(mqtt_loop())
+    retention_task = asyncio.create_task(retention_loop())
     yield
-    task.cancel()
+    mqtt_task.cancel()
+    retention_task.cancel()
 
 app = FastAPI(title="Bluetti API", lifespan=lifespan)
 app.add_middleware(
@@ -332,13 +489,19 @@ def get_history(
     """
     Historical readings for one device/field.
     Optionally filter with ?since=2024-01-01T00:00:00Z
+
+    Raw rows only cover the last RAW_RETENTION_DAYS; requests reaching further
+    back are backfilled from the hourly readings_hourly aggregates (avg_value,
+    or last_value for non-numeric fields) so older trend data stays visible at
+    reduced resolution instead of returning nothing.
     """
+    cutoff = raw_retention_cutoff()
     with db_connect() as conn:
         if since:
             rows = conn.execute(
                 "SELECT value, ts FROM readings WHERE device=? AND field=? AND ts>=? "
                 "ORDER BY ts DESC LIMIT ?",
-                (device, field, since, limit)
+                (device, field, max(since, cutoff), limit)
             ).fetchall()
         else:
             rows = conn.execute(
@@ -346,7 +509,26 @@ def get_history(
                 "ORDER BY ts DESC LIMIT ?",
                 (device, field, limit)
             ).fetchall()
-    return [{"value": r["value"], "ts": r["ts"]} for r in rows]
+
+        result = [{"value": r["value"], "ts": r["ts"]} for r in rows]
+
+        remaining = limit - len(result)
+        if since and since < cutoff and remaining > 0:
+            agg_rows = conn.execute(
+                "SELECT avg_value, last_value, hour_ts FROM readings_hourly "
+                "WHERE device=? AND field=? AND hour_ts>=? AND hour_ts<? "
+                "ORDER BY hour_ts DESC LIMIT ?",
+                (device, field, since, cutoff, remaining)
+            ).fetchall()
+            result.extend(
+                {
+                    "value": str(r["avg_value"]) if r["avg_value"] is not None else r["last_value"],
+                    "ts": r["hour_ts"],
+                }
+                for r in agg_rows
+            )
+
+    return result
 
 @app.get("/history/{device}")
 def get_history_bundle(
@@ -364,12 +546,15 @@ def get_history_bundle(
     if not requested:
         return {}
 
+    cutoff = raw_retention_cutoff()
+    raw_since = max(since, cutoff) if since else None
+
     placeholders = ",".join("?" for _ in requested)
     params: list[object] = [device, *requested]
     since_clause = ""
-    if since:
+    if raw_since:
         since_clause = "AND ts>=?"
-        params.append(since)
+        params.append(raw_since)
     params.append(limit)
 
     with db_connect() as conn:
@@ -391,9 +576,34 @@ def get_history_bundle(
             params,
         ).fetchall()
 
-    bundled: dict[str, list[dict[str, str]]] = {field: [] for field in requested}
-    for row in rows:
-        bundled[row["field"]].append({"value": row["value"], "ts": row["ts"]})
+        bundled: dict[str, list[dict[str, str]]] = {field: [] for field in requested}
+        for row in rows:
+            bundled[row["field"]].append({"value": row["value"], "ts": row["ts"]})
+
+        # Backfill ranges older than the raw retention window from hourly aggregates.
+        if since and since < cutoff:
+            agg_rows = conn.execute(
+                f"""
+                SELECT field, hour_ts, avg_value, last_value
+                FROM (
+                    SELECT
+                        field, hour_ts, avg_value, last_value,
+                        ROW_NUMBER() OVER (PARTITION BY field ORDER BY hour_ts DESC) AS rn
+                    FROM readings_hourly
+                    WHERE device=? AND field IN ({placeholders}) AND hour_ts>=? AND hour_ts<?
+                )
+                WHERE rn <= ?
+                ORDER BY field, hour_ts DESC
+                """,
+                [device, *requested, since, cutoff, limit],
+            ).fetchall()
+            for row in agg_rows:
+                bucket = bundled[row["field"]]
+                if len(bucket) >= limit:
+                    continue
+                value = str(row["avg_value"]) if row["avg_value"] is not None else row["last_value"]
+                bucket.append({"value": value, "ts": row["hour_ts"]})
+
     return bundled
 
 @app.get("/stats/{device}/input-max")
